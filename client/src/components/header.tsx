@@ -18,6 +18,7 @@ import {
     Menu,
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
+import { Cmd } from "./cmd"
 
 const NAV_ITEMS = [
     { label: "Issues", icon: Bug },
@@ -30,7 +31,7 @@ export default function Header() {
     const { data: session } = authClient.useSession()
 
     return (
-        <header className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2 sm:px-2 sm:py-1 bg-gradient-to-b from-muted via-muted to-muted/80">
+        <header className="flex items-center justify-between gap-2 border-b bg-muted/10  px-3 py-2 sm:px-2 sm:py-1">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <img
                     draggable={false}
@@ -46,7 +47,6 @@ export default function Header() {
                     className="hidden h-7 w-7 shrink-0 dark:block sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
                 />
 
-                {/* Desktop nav */}
                 <nav className="hidden items-center gap-1 pb-1 md:flex">
                     {NAV_ITEMS.map(({ label, icon: Icon }) => (
                         <Button key={label} variant="link" disabled>
@@ -77,10 +77,19 @@ export default function Header() {
                 </div>
             </div>
 
+
+
             <div className="flex items-center gap-1 sm:gap-3">
-                <Button size="lg">
+                <div className="">
+                    <Cmd />
+                </div>
+                <Button size="default">
                     <BookPlus className="h-4 w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">Repository</span>
+                    <span className="hidden sm:inline">Create</span>
+                </Button>
+
+                <Button size="icon" aria-label="Search" variant="outline" disabled>
+                    <Bell aria-hidden="true" />
                 </Button>
 
                 <Pattern />

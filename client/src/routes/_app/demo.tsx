@@ -3,9 +3,9 @@ import { authMiddleware } from "@/lib/middleware"
 
 export const Route = createFileRoute("/_app/demo")({
   component: Demo,
-  // server: {
-  //   middleware: [authMiddleware],
-  // },
+  server: {
+    middleware: [authMiddleware],
+  },
 })
 
 
