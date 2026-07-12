@@ -103,7 +103,7 @@ export default function Header() {
                     <TooltipTrigger>
                         <Avatar className="mr-1">
                             <AvatarImage
-                                src={session?.user.image ?? "https://github.com/shadcn.png"}
+                                src={session?.user.image ?? import.meta.env.VITE_DEFAULT_AVATAR_URL}
                                 alt={session?.user.name ?? "User"}
                             />
                             <AvatarFallback>
