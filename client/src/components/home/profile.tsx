@@ -38,7 +38,7 @@ function Profile() {
             </Avatar>
 
             <div className="flex flex-row items-center gap-2 flex-wrap justify-center sm:justify-start">
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground text-center sm:text-left underline">
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground text-center sm:text-left">
                     {session?.user.name}
                 </h1>
                 <Tooltip>

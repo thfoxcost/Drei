@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 echo "1) Client (bun dev)"
+echo "2) Backend (main.go)"
 echo "2) Exit"
 echo
 
@@ -11,7 +12,13 @@ case "$choice" in
         cd client || exit 1
         bun --bun run dev
         ;;
+
     2)
+    cd backend || exit 1
+    go run main.go
+    ;;
+
+        3)
         echo "Goodbye!"
         exit 0
         ;;
