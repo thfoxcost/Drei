@@ -31,7 +31,7 @@ export function GitHubContributions({
 
   return (
     <ContributionGraph
-      className={cn("mx-auto py-2", className)}
+      className={cn("mx-auto py-2 w-full", className)}
       data={data}
       blockSize={11}
       blockMargin={3}

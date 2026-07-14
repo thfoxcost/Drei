@@ -1,13 +1,18 @@
 export async function getContributions() {
-  const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/contribution`
-  )
+  const url = `${import.meta.env.VITE_BACKEND_URL}/api/contribution`
 
-  if (!res.ok) {
-    return []
-  }
+  console.log("Fetching:", url)
 
-  const data = await res.json()
+  const res = await fetch(url)
+
+  console.log("Status:", res.status)
+  console.log("Headers:", [...res.headers.entries()])
+
+  const text = await res.text()
+
+  console.log("Response:", text.slice(0, 200))
+
+  const data = JSON.parse(text)
 
   return data.contributions
 }

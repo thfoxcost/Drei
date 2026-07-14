@@ -13,7 +13,7 @@ function Dash() {
   const contributions = getContributions()
 
   return (
-    <div>
+    <div className="w-full">
       <Suspense fallback={<GitHubContributionsFallback />}>
         <GitHubContributions
           contributions={contributions}

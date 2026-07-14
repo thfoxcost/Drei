@@ -27,6 +27,7 @@
     "@magicui": "https://magicui.design/r/{name}",
     "@reui": "https://reui.io/r/{style}/{name}.json",
     "@soundcn": "https://soundcn.xyz/r/{name}.json",
-    "@dotmatrix": "https://dotmatrix.zzzzshawn.cloud/r/{name}.json"
+    "@dotmatrix": "https://dotmatrix.zzzzshawn.cloud/r/{name}.json",
+    "@wigggle-ui": "https://wigggle-ui.vercel.app/r/{name}.json"
   }
 }
