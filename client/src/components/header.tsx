@@ -37,14 +37,14 @@ export default function Header() {
                     draggable={false}
                     src="/logo-light.svg"
                     alt="Logo"
-                    className="block h-7 w-7 shrink-0 dark:hidden sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
+                    className="block h-6 w-6 shrink-0 dark:hidden sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
                 />
 
                 <img
                     draggable={false}
                     src="/logo-dark.svg"
                     alt="Logo"
-                    className="hidden h-7 w-7 shrink-0 dark:block sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
+                    className="hidden h-6 w-6 shrink-0 dark:block sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
                 />
 
                 <nav className="hidden items-center gap-1 pb-1 md:flex">
@@ -56,7 +56,6 @@ export default function Header() {
                     ))}
                 </nav>
 
-                {/* Mobile nav */}
                 <div className="md:hidden">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

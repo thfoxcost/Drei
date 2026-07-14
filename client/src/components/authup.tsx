@@ -35,7 +35,7 @@ export function SignUpPage() {
             name: "",
             email: "",
             password: "",
-            callbackURL: "/demo",
+            callbackURL: "/home",
         },
         validators: {
             onSubmit: formSchema,

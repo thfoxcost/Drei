@@ -32,7 +32,7 @@ export function SignInPage() {
 		defaultValues: {
 			email: "",
 			password: "",
-			callbackURL: "/demo",
+			callbackURL: "/home",
 		},
 		validators: {
 			onSubmit: formSchema,
