@@ -1,30 +1,15 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-echo "1) Client (bun dev)"
-echo "2) Backend (main.go)"
-echo "2) Exit"
-echo
+# Frontend
+(
+  cd client || exit
+  bun run dev
+) &
 
-read -rp "Choose an option: " choice
+# Backend
+(
+  cd backend || exit
+  go run .
+) &
 
-case "$choice" in
-    1)
-        cd client || exit 1
-        bun --bun run dev
-        ;;
-
-    2)
-    cd backend || exit 1
-    go run main.go
-    ;;
-
-        3)
-        echo "Goodbye!"
-        exit 0
-        ;;
-    *)
-        echo "Invalid option."
-        exit 1
-        ;;
-esac
-esac
+wait

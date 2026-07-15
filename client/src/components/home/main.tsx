@@ -1,23 +1,25 @@
 import Clock from "@/components/clock-06"
 import Dash from "./dash"
 import Profile from "./profile"
+import Weather from "./weather-07"
+import SystemHealth from "./health"
 
 function Main() {
   return (
-    <div className="flex min-h-screen gap-6 p-6">
-      {/* Left Sidebar */}
+    <div className="flex min-h-screen gap-6 p-6 overflow-hidden">
       <Profile />
 
-      {/* Main Content */}
-      <div className="flex flex-1 gap-6">
-        {/* Dashboard */}
+      <div className="flex flex-1 gap-6 min-w-0">
+        {/* Main Content */}
         <div className="flex-1 min-w-0">
           <Dash />
+          {/* Add widget about salat */}
         </div>
 
-        {/* Clock */}
-        <div className="shrink-0">
+        <div className="flex flex-col gap-6 shrink-0">
           <Clock />
+          <Weather />
+          <SystemHealth />
         </div>
       </div>
     </div>
