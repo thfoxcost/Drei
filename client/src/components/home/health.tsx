@@ -70,10 +70,6 @@ export default function SystemHealth() {
 
   return (
     <Widget design="mumbai" className="h-auto gap-4">
-      <WidgetHeader>
-        <WidgetTitle>System Health</WidgetTitle>
-      </WidgetHeader>
-
       <WidgetContent className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-3">
         {visibleServices.map((service) => {
           const Icon = getServiceIcon(service.name);

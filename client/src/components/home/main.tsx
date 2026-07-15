@@ -3,6 +3,7 @@ import Dash from "./dash"
 import Profile from "./profile"
 import Weather from "./weather-07"
 import SystemHealth from "./health"
+import Repos from "./repos"
 
 function Main() {
   return (
@@ -13,6 +14,7 @@ function Main() {
         {/* Main Content */}
         <div className="flex-1 min-w-0">
           <Dash />
+          <Repos />
           {/* Add widget about salat */}
         </div>
 

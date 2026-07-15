@@ -13,8 +13,8 @@ interface LocationData {
 }
 
 export const DEFAULT_LOCATION: Coordinates = {
-  lat: 19.076, // Mumbai
-  lon: 72.8777,
+  lat: 36.4700, // Blida
+  lon: 2.8287,
 };
 
 const CACHE_KEY = "wigggle-location-data";
