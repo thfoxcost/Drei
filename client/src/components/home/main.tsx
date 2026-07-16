@@ -18,7 +18,7 @@ function Main() {
           {/* Add widget about salat */}
         </div>
 
-        <div className="flex flex-col gap-6 shrink-0">
+        <div className="flex flex-col gap-9 shrink-0">
           <Clock />
           <Weather />
           <SystemHealth />
