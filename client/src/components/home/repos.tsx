@@ -1,5 +1,14 @@
+"use client"
+
+import { useMemo, useState } from "react"
+import { Search, BookMarked, FolderSearch } from "lucide-react"
+
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Prevlang,
   Stars,
@@ -83,23 +92,34 @@ const repos = [
   },
 ]
 
-function RepoCard({ repo }: { repo: (typeof repos)[number] }) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-3 transition-colors hover:border-muted-foreground/30">
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Button variant="link" className="h-auto p-0 text-xl font-semibold">
-            {repo.name}
-          </Button>
+type Repo = (typeof repos)[number]
 
-          <Badge variant="outline">{repo.owner}</Badge>
+function RepoCard({ repo }: { repo: Repo }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      className="group cursor-pointer rounded-lg border border-border bg-card p-3 transition-colors hover:border-muted-foreground/30 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <BookMarked
+            size={18}
+            className="shrink-0 text-muted-foreground"
+          />
+          <span className="truncate text-lg font-semibold group-hover:underline">
+            {repo.name}
+          </span>
+          <Badge variant="outline" className="shrink-0">
+            {repo.owner}
+          </Badge>
         </div>
 
         <p className="text-sm text-muted-foreground">
           {repo.description}
         </p>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {repo.tags.map((tag) => (
             <Badge key={tag} variant="secondary">
               {tag}
@@ -107,11 +127,8 @@ function RepoCard({ repo }: { repo: (typeof repos)[number] }) {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 pt-1 text-sm text-muted-foreground">
-          <Prevlang
-            language={repo.language}
-            color={repo.languageColor}
-          />
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-sm text-muted-foreground">
+          <Prevlang language={repo.language} color={repo.languageColor} />
           <Stars count={repo.stars} />
           <Forks count={repo.forks} />
           <License license={repo.license} />
@@ -122,12 +139,59 @@ function RepoCard({ repo }: { repo: (typeof repos)[number] }) {
   )
 }
 
-function Repos() {
+function EmptyState({ query }: { query: string }) {
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-1 xl:grid-cols-2">
-      {repos.map((repo) => (
-        <RepoCard key={repo.name} repo={repo} />
-      ))}
+    <div className="col-span-full flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border py-12 text-center">
+      <FolderSearch className="text-muted-foreground" size={28} />
+      <p className="text-sm font-medium">No repositories found</p>
+      <p className="text-sm text-muted-foreground">
+        Nothing matches &ldquo;{query}&rdquo;. Try a different name, tag, or
+        language.
+      </p>
+    </div>
+  )
+}
+
+function Repos() {
+  const [query, setQuery] = useState("")
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return repos
+
+    return repos.filter((repo) => {
+      return (
+        repo.name.toLowerCase().includes(q) ||
+        repo.description.toLowerCase().includes(q) ||
+        repo.language.toLowerCase().includes(q) ||
+        repo.tags.some((tag) => tag.toLowerCase().includes(q))
+      )
+    })
+  }, [query])
+
+  return (
+    <div className="space-y-3 p-2">
+      <InputGroup className="mb-5.5 w-full">
+        <InputGroupInput
+          placeholder="Search repositories..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <InputGroupAddon>
+          <Search size={16} />
+        </InputGroupAddon>
+        <InputGroupAddon align="inline-end">
+          {filtered.length} result{filtered.length === 1 ? "" : "s"}
+        </InputGroupAddon>
+      </InputGroup>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-1 xl:grid-cols-2">
+        {filtered.length > 0 ? (
+          filtered.map((repo) => <RepoCard key={repo.name} repo={repo} />)
+        ) : (
+          <EmptyState query={query} />
+        )}
+      </div>
     </div>
   )
 }

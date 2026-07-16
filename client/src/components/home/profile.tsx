@@ -21,8 +21,8 @@ function Profile() {
     const { data: session } = authClient.useSession()
 
     return (
-        <div className="flex flex-col items-center gap-3 sm:items-start px-4 sm:px-0">
-            <Avatar className="w-30 h-30 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 ring-2 ring-muted ring-offset-2 ring-offset-background sm:mb-8">
+        <div className="flex flex-col items-center gap-2 sm:items-start px-4 sm:px-0">
+            <Avatar className="w-30 h-30 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 ring-2 ring-muted ring-offset-2 ring-offset-background sm:mb-4">
                 <AvatarImage
                     src={session?.user.image ?? import.meta.env.VITE_DEFAULT_AVATAR_URL}
                     alt={session?.user.name ?? "User"}
