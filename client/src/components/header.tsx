@@ -82,10 +82,12 @@ export default function Header() {
                 <div className="">
                     <Cmd />
                 </div>
-                <Button size="default">
-                    <BookPlus className="h-4 w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">Create</span>
-                </Button>
+                <a href="/new">
+                    <Button size="default" >
+                        <BookPlus className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Create</span>
+                    </Button>
+                </a>
 
                 <Button size="icon" aria-label="Search" variant="outline" disabled>
                     <Bell aria-hidden="true" />
