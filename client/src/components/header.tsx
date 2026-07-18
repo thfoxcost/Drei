@@ -97,8 +97,7 @@ export default function Header() {
 
                 <Separator
                     orientation="vertical"
-                    className="hidden h-6 sm:block"
-                />
+  className="hidden h-6 self-center sm:block mt-1"                />
 
                 <Tooltip>
                     <TooltipTrigger>
