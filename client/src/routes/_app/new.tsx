@@ -1,10 +1,12 @@
+
+import { useNavigate } from "@tanstack/react-router"
 import {
   Globe,
   Lock,
   Check,
   ChevronDown,
 } from "lucide-react"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
 import {
   Avatar,
@@ -30,6 +32,7 @@ import { authClient } from "#/lib/auth-client"
 import { authMiddleware } from "#/lib/middleware"
 import { Card, CardContent } from "#/components/ui/card"
 import { useState } from "react"
+import { toast } from "sonner"
 
 export const Route = createFileRoute("/_app/new")({
   component: New,
@@ -38,9 +41,55 @@ export const Route = createFileRoute("/_app/new")({
   },
 })
 
+
+
+
+
+
 function New() {
+  const navigate = useNavigate()
+  // states to get the data
   const { data: session } = authClient.useSession()
   const [visibility, setVisibility] = useState("Public")
+
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+
+  async function createRepository() {
+    try {
+      const res = await fetch("http://localhost:3200/api/repos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          description,
+          visibility,
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error("Failed to create repository")
+      }
+
+      const data = await res.json()
+
+      toast.success("Repository created successfully!")
+      navigate({ to: `/${name}` }) // redirect to the repo page
+      console.log(data)
+    } catch (err) {
+      console.error(err)
+
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
+      )
+    }
+  }
+
+
 
 
   const visibilityOptions = [
@@ -84,7 +133,13 @@ function New() {
         </p>
       </header>
 
-      <form className="space-y-8">
+      <form
+        className="space-y-8"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          await createRepository()
+        }}
+      >
         <section className="space-y-4">
           <p className="text-md mb-0 font-bold">General</p>
           <div className="flex flex-wrap items-end gap-3">
@@ -117,11 +172,13 @@ function New() {
               <FieldLabel htmlFor="repo-name">
                 Repository name *
               </FieldLabel>
-
               <Input
                 id="repo-name"
                 name="name"
                 placeholder="awesome-project"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
               />
             </Field>
           </div>
@@ -149,6 +206,8 @@ function New() {
               rows={3}
               maxLength={350}
               placeholder="Tell people what your repository is about..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
 
             <FieldDescription>
@@ -213,7 +272,11 @@ function New() {
         <a href="/home">
           <Button variant="outline">Cancel</Button>
         </a>
-        <Button>Create repository</Button>
+        <Button
+          onClick={createRepository}
+        >
+          Create repository
+        </Button>
       </div>
     </main>
   )
