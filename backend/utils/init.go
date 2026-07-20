@@ -24,21 +24,20 @@ func CreateUserDIR(userPath string) {
 	}
 }
 
-func Init(repoPath string) {
-
-	// make a folder for the bare repo
-	err := os.Mkdir(repoPath, 0755)
-	if err != nil {
-		return
-	}
-
+func Init(repoPath string) error {
+	// Initialize bare repository
 	cmd := exec.Command("git", "init", "--bare")
 	cmd.Dir = repoPath
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println(err)
+	if err := cmd.Run(); err != nil {
+		return err
 	}
 
-	fmt.Println(string(output))
+	// Enable HTTP push
+	cmd = exec.Command("git", "config", "http.receivepack", "true")
+	cmd.Dir = repoPath
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -1,35 +1,15 @@
 package main
 
 import (
+	"backend/apis"
+	"backend/config"
 	"backend/data"
 	"backend/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 )
-
-const (
-	Reset  = "\033[0m"
-	Red    = "\033[31m"
-	Green  = "\033[32m"
-	Yellow = "\033[33m"
-	Blue   = "\033[34m"
-	Cyan   = "\033[36m"
-	White  = "\033[37m"
-	Bold   = "\033[1m"
-)
-
-type Config struct {
-	path       string
-	username   string
-	reponame   string
-	decription string
-	isPublic   bool
-}
-
-var AppConfig = Config{
-	path: "../repos",
-}
 
 func createRepo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -41,11 +21,10 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	println("Request Method:", r.Method)
+	fmt.Println("Request Method:", r.Method)
 
-	err := data.ParseRequest(r)
-	if err != nil {
-		println("ParseRequest Error:", err.Error())
+	if err := data.ParseRequest(r); err != nil {
+		fmt.Println("ParseRequest Error:", err)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
@@ -62,34 +41,32 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
-		"message": "Repository received",
+		"message": "Repository created successfully",
 	})
-
 }
 
 func createRepoFiles() {
-	userPath := AppConfig.path + "/" + data.Current.Username
-	repoPath := userPath + "/" + data.Current.Reponame + ".git"
+	userPath := filepath.Join(config.App.ReposPath, data.Current.Username)
+	repoPath := filepath.Join(userPath, data.Current.Reponame+".git")
 
-	fmt.Println("\033[36m[INFO]\033[0m Creating repository...")
-	fmt.Println("\033[34m├── User:\033[0m", data.Current.Username)
-	fmt.Println("\033[34m├── Repo:\033[0m", data.Current.Reponame)
-	fmt.Println("\033[34m├── Public:\033[0m", data.Current.Visibility)
-	fmt.Println("\033[34m├── User Path:\033[0m", userPath)
-	fmt.Println("\033[34m└── Repo Path:\033[0m", repoPath)
-
-	utils.CreateReposDIR(AppConfig.path)
-	fmt.Println("\033[32m[OK]\033[0m Repositories directory ready")
+	utils.CreateReposDIR(config.App.ReposPath)
 
 	utils.CreateUserDIR(userPath)
-	fmt.Println("\033[32m[OK]\033[0m User directory ready")
 
 	utils.Init(repoPath)
-	fmt.Println("\033[32m[OK]\033[0m Git repository initialized")
 }
-func main() {
-	// POST http://localhost:3200/api/repos
-	http.HandleFunc("/api/repos", createRepo)
-	http.ListenAndServe(":3200", nil)
 
+func main() {
+	if err := config.Load(); err != nil {
+		panic(err)
+	}
+
+	http.HandleFunc("/api/repos", createRepo)
+	http.HandleFunc("/git/", apis.GitHandler)
+
+	fmt.Printf("[OK] Server listening on :%s\n", config.App.Port)
+
+	if err := http.ListenAndServe(":"+config.App.Port, nil); err != nil {
+		panic(err)
+	}
 }
