@@ -1,3 +1,4 @@
+import { Spinner } from "#/components/ui/spinner"
 
 import { useNavigate } from "@tanstack/react-router"
 import {
@@ -6,7 +7,7 @@ import {
   Check,
   ChevronDown,
 } from "lucide-react"
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 
 import {
   Avatar,
@@ -48,6 +49,7 @@ export const Route = createFileRoute("/_app/new")({
 
 function New() {
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
   // states to get the data
   const { data: session } = authClient.useSession()
   const [visibility, setVisibility] = useState("Public")
@@ -56,6 +58,13 @@ function New() {
   const [description, setDescription] = useState("")
 
   async function createRepository() {
+    setLoading(true)
+    if (name == "" || description == "" || visibility == "") {
+      toast.error("Please fill all the fields")
+      setLoading(false)
+      return
+    }
+
     try {
       const res = await fetch("http://localhost:3200/api/repos", {
         method: "POST",
@@ -63,10 +72,13 @@ function New() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
+          userid: session?.user.id,
+          userEmail: session?.user.email,
+          username: session?.user.name,
+          reponame: name,
           description,
-          visibility,
-        }),
+          visibility: visibility === "Public",
+        })
       })
 
       if (!res.ok) {
@@ -75,17 +87,13 @@ function New() {
 
       const data = await res.json()
 
-      toast.success("Repository created successfully!")
-      navigate({ to: `/${name}` }) // redirect to the repo page
+      navigate({ to: `/repo/${name}` }) // redirect to the repo page
       console.log(data)
     } catch (err) {
       console.error(err)
-
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong."
-      )
+      toast.error(err instanceof Error ? err.message : "Something went wrong.")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -274,8 +282,16 @@ function New() {
         </a>
         <Button
           onClick={createRepository}
+          disabled={loading}
         >
-          Create repository
+          {loading ? (
+            <>
+              <Spinner />
+              <span className="ml-2">Creating...</span>
+            </>
+          ) : (
+            "Create repository"
+          )}
         </Button>
       </div>
     </main>
