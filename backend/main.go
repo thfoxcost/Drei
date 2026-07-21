@@ -54,6 +54,9 @@ func createRepoFiles() {
 	utils.CreateUserDIR(userPath)
 
 	utils.Init(repoPath)
+
+	// add the user data into the config file
+	utils.Edit(repoPath, data.Current.Description, data.Current.Visibility, data.Current.Useremail, data.Current.Username, data.Current.UserId)
 }
 
 func main() {
