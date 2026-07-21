@@ -25,19 +25,18 @@ func CreateUserDIR(userPath string) {
 }
 
 func Init(repoPath string) error {
-	// Initialize bare repository
-	cmd := exec.Command("git", "init", "--bare")
-	cmd.Dir = repoPath
+	cmd := exec.Command("git", "init", "--bare", repoPath)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
 
-	// Enable HTTP push
-	cmd = exec.Command("git", "config", "http.receivepack", "true")
-	cmd.Dir = repoPath
-	if err := cmd.Run(); err != nil {
-		return err
-	}
+	cmd = exec.Command(
+		"git",
+		"--git-dir="+repoPath,
+		"config",
+		"http.receivepack",
+		"true",
+	)
 
-	return nil
+	return cmd.Run()
 }
