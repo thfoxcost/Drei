@@ -8,10 +8,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 )
 
+func RepoExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
 func createRepo(w http.ResponseWriter, r *http.Request) {
+	// CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -23,6 +30,7 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Request Method:", r.Method)
 
+	// Parse request
 	if err := data.ParseRequest(r); err != nil {
 		fmt.Println("ParseRequest Error:", err)
 
@@ -36,27 +44,69 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createRepoFiles()
+	// Build paths
+	userPath := filepath.Join(config.App.ReposPath, data.Current.Username)
+	repoPath := filepath.Join(userPath, data.Current.Reponame+".git")
 
+	// Check if repository already exists
+	if RepoExists(repoPath) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+
+		json.NewEncoder(w).Encode(map[string]any{
+			"success": false,
+			"message": "Repository already exists",
+		})
+		return
+	}
+
+	// Create repository
+	if err := createRepoFiles(userPath, repoPath); err != nil {
+		fmt.Println("CreateRepo Error:", err)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Success
 	w.Header().Set("Content-Type", "application/json")
+
 	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Repository created successfully",
 	})
 }
 
-func createRepoFiles() {
-	userPath := filepath.Join(config.App.ReposPath, data.Current.Username)
-	repoPath := filepath.Join(userPath, data.Current.Reponame+".git")
-
+func createRepoFiles(userPath, repoPath string) error {
+	// Create directories
 	utils.CreateReposDIR(config.App.ReposPath)
-
 	utils.CreateUserDIR(userPath)
 
-	utils.Init(repoPath)
+	// Initialize bare repository
+	if err := utils.Init(repoPath); err != nil {
+		return err
+	}
 
-	// add the user data into the config file
-	utils.Edit(repoPath, data.Current.Description, data.Current.Visibility, data.Current.Useremail, data.Current.Username, data.Current.UserId)
+	if err := utils.Edit(
+		repoPath,
+		data.Current.Description,
+		data.Current.Visibility,
+		data.Current.Useremail,
+		data.Current.Username,
+		data.Current.UserId,
+	); err != nil {
+		return err
+	}
+
+	fmt.Println("[OK] Repository created:", repoPath)
+
+	return nil
 }
 
 func main() {
