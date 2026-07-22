@@ -15,6 +15,7 @@ import {
     BookPlus,
     Bug,
     GitPullRequest,
+    Inbox,
     Menu,
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
@@ -90,7 +91,7 @@ export default function Header() {
                 </a>
 
                 <Button size="icon" aria-label="Search" variant="outline" disabled>
-                    <Bell aria-hidden="true" />
+                   <Inbox className="size-4" aria-hidden="true"/>
                 </Button>
 
                 <Pattern />
