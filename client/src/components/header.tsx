@@ -31,7 +31,7 @@ export default function Header() {
     const { data: session } = authClient.useSession()
 
     return (
-        <header className="flex items-center justify-between gap-2 border-b bg-muted/10  px-3 py-2 sm:px-2 sm:py-1">
+        <header className="flex items-center justify-between gap-2 bg-muted/10  px-3 py-2 sm:px-2 sm:py-1">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <img
                     draggable={false}
@@ -97,7 +97,7 @@ export default function Header() {
 
                 <Separator
                     orientation="vertical"
-  className="hidden h-6 self-center sm:block mt-1"                />
+                    className="hidden h-6 self-center sm:block mt-1" />
 
                 <Tooltip>
                     <TooltipTrigger>

@@ -57,53 +57,59 @@ function New() {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
 
-async function createRepository() {
-  setLoading(true)
+  async function createRepository() {
+    setLoading(true)
 
-  if (name === "" || description === "" || visibility === "") {
-    toast.error("Please fill all the fields")
-    setLoading(false)
-    return
-  }
-
-  try {
-    const res = await fetch("http://localhost:3200/api/repos", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userid: session?.user.id,
-        userEmail: session?.user.email,
-        username: session?.user.name,
-        reponame: name,
-        description,
-        visibility: visibility === "Public",
-      }),
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      throw new Error(data.message || data.error || "Failed to create repository")
+    if (name === "" || description === "" || visibility === "") {
+      toast.error("Please fill all the fields")
+      setLoading(false)
+      return
     }
 
-    toast.success(data.message)
-    console.log(data)
-    navigate({ to: `/repo/${name}` })
+    try {
+      const res = await fetch("http://localhost:3200/api/repos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userid: session?.user.id,
+          userEmail: session?.user.email,
+          username: session?.user.name,
+          reponame: name,
+          description,
+          visibility: visibility === "Public",
+        }),
+      })
 
-  } catch (err) {
-    console.error(err)
+      const data = await res.json()
 
-    if (err instanceof Error) {
-      toast.error(err.message)
-    } else {
-      toast.error("Something went wrong")
+      if (!res.ok) {
+        throw new Error(data.message || data.error || "Failed to create repository")
+      }
+
+      toast.success(data.message)
+      console.log(data)
+      // navigate({
+      //   to: "/repo/$user/$repo",
+      //   params: {
+      //     user: session!.user.name,
+      //     repo: name,
+      //   },
+      // })
+
+    } catch (err) {
+      console.error(err)
+
+      if (err instanceof Error) {
+        toast.error(err.message)
+      } else {
+        toast.error("Something went wrong")
+      }
+    } finally {
+      setLoading(false)
     }
-  } finally {
-    setLoading(false)
   }
-}
 
 
 
