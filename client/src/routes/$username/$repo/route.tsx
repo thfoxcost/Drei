@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router"
 import ReposMainHeader from "#/components/repo/Repos-main-header"
-import RepoTabs from "#/components/repo/repo-header"
+import RepoTabs from "#/components/repo/repo-tabs"
 
 export const Route : any = createFileRoute("/$username/$repo")({
   component: RepositoryLayout,

@@ -1,21 +1,51 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
 
-export const Route = createFileRoute('/$username/$repo/')({
+import { NoRepo } from "#/components/repo/norepo"
+import Repo from "#/components/repo/repo"
+
+export const Route = createFileRoute("/$username/$repo/")({
   component: RouteComponent,
 })
 
-
-// make req to GET /api/repos/:owner/:repo and get as res if the repo has been pused to it as bool
-// render <Norepo /> first when redirect to the repo page as first
-// add comparison if :
-  // 1. repo is empty => <Norepo /> (default)
-  // 2. repo is not empty => <Repo /> [make go apis]
-
-
 function RouteComponent() {
-  return <div>
+  const { username, repo } = Route.useParams()
 
+  const [hasCommits, setHasCommits] = useState<boolean | null>(null)
 
+  useEffect(() => {
+    async function isRepoPushed() {
+      try {
+        const res = await fetch(
+          `http://localhost:3200/api/repos/${username}/${repo}`
+        )
 
-  </div>
+        if (!res.ok) {
+          throw new Error("Failed to fetch repository status")
+        }
+
+        const data = await res.json()
+
+        setHasCommits(data.hasCommits)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    isRepoPushed()
+  }, [username, repo])
+
+  if (hasCommits) {
+    return <Repo />
+  }
+
+  if (!hasCommits) {
+    return <NoRepo />
+  }
+
+  return (
+    <div>
+      this is index.tsx
+    </div>
+  )
 }

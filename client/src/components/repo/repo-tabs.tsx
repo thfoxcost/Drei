@@ -91,7 +91,7 @@ export default function RepoTabs() {
           <TabsContent key={tab.value} value={tab.value}>
             <div className="rounded-md border p-4">
               <p className="text-muted-foreground text-sm">
-                {tab.name} content goes here.
+                {/* {tab.name} content goes here. make this to retutn a component */}
               </p>
             </div>
           </TabsContent>

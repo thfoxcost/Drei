@@ -116,6 +116,7 @@ func main() {
 
 	http.HandleFunc("/api/repos", createRepo)
 	http.HandleFunc("/git/", apis.GitHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}", utils.CheckPush)
 
 	fmt.Printf("[OK] Server listening on :%s\n", config.App.Port)
 
