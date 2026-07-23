@@ -90,13 +90,13 @@ function New() {
 
       toast.success(data.message)
       console.log(data)
-      // navigate({
-      //   to: "/repo/$user/$repo",
-      //   params: {
-      //     user: session!.user.name,
-      //     repo: name,
-      //   },
-      // })
+      navigate({
+        to: "/$username/$repo",
+        params: {
+          username: session!.user.name,
+          repo: name,
+        },
+      })
 
     } catch (err) {
       console.error(err)

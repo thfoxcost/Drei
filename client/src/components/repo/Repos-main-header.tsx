@@ -1,11 +1,11 @@
-    import { Separator } from "@/components/ui/separator"
+import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
 
 import { Pattern } from "@/components/mode-toggle"
 import { authClient } from "#/lib/auth-client"
-import { Cmd } from "./cmd"
+import { Cmd } from "../cmd"
 
 import {
   Inbox,
@@ -14,11 +14,17 @@ import {
   CircleDot,
 } from "lucide-react"
 
-export default function ReposMainHeader() {
+type ReposMainHeaderProps = {
+  username: string
+  repo: string
+}
+
+export default function ReposMainHeader({
+  username,
+  repo,
+}: ReposMainHeaderProps) {
   const { data: session } = authClient.useSession()
-    //   const { repo } = Route.useParams()
-    const repo = "test"
-    // this is important but u should make the dynamic routing first
+
   return (
     <header className="flex items-center justify-between gap-2 bg-muted/10 px-3 py-2 sm:px-2 sm:py-1">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -36,10 +42,9 @@ export default function ReposMainHeader() {
           className="hidden h-6 w-6 shrink-0 dark:block sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
         />
 
-
-
-        <p className="hidden text-sm font-semibold sm:block ">{session?.user?.name} / {repo}</p>
-        {/* this will be the repo name from params */}
+        <p className="hidden text-sm font-semibold sm:block">
+          {username} / {repo}
+        </p>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">

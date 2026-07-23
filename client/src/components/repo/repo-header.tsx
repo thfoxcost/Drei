@@ -32,7 +32,7 @@ const tabs = [
     name: "Actions",
     value: "actions",
     icon: Play,
-    disabled: false,
+    disabled: true,
   },
   {
     name: "Security",
@@ -54,13 +54,13 @@ const tabs = [
   },
 ]
 
-export default function TabsCustomUnderlineDemo() {
+export default function RepoTabs() {
   return (
     <div className="w-full">
-      <Tabs defaultValue="files" className="gap-4 ">
-        <div className="w-full border-b pb-1.5">          <TabsList
+      <Tabs defaultValue="files" className="gap-4">
+        <div className="w-full border-b pb-1 bg-muted/10">          <TabsList
           variant="line"
-          className="rounded-none bg-muted/10 p-0"
+          className="rounded-none p-0"
         >
           {tabs.map((tab) => {
             const Icon = tab.icon
@@ -73,7 +73,7 @@ export default function TabsCustomUnderlineDemo() {
                 className={`
                   mx-3 gap-2 rounded-t-md border-0
                   data-[state=active]:bg-muted
-                  group-data-horizontal/tabs:after:-bottom-[7px]
+                  group-data-horizontal/tabs:after:-bottom-[6px]
                   not-data-active:hover:group-data-horizontal/tabs:after:bg-muted-foreground/30
                   not-data-active:hover:group-data-horizontal/tabs:after:opacity-100
                   ${tab.value === "settings" ? "ml-auto mr-3" : ""}

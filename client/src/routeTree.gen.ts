@@ -13,12 +13,15 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UsernameIndexRouteImport } from './routes/$username/index'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/_auth/signin'
-import { Route as AppTestRouteImport } from './routes/_app/test'
 import { Route as AppNewRouteImport } from './routes/_app/new'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
+import { Route as UsernameRepoRouteRouteImport } from './routes/$username/$repo/route'
+import { Route as UsernameRepoIndexRouteImport } from './routes/$username/$repo/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as UsernameRepoPrsRouteImport } from './routes/$username/$repo/prs'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
@@ -38,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UsernameIndexRoute = UsernameIndexRouteImport.update({
+  id: '/$username/',
+  path: '/$username/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -47,11 +55,6 @@ const AuthSigninRoute = AuthSigninRouteImport.update({
   id: '/signin',
   path: '/signin',
   getParentRoute: () => AuthRoute,
-} as any)
-const AppTestRoute = AppTestRouteImport.update({
-  id: '/test',
-  path: '/test',
-  getParentRoute: () => AppRoute,
 } as any)
 const AppNewRoute = AppNewRouteImport.update({
   id: '/new',
@@ -63,31 +66,51 @@ const AppHomeRoute = AppHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AppRoute,
 } as any)
+const UsernameRepoRouteRoute = UsernameRepoRouteRouteImport.update({
+  id: '/$username/$repo',
+  path: '/$username/$repo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsernameRepoIndexRoute = UsernameRepoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => UsernameRepoRouteRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UsernameRepoPrsRoute = UsernameRepoPrsRouteImport.update({
+  id: '/prs',
+  path: '/prs',
+  getParentRoute: () => UsernameRepoRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/$username/$repo': typeof UsernameRepoRouteRouteWithChildren
   '/home': typeof AppHomeRoute
   '/new': typeof AppNewRoute
-  '/test': typeof AppTestRoute
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
+  '/$username/': typeof UsernameIndexRoute
+  '/$username/$repo/prs': typeof UsernameRepoPrsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/$username/$repo/': typeof UsernameRepoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/home': typeof AppHomeRoute
   '/new': typeof AppNewRoute
-  '/test': typeof AppTestRoute
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
+  '/$username': typeof UsernameIndexRoute
+  '/$username/$repo/prs': typeof UsernameRepoPrsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/$username/$repo': typeof UsernameRepoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,46 +118,57 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/$username/$repo': typeof UsernameRepoRouteRouteWithChildren
   '/_app/home': typeof AppHomeRoute
   '/_app/new': typeof AppNewRoute
-  '/_app/test': typeof AppTestRoute
   '/_auth/signin': typeof AuthSigninRoute
   '/_auth/signup': typeof AuthSignupRoute
+  '/$username/': typeof UsernameIndexRoute
+  '/$username/$repo/prs': typeof UsernameRepoPrsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/$username/$repo/': typeof UsernameRepoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/$'
+    | '/$username/$repo'
     | '/home'
     | '/new'
-    | '/test'
     | '/signin'
     | '/signup'
+    | '/$username/'
+    | '/$username/$repo/prs'
     | '/api/auth/$'
+    | '/$username/$repo/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/$'
     | '/home'
     | '/new'
-    | '/test'
     | '/signin'
     | '/signup'
+    | '/$username'
+    | '/$username/$repo/prs'
     | '/api/auth/$'
+    | '/$username/$repo'
   id:
     | '__root__'
     | '/'
     | '/$'
     | '/_app'
     | '/_auth'
+    | '/$username/$repo'
     | '/_app/home'
     | '/_app/new'
-    | '/_app/test'
     | '/_auth/signin'
     | '/_auth/signup'
+    | '/$username/'
+    | '/$username/$repo/prs'
     | '/api/auth/$'
+    | '/$username/$repo/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -142,6 +176,8 @@ export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  UsernameRepoRouteRoute: typeof UsernameRepoRouteRouteWithChildren
+  UsernameIndexRoute: typeof UsernameIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -175,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$username/': {
+      id: '/$username/'
+      path: '/$username'
+      fullPath: '/$username/'
+      preLoaderRoute: typeof UsernameIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_auth/signup': {
       id: '/_auth/signup'
       path: '/signup'
@@ -188,13 +231,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/signin'
       preLoaderRoute: typeof AuthSigninRouteImport
       parentRoute: typeof AuthRoute
-    }
-    '/_app/test': {
-      id: '/_app/test'
-      path: '/test'
-      fullPath: '/test'
-      preLoaderRoute: typeof AppTestRouteImport
-      parentRoute: typeof AppRoute
     }
     '/_app/new': {
       id: '/_app/new'
@@ -210,6 +246,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHomeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/$username/$repo': {
+      id: '/$username/$repo'
+      path: '/$username/$repo'
+      fullPath: '/$username/$repo'
+      preLoaderRoute: typeof UsernameRepoRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$username/$repo/': {
+      id: '/$username/$repo/'
+      path: '/'
+      fullPath: '/$username/$repo/'
+      preLoaderRoute: typeof UsernameRepoIndexRouteImport
+      parentRoute: typeof UsernameRepoRouteRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -217,19 +267,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$username/$repo/prs': {
+      id: '/$username/$repo/prs'
+      path: '/prs'
+      fullPath: '/$username/$repo/prs'
+      preLoaderRoute: typeof UsernameRepoPrsRouteImport
+      parentRoute: typeof UsernameRepoRouteRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppHomeRoute: typeof AppHomeRoute
   AppNewRoute: typeof AppNewRoute
-  AppTestRoute: typeof AppTestRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppHomeRoute: AppHomeRoute,
   AppNewRoute: AppNewRoute,
-  AppTestRoute: AppTestRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -246,11 +301,26 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface UsernameRepoRouteRouteChildren {
+  UsernameRepoPrsRoute: typeof UsernameRepoPrsRoute
+  UsernameRepoIndexRoute: typeof UsernameRepoIndexRoute
+}
+
+const UsernameRepoRouteRouteChildren: UsernameRepoRouteRouteChildren = {
+  UsernameRepoPrsRoute: UsernameRepoPrsRoute,
+  UsernameRepoIndexRoute: UsernameRepoIndexRoute,
+}
+
+const UsernameRepoRouteRouteWithChildren =
+  UsernameRepoRouteRoute._addFileChildren(UsernameRepoRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  UsernameRepoRouteRoute: UsernameRepoRouteRouteWithChildren,
+  UsernameIndexRoute: UsernameIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
