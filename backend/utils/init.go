@@ -25,7 +25,14 @@ func CreateUserDIR(userPath string) {
 }
 
 func Init(repoPath string) error {
-	cmd := exec.Command("git", "init", "--bare", repoPath)
+	cmd := exec.Command(
+		"git",
+		"init",
+		"--bare",
+		"--initial-branch=main",
+		repoPath,
+	)
+
 	if err := cmd.Run(); err != nil {
 		return err
 	}

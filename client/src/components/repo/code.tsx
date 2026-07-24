@@ -20,7 +20,7 @@ export function CodeBlock({ className }: CodeBlockProps) {
     "git add README.md",
     `git commit -m "first commit"`,
     "git branch -M main",
-    `git remote add origin https://github.com/git/${username}/${repo}.git`,
+    `git remote add origin http://localhost:3200/git/${username}/${repo}.git`,
     "git push -u origin main",
   ]
 

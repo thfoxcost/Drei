@@ -28,12 +28,7 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Request Method:", r.Method)
-
-	// Parse request
 	if err := data.ParseRequest(r); err != nil {
-		fmt.Println("ParseRequest Error:", err)
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 
@@ -44,11 +39,9 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build paths
 	userPath := filepath.Join(config.App.ReposPath, data.Current.Username)
 	repoPath := filepath.Join(userPath, data.Current.Reponame+".git")
 
-	// Check if repository already exists
 	if RepoExists(repoPath) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
@@ -60,10 +53,7 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create repository
 	if err := createRepoFiles(userPath, repoPath); err != nil {
-		fmt.Println("CreateRepo Error:", err)
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 
@@ -74,7 +64,6 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Success
 	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(map[string]any{
@@ -84,11 +73,9 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 }
 
 func createRepoFiles(userPath, repoPath string) error {
-	// Create directories
 	utils.CreateReposDIR(config.App.ReposPath)
 	utils.CreateUserDIR(userPath)
 
-	// Initialize bare repository
 	if err := utils.Init(repoPath); err != nil {
 		return err
 	}
@@ -109,14 +96,41 @@ func createRepoFiles(userPath, repoPath string) error {
 	return nil
 }
 
+func RepoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	owner := r.PathValue("owner")
+	repo := r.PathValue("repo")
+
+	repository, err := utils.GetRepo(owner, repo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(repository); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func main() {
 	if err := config.Load(); err != nil {
 		panic(err)
 	}
 
 	http.HandleFunc("/api/repos", createRepo)
+	http.HandleFunc("/api/repos/{owner}/{repo}", RepoHandler)
 	http.HandleFunc("/git/", apis.GitHandler)
-	http.HandleFunc("/api/repos/{owner}/{repo}", utils.CheckPush)
 
 	fmt.Printf("[OK] Server listening on :%s\n", config.App.Port)
 
