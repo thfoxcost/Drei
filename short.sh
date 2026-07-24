@@ -9,7 +9,7 @@
 # Backend
 (
   cd backend || exit
-  go run .
+  air
 ) &
 
 wait
