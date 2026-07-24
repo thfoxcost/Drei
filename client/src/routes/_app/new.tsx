@@ -169,22 +169,19 @@ function New() {
         <section className="space-y-4">
           <p className="text-md mb-0 font-bold">General</p>
           <div className="flex flex-wrap items-end gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2 py-4">
-                  <Avatar className="size-6">
-                    <AvatarImage
-                      src={
+            <DropdownMenu>            
+              <Button variant="outline">
+                <Avatar className="size-5.5">
+                  <AvatarImage src={
                         session?.user.image ??
                         import.meta.env.VITE_DEFAULT_AVATAR_URL
-                      }
-                    />
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
+                      } alt="@shadcn" />
+                  <AvatarFallback>
 
-                  <span>{session?.user.name ?? "Unknown User"}</span>
-                </Button>
-              </DropdownMenuTrigger>
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs">@{session?.user.name ?? "Unknown User"}</span>
+              </Button>
 
               <DropdownMenuContent className="w-auto">
                 <p className="p-2 text-sm text-muted-foreground">
