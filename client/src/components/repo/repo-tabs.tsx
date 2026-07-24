@@ -73,7 +73,7 @@ export default function RepoTabs() {
                 className={`
                   mx-3 gap-2 rounded-t-md border-0
                   data-[state=active]:bg-muted
-                  group-data-horizontal/tabs:after:-bottom-[6px]
+                  group-data-horizontal/tabs:after:bottom-[-6px]
                   not-data-active:hover:group-data-horizontal/tabs:after:bg-muted-foreground/30
                   not-data-active:hover:group-data-horizontal/tabs:after:opacity-100
                   ${tab.value === "settings" ? "ml-auto mr-3" : ""}
