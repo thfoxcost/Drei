@@ -28,6 +28,7 @@
     "@reui": "https://reui.io/r/{style}/{name}.json",
     "@soundcn": "https://soundcn.xyz/r/{name}.json",
     "@dotmatrix": "https://dotmatrix.zzzzshawn.cloud/r/{name}.json",
-    "@wigggle-ui": "https://wigggle-ui.vercel.app/r/{name}.json"
+    "@wigggle-ui": "https://wigggle-ui.vercel.app/r/{name}.json",
+    "@shadcn-space": "https://shadcnspace.com/r/{name}.json"
   }
 }

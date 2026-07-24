@@ -43,9 +43,5 @@ function RouteComponent() {
     return <NoRepo />
   }
 
-  return (
-    <div>
-      this is index.tsx
-    </div>
-  )
+  return null
 }

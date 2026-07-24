@@ -11,7 +11,7 @@ import {
 
 const tabs = [
   {
-    name: "Files",
+    name: "Code",
     value: "files",
     icon: Code,
     disabled: false,
@@ -89,11 +89,6 @@ export default function RepoTabs() {
 
         {tabs.map((tab) => (
           <TabsContent key={tab.value} value={tab.value}>
-            <div className="rounded-md border p-4">
-              <p className="text-muted-foreground text-sm">
-                {/* {tab.name} content goes here. make this to retutn a component */}
-              </p>
-            </div>
           </TabsContent>
         ))}
       </Tabs>

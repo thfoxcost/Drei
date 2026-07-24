@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button"
 import {
   Empty,
   EmptyContent,
@@ -7,6 +6,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import CodeBlock from "./code"
 
 function BoardIllustration() {
   return (
@@ -124,18 +124,7 @@ export function NoRepo() {
         </EmptyHeader>
 
         <EmptyContent>
-          <div className="flex flex-wrap justify-center gap-2">
-           <a href="/new">
-
-            <Button> 
-              Create Repository
-            </Button>
-
-           </a>
-            <Button variant="outline" disabled>
-              Import Repository
-            </Button>
-          </div>
+          <CodeBlock />
         </EmptyContent>
       </Empty>
     </div>

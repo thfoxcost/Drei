@@ -16,9 +16,11 @@
     "check": "biome check"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@radix-ui/react-label": "^2.1.11",
     "@radix-ui/react-slot": "^1.3.0",
+    "@rexa-developer/tiks": "^0.3.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-form": "^1.33.1",
@@ -34,6 +36,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
+    "jotai": "^2.20.2",
     "lucide-react": "^0.577.0",
     "motion": "^12.42.2",
     "nanoid": "^6.0.0",
@@ -47,7 +50,8 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.1.18",
-    "tw-animate-css": "^1.3.6"
+    "tw-animate-css": "^1.3.6",
+    "web-haptics": "^0.0.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
@@ -63,6 +67,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "jsdom": "^28.1.0",
+    "shiki": "^4.3.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
     "vitest": "^4.1.5"
