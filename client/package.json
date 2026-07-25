@@ -37,6 +37,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
     "jotai": "^2.20.2",
+    "linguist-languages": "^9.4.0",
     "lucide-react": "^0.577.0",
     "motion": "^12.42.2",
     "nanoid": "^6.0.0",

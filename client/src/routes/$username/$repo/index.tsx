@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 
 import { NoRepo } from "#/components/repo/norepo"
 import Repo from "#/components/repo/repo"
+import { Spinner } from "#/components/ui/spinner"
 
 export const Route = createFileRoute("/$username/$repo/")({
   component: RouteComponent,
@@ -14,6 +15,8 @@ function RouteComponent() {
   const [hasCommits, setHasCommits] = useState<boolean | null>(null)
 
   useEffect(() => {
+    setHasCommits(null) // reset to loading state when username/repo changes
+
     async function isRepoPushed() {
       try {
         const res = await fetch(
@@ -29,19 +32,24 @@ function RouteComponent() {
         setHasCommits(data.hasCommits)
       } catch (err) {
         console.error(err)
+        setHasCommits(false) // treat fetch errors as "no repo" instead of spinning forever
       }
     }
 
     isRepoPushed()
   }, [username, repo])
 
+  if (hasCommits === null) {
+    return (
+      <div className="flex h-[60vh] w-full items-center justify-center">
+        <Spinner />
+      </div>
+    )
+  }
+
   if (hasCommits) {
     return <Repo />
   }
 
-  if (!hasCommits) {
-    return <NoRepo />
-  }
-
-  return null
+  return <NoRepo />
 }
