@@ -9,7 +9,7 @@ import (
 	"github.com/go-git/go-git/v6/plumbing/object"
 )
 
-type CommitInfo struct {
+type CommitInfo2 struct {
 	Hash    string `json:"hash"`
 	Message string `json:"message"`
 	Author  string `json:"author"`
