@@ -63,9 +63,6 @@ interface RightPanelProps {
 }
 
 export default function RightPanel({ data }: RightPanelProps) {
-  const nCommits = data.commits?.length ?? 0;
-  const nBranches = data.branches?.length ?? 0;
-  const nTags = data.tags?.length ?? 0;
   const sortedLangs = [...(data.langs ?? [])].sort((a, b) => b.percent - a.percent);
 
   return (

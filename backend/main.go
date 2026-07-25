@@ -6,6 +6,7 @@ import (
 	"backend/data"
 	"backend/sample"
 	"backend/utils"
+	"backend/utils/home"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -129,6 +130,7 @@ func main() {
 		panic(err)
 	}
 	http.HandleFunc("/api/contribution", sample.Contribution)
+	http.HandleFunc("/api/users/{owner}/repos", home.GetRepos)
 	http.HandleFunc("/api/status", sample.Status)
 	http.HandleFunc("/api/repos", createRepo)
 	http.HandleFunc("/api/repos/{owner}/{repo}", RepoHandler)
