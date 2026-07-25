@@ -2,6 +2,7 @@ package utils
 
 import (
 	"path/filepath"
+	"sort"
 
 	"backend/config"
 
@@ -218,7 +219,13 @@ var extensions = map[string]string{
 	".zsh": "Z shell",
 }
 
-func GetLang(owner, repo string) ([]string, error) {
+type Language struct {
+	Name    string  `json:"name"`
+	Bytes   int64   `json:"bytes"`
+	Percent float64 `json:"percent"`
+}
+
+func GetLang(owner, repo string) ([]Language, error) {
 	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
 
 	r, err := git.PlainOpen(repoPath)
@@ -241,14 +248,19 @@ func GetLang(owner, repo string) ([]string, error) {
 		return nil, err
 	}
 
-	seen := make(map[string]struct{})
+	langBytes := make(map[string]int64)
+	var totalBytes int64
 
 	err = tree.Files().ForEach(func(f *object.File) error {
 		ext := filepath.Ext(f.Name)
 
-		if lang, ok := extensions[ext]; ok {
-			seen[lang] = struct{}{}
+		lang, ok := extensions[ext]
+		if !ok {
+			return nil
 		}
+
+		langBytes[lang] += f.Size
+		totalBytes += f.Size
 
 		return nil
 	})
@@ -256,10 +268,24 @@ func GetLang(owner, repo string) ([]string, error) {
 		return nil, err
 	}
 
-	var langs []string
-	for lang := range seen {
-		langs = append(langs, lang)
+	langs := make([]Language, 0, len(langBytes))
+
+	for name, bytes := range langBytes {
+		percent := 0.0
+		if totalBytes > 0 {
+			percent = (float64(bytes) / float64(totalBytes)) * 100
+		}
+
+		langs = append(langs, Language{
+			Name:    name,
+			Bytes:   bytes,
+			Percent: percent,
+		})
 	}
+
+	sort.Slice(langs, func(i, j int) bool {
+		return langs[i].Bytes > langs[j].Bytes
+	})
 
 	return langs, nil
 }

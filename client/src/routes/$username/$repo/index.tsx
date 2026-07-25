@@ -48,7 +48,7 @@ function RouteComponent() {
   }
 
   if (hasCommits) {
-    return <Repo />
+    return <Repo owner={username} repo={repo} />
   }
 
   return <NoRepo />

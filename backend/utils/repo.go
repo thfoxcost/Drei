@@ -5,13 +5,14 @@ import (
 )
 
 type RepoResponse struct {
+	Name          string       `json:"name"`
 	Owner         string       `json:"owner"`
 	Email         string       `json:"email"`
 	Description   string       `json:"description"`
 	Visibility    bool         `json:"visibility"`
 	HasCommits    bool         `json:"hasCommits"`
 	Created       string       `json:"created"`
-	Langs         []string     `json:"langs"`
+	Langs         []Language   `json:"langs"`
 	Branches      []string     `json:"branches"`
 	DefaultBranch string       `json:"defaultBranch"`
 	Tags          []string     `json:"tags"`
@@ -82,6 +83,7 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 	}
 
 	return &RepoResponse{
+		Name:          repo,
 		Owner:         info.Name,
 		Email:         info.Email,
 		Description:   info.Description,
