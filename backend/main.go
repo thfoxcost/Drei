@@ -4,6 +4,7 @@ import (
 	"backend/apis"
 	"backend/config"
 	"backend/data"
+	"backend/sample"
 	"backend/utils"
 	"encoding/json"
 	"fmt"
@@ -127,7 +128,8 @@ func main() {
 	if err := config.Load(); err != nil {
 		panic(err)
 	}
-
+	http.HandleFunc("/api/contribution", sample.Contribution)
+	http.HandleFunc("/api/status", sample.Status)
 	http.HandleFunc("/api/repos", createRepo)
 	http.HandleFunc("/api/repos/{owner}/{repo}", RepoHandler)
 	http.HandleFunc("/git/", apis.GitHandler)

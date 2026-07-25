@@ -12,10 +12,10 @@ function Main() {
     <div className="flex min-h-screen gap-6 p-6 overflow-hidden">
       <div className="flex flex-col gap-4">
 
-      <Profile />
-<div className="flex h-26 w-auto items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
-  @{session?.user.name ?? "username"}
-</div>
+        <Profile />
+        <div className="flex h-26 w-auto items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
+          @{session?.user.name ?? "username"}
+        </div>
       </div>
       <div className="flex flex-1 gap-6 min-w-0">
         {/* Main Content */}

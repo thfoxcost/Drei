@@ -36,7 +36,7 @@ export function useHealth(pollIntervalMs = 15000) {
 
     async function fetchHealth() {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/health`);
+        const res = await fetch(`${BACKEND_URL}/api/status`);
         if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
         const json = (await res.json()) as HealthData;
         if (!cancelled) {

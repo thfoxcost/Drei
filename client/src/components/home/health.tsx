@@ -12,8 +12,6 @@ import {
   Widget,
   WidgetContent,
   WidgetFooter,
-  WidgetHeader,
-  WidgetTitle,
 } from "#/components/ui/widget.tsx";
 
 const STATUS_COLOR: Record<ServiceState, string> = {

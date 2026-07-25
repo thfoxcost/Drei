@@ -3,11 +3,14 @@ package utils
 import (
 	"backend/config"
 	"encoding/base64"
+	"errors"
 	"path/filepath"
 
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing/object"
 )
+
+var errStop = errors.New("stop iteration")
 
 type CommitInfo2 struct {
 	Hash    string `json:"hash"`
@@ -60,12 +63,9 @@ func GetFiles(owner, repo string) ([]FileInfo, error) {
 		var result CommitInfo
 
 		err = iter.ForEach(func(commit *object.Commit) error {
-
 			changed := false
 
-			// First commit (no parent)
 			if commit.NumParents() == 0 {
-
 				tree, err := commit.Tree()
 				if err != nil {
 					return nil
@@ -75,9 +75,7 @@ func GetFiles(owner, repo string) ([]FileInfo, error) {
 				if err == nil && file != nil {
 					changed = true
 				}
-
 			} else {
-
 				parent, err := commit.Parent(0)
 				if err != nil {
 					return nil
@@ -93,7 +91,6 @@ func GetFiles(owner, repo string) ([]FileInfo, error) {
 
 					if (from != nil && from.Path() == path) ||
 						(to != nil && to.Path() == path) {
-
 						changed = true
 						break
 					}
@@ -108,13 +105,13 @@ func GetFiles(owner, repo string) ([]FileInfo, error) {
 					Date:    commit.Author.When.String(),
 				}
 
-				return object.ErrStop
+				return errStop
 			}
 
 			return nil
 		})
 
-		if err != nil && err != object.ErrStop {
+		if err != nil && !errors.Is(err, errStop) {
 			return CommitInfo{}, err
 		}
 
@@ -124,7 +121,6 @@ func GetFiles(owner, repo string) ([]FileInfo, error) {
 	var files []FileInfo
 
 	err = tree.Files().ForEach(func(file *object.File) error {
-
 		content, err := file.Contents()
 		if err != nil {
 			return err
