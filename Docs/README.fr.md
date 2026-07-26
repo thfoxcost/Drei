@@ -32,8 +32,6 @@
 [Deutsch](./README.de.md) | [Arabic](./README.ar.md) | [English](./README.md) | [French](./README.fr.md)
 
 ### Qu'est-ce que Drei ?
-<hr />
-
 Drei (prononcé « dry », mot allemand pour « trois ») est une plateforme d'hébergement Git gratuite et open source que vous pouvez héberger sur votre propre réseau — une alternative légère, rapide et extensible pour les équipes qui souhaitent garder un contrôle total sur l'emplacement de leur code.
 
 Pour en savoir plus, rendez-vous sur <a href="https://Drei.sh">drei.sh</a>

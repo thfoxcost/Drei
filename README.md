@@ -29,11 +29,9 @@
 </details>
 <br />
 
-[Deutsch](./README.de.md) | [Arabic](./README.ar.md) | [English](./README.md) | [French](./README.fr.md) (only ones i know)
+[Deutsch](./docs/README.de.md) | [Arabic](./docs/README.ar.md) | [English](./docs/README.md) | [French](./docs/README.fr.md) (only ones i know)
 
 ### What is Drei?
-<hr />
-
 Drei (pronounced "dry," German for "three") is a free, open-source Git hosting platform you can run on your own network — a lightweight, fast, and extensible alternative for teams who want full control over where their code lives.
 
 
