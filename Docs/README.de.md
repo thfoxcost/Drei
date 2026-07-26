@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo-dark.svg" alt="Drei Logo" width="180">
+  <img src="../assets/logo-light.svg" alt="Drei Logo" width="180">
 </p>
 
 <div align="center">
@@ -10,16 +10,16 @@
 </div>
 
 <details>
-<summary>Preview</summary>
+<summary>Vorschau</summary>
 
 <br>
 
 <p align="center">
-  <img src="assets/screenshots/home.png" alt="Home" width="900">
+  <img src="assets/screenshots/home.png" alt="Startseite" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/empty.png" alt="Empty Repository" width="900">
+  <img src="assets/screenshots/empty.png" alt="Leeres Repository" width="900">
 </p>
 
 <p align="center">
@@ -29,12 +29,11 @@
 </details>
 <br />
 
-[Deutsch](./README.de.md) | [Arabic](./README.ar.md) | [English](./README.md) | [French](./README.fr.md) (only ones i know)
+[Deutsch](./README.de.md) | [Arabic](./README.ar.md) | [English](./README.md) | [French](./README.fr.md)
 
-### What is Drei?
+### Was ist Drei?
 <hr />
 
-Drei (pronounced "dry," German for "three") is a free, open-source Git hosting platform you can run on your own network — a lightweight, fast, and extensible alternative for teams who want full control over where their code lives.
+Drei (ausgesprochen "dry", deutsch für "drei") ist eine kostenlose Open-Source-Git-Hosting-Plattform, die du in deinem eigenen Netzwerk betreiben kannst — eine leichtgewichtige, schnelle und erweiterbare Alternative für Teams, die volle Kontrolle darüber haben möchten, wo ihr Code liegt.
 
-
-Learn more at <a href="https://Drei.sh">drei.sh</a>
+Weitere Informationen findest du auf <a href="https://Drei.sh">drei.sh</a>
