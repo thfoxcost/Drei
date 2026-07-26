@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo-dark.svg" alt="Drei Logo" width="180">
+  <img src="../assets/logo-dark.svg" alt="Drei Logo" width="180">
 </p>
 
 <div align="center">
@@ -10,20 +10,20 @@
 </div>
 
 <details>
-<summary>Preview</summary>
+<summary>معاينة</summary>
 
 <br>
 
 <p align="center">
-  <img src="assets/screenshots/home.png" alt="Home" width="900">
+  <img src="assets/screenshots/home.png" alt="الصفحة الرئيسية" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/empty.png" alt="Empty Repository" width="900">
+  <img src="assets/screenshots/empty.png" alt="مستودع فارغ" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/repo.png" alt="Repository" width="900">
+  <img src="assets/screenshots/repo.png" alt="المستودع" width="900">
 </p>
 
 </details>
@@ -31,10 +31,13 @@
 
 [Deutsch](./README.de.md) | [Arabic](./README.ar.md) | [English](./README.md) | [French](./README.fr.md) (only ones i know)
 
-### What is Drei?
+<div dir="rtl" align="right">
+
+### ما هو Drei؟
 <hr />
 
-Drei (pronounced "dry," German for "three") is a free, open-source Git hosting platform you can run on your own network — a lightweight, fast, and extensible alternative for teams who want full control over where their code lives.
+Drei (تُنطق "دراي"، وهي الكلمة الألمانية لـ"ثلاثة") هي منصة مجانية ومفتوحة المصدر لاستضافة مستودعات Git يمكنك تشغيلها على شبكتك الخاصة — بديل خفيف وسريع وقابل للتوسّع للفرق التي تريد التحكم الكامل في مكان تخزين أكوادها البرمجية.
 
+لمزيد من المعلومات، تفضل بزيارة <a href="https://Drei.sh">drei.sh</a>
 
-Learn more at <a href="https://Drei.sh">drei.sh</a>
+</div>
