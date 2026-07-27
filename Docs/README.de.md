@@ -32,8 +32,6 @@
 [Deutsch](./README.de.md) | [Arabic](./README.ar.md) | [English](./README.md) | [French](./README.fr.md)
 
 ### Was ist Drei?
-<hr />
-
 Drei (ausgesprochen "dry", deutsch für "drei") ist eine kostenlose Open-Source-Git-Hosting-Plattform, die du in deinem eigenen Netzwerk betreiben kannst — eine leichtgewichtige, schnelle und erweiterbare Alternative für Teams, die volle Kontrolle darüber haben möchten, wo ihr Code liegt.
 
 Weitere Informationen findest du auf <a href="https://Drei.sh">drei.sh</a>
