@@ -4,9 +4,12 @@ import (
 	"backend/config"
 	"encoding/base64"
 	"errors"
+	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/object"
 )
 
@@ -24,13 +27,18 @@ type FileInfo struct {
 	Path       string     `json:"path"`
 	Size       int64      `json:"size"`
 	Hash       string     `json:"hash"`
-	Type       bool       `json:"type"`
+	Type       bool       `json:"type"` // true = file, false = folder
+	IsNested   bool       `json:"isNested"`
 	Content    string     `json:"content,omitempty"`
 	LastCommit CommitInfo `json:"lastCommit"`
 }
 
 func GetFiles(owner, repo string) ([]FileInfo, error) {
-	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
+	repoPath := filepath.Join(
+		config.App.ReposPath,
+		owner,
+		repo+".git",
+	)
 
 	r, err := git.PlainOpen(repoPath)
 	if err != nil {
@@ -47,52 +55,94 @@ func GetFiles(owner, repo string) ([]FileInfo, error) {
 		return nil, err
 	}
 
-	tree, err := headCommit.Tree()
+	rootTree, err := headCommit.Tree()
 	if err != nil {
 		return nil, err
 	}
 
-	getLastCommit := func(path string) (CommitInfo, error) {
+	// Cache last-commit lookups so we don't walk the entire Git
+	// history repeatedly for the same path.
+	lastCommitCache := make(map[string]CommitInfo)
+
+	getLastCommit := func(filePath string, isFile bool) (CommitInfo, error) {
+		if cached, ok := lastCommitCache[filePath]; ok {
+			return cached, nil
+		}
+
 		iter, err := r.Log(&git.LogOptions{
 			From: head.Hash(),
 		})
 		if err != nil {
 			return CommitInfo{}, err
 		}
+		defer iter.Close()
 
 		var result CommitInfo
 
 		err = iter.ForEach(func(commit *object.Commit) error {
 			changed := false
 
+			// First commit in history.
 			if commit.NumParents() == 0 {
-				tree, err := commit.Tree()
+				commitTree, err := commit.Tree()
 				if err != nil {
-					return nil
+					return err
 				}
 
-				file, err := tree.File(path)
-				if err == nil && file != nil {
-					changed = true
+				if isFile {
+					file, err := commitTree.File(filePath)
+					if err == nil && file != nil {
+						changed = true
+					}
+				} else {
+					// Check whether the directory existed.
+					_, err := commitTree.Tree(filePath)
+					if err == nil {
+						changed = true
+					}
 				}
 			} else {
 				parent, err := commit.Parent(0)
 				if err != nil {
-					return nil
+					return err
 				}
 
 				patch, err := parent.Patch(commit)
 				if err != nil {
-					return nil
+					return err
 				}
 
 				for _, fp := range patch.FilePatches() {
 					from, to := fp.Files()
 
-					if (from != nil && from.Path() == path) ||
-						(to != nil && to.Path() == path) {
-						changed = true
-						break
+					var fromPath string
+					var toPath string
+
+					if from != nil {
+						fromPath = from.Path()
+					}
+
+					if to != nil {
+						toPath = to.Path()
+					}
+
+					if isFile {
+						// File itself changed.
+						if fromPath == filePath || toPath == filePath {
+							changed = true
+							break
+						}
+					} else {
+						// Folder changed when anything inside it changed.
+						prefix := filePath + "/"
+
+						if fromPath == filePath ||
+							toPath == filePath ||
+							strings.HasPrefix(fromPath, prefix) ||
+							strings.HasPrefix(toPath, prefix) {
+							changed = true
+							break
+						}
 					}
 				}
 			}
@@ -115,37 +165,78 @@ func GetFiles(owner, repo string) ([]FileInfo, error) {
 			return CommitInfo{}, err
 		}
 
+		lastCommitCache[filePath] = result
+
 		return result, nil
 	}
 
 	var files []FileInfo
 
-	err = tree.Files().ForEach(func(file *object.File) error {
-		content, err := file.Contents()
-		if err != nil {
-			return err
+	// Walk the entire Git tree recursively.
+	// This includes both files and folders.
+	walker := object.NewTreeWalker(
+		rootTree,
+		true,
+		make(map[plumbing.Hash]bool),
+	)
+	defer walker.Close()
+
+	for {
+		fullPath, entry, err := walker.Next()
+
+		if errors.Is(err, io.EOF) {
+			break
 		}
 
-		lastCommit, err := getLastCommit(file.Name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		files = append(files, FileInfo{
-			Name:       filepath.Base(file.Name),
-			Path:       file.Name,
-			Size:       file.Size,
-			Hash:       file.Hash.String(),
-			Type:       file.Mode.IsFile(),
-			Content:    base64.StdEncoding.EncodeToString([]byte(content)),
-			LastCommit: lastCommit,
-		})
+		isFile := entry.Mode.IsFile()
 
-		return nil
-	})
+		// A file/folder is nested if its path contains "/".
+		//
+		// hello.rb           -> false
+		// err                -> false
+		// err/err.rb         -> true
+		// src/main.go        -> true
+		// src/utils/test.go  -> true
+		isNested := strings.Contains(fullPath, "/")
 
-	if err != nil {
-		return nil, err
+		item := FileInfo{
+			Name:     entry.Name,
+			Path:     fullPath,
+			Hash:     entry.Hash.String(),
+			Type:     isFile,
+			IsNested: isNested,
+		}
+
+		// Only files have content and size.
+		if isFile {
+			currentTree := walker.Tree()
+
+			file, err := currentTree.TreeEntryFile(&entry)
+			if err != nil {
+				return nil, err
+			}
+
+			content, err := file.Contents()
+			if err != nil {
+				return nil, err
+			}
+
+			item.Size = file.Size
+			item.Content = base64.StdEncoding.EncodeToString([]byte(content))
+		}
+
+		lastCommit, err := getLastCommit(fullPath, isFile)
+		if err != nil {
+			return nil, err
+		}
+
+		item.LastCommit = lastCommit
+
+		files = append(files, item)
 	}
 
 	return files, nil
