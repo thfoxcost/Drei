@@ -28,6 +28,7 @@ interface RepoFile {
   type: boolean;
   content: string;
   lastCommit: Commit;
+  isNested : boolean
 }
 
 interface Lang {
@@ -118,23 +119,25 @@ function Repo({ owner, repo }: RepoProps) {
             commitNum={repoData.commits.length.toLocaleString()}
           />
 
-          {repoData.files.map((file) => (
-            <Cell
-              key={file.path}
-              filename={file.name}
-              commitmessage={
-                file.lastCommit.message.trim() === ""
-                  ? repoData.lastCommit.message
-                  : file.lastCommit.message
-              }
-              date={
-                file.lastCommit.date.trim() === ""
-                  ? repoData.lastCommit.date
-                  : file.lastCommit.date
-              }
-              isFile={file.type}
-            />
-          ))}
+          {repoData.files
+            .filter((file) => !file.isNested)
+            .map((file) => (
+              <Cell
+                key={file.path}
+                filename={file.name}
+                commitmessage={
+                  file.lastCommit.message.trim() === ""
+                    ? repoData.lastCommit.message
+                    : file.lastCommit.message
+                }
+                date={
+                  file.lastCommit.date.trim() === ""
+                    ? repoData.lastCommit.date
+                    : file.lastCommit.date
+                }
+                isFile={file.type}
+              />
+            ))}
           <Readme content={readme?.content ?? ""} />
         </div>
 
