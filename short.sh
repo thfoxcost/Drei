@@ -9,6 +9,7 @@
 # Backend
 (
   cd backend || exit
+  export PATH="$PATH:$(go env GOPATH)/bin"
   air
 ) &
 
