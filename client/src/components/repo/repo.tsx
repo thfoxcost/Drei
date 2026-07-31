@@ -28,7 +28,7 @@ interface RepoFile {
   type: boolean;
   content: string;
   lastCommit: Commit;
-  isNested : boolean
+  isNested: boolean
 }
 
 interface Lang {
@@ -91,9 +91,15 @@ function Repo({ owner, repo }: RepoProps) {
   }
 
 
-  const readme = repoData.files.find(
-    (file) => file.name.toLowerCase() === "readme.md"
-  );
+  const readme = repoData.files.find((file) =>
+  [
+    "readme.md",
+    "readme.mdx",
+    "readme.markdown",
+    "readme.txt",
+    "readme",
+  ].includes(file.name.toLowerCase())
+);
   return (
     <div className="flex flex-col px-10 h-full overflow-y-auto mx-16">
       <RepoStarsheader reponame={repoData.name} visibility={repoData.visibility} />
@@ -138,8 +144,7 @@ function Repo({ owner, repo }: RepoProps) {
                 isFile={file.type}
               />
             ))}
-          <Readme content={readme?.content ?? ""} />
-        </div>
+          {readme?.content && <Readme content={readme.content} />}        </div>
 
         <div className="w-full max-w-xs shrink-0">
           <Rightpanel data={repoData} />

@@ -17,7 +17,6 @@ import { Route as UsernameIndexRouteImport } from './routes/$username/index'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/_auth/signin'
 import { Route as AppNewRouteImport } from './routes/_app/new'
-import { Route as AppHomeRouteImport } from './routes/_app/home'
 import { Route as UsernameRepoRouteRouteImport } from './routes/$username/$repo/route'
 import { Route as UsernameRepoIndexRouteImport } from './routes/$username/$repo/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -61,11 +60,6 @@ const AppNewRoute = AppNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AppRoute,
 } as any)
-const AppHomeRoute = AppHomeRouteImport.update({
-  id: '/home',
-  path: '/home',
-  getParentRoute: () => AppRoute,
-} as any)
 const UsernameRepoRouteRoute = UsernameRepoRouteRouteImport.update({
   id: '/$username/$repo',
   path: '/$username/$repo',
@@ -91,7 +85,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/$username/$repo': typeof UsernameRepoRouteRouteWithChildren
-  '/home': typeof AppHomeRoute
   '/new': typeof AppNewRoute
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
@@ -103,7 +96,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/home': typeof AppHomeRoute
   '/new': typeof AppNewRoute
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
@@ -119,7 +111,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/$username/$repo': typeof UsernameRepoRouteRouteWithChildren
-  '/_app/home': typeof AppHomeRoute
   '/_app/new': typeof AppNewRoute
   '/_auth/signin': typeof AuthSigninRoute
   '/_auth/signup': typeof AuthSignupRoute
@@ -134,7 +125,6 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/$username/$repo'
-    | '/home'
     | '/new'
     | '/signin'
     | '/signup'
@@ -146,7 +136,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
-    | '/home'
     | '/new'
     | '/signin'
     | '/signup'
@@ -161,7 +150,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/$username/$repo'
-    | '/_app/home'
     | '/_app/new'
     | '/_auth/signin'
     | '/_auth/signup'
@@ -239,13 +227,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNewRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/home': {
-      id: '/_app/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof AppHomeRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/$username/$repo': {
       id: '/$username/$repo'
       path: '/$username/$repo'
@@ -278,12 +259,10 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
-  AppHomeRoute: typeof AppHomeRoute
   AppNewRoute: typeof AppNewRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppHomeRoute: AppHomeRoute,
   AppNewRoute: AppNewRoute,
 }
 
