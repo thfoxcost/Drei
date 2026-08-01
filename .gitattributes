@@ -1,2 +1,2 @@
-client/components/** linguist-vendored
-client/src/components/** linguist-vendored
+client/** linguist-vendored
+
