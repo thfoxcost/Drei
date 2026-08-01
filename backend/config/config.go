@@ -10,7 +10,8 @@ type Config struct {
 	Port           string
 	ReposPath      string
 	GitBackendPath string
-	DbHost		 string
+	DbHost         string
+	DatabaseURL    string
 }
 
 var App Config
@@ -24,7 +25,7 @@ func Load() error {
 		Port:           os.Getenv("PORT"),
 		ReposPath:      os.Getenv("REPOS_PATH"),
 		GitBackendPath: os.Getenv("GIT_HTTP_BACKEND"),
-		DbHost: os.Getenv("DB_HOST")
+		DatabaseURL:    os.Getenv("DATABASE_URL"),
 	}
 
 	return nil

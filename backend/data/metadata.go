@@ -6,12 +6,13 @@ import (
 )
 
 type ApiTypes struct {
-	UserId      string `json:"userid"`
-	Useremail   string `json:"useremail"`
-	Username    string `json:"username"`
-	Reponame    string `json:"reponame"`
-	Description string `json:"description"`
-	Visibility  bool   `json:"visibility"`
+	UserId        string `json:"userid"`
+	Useremail     string `json:"useremail"`
+	Username      string `json:"username"`
+	Reponame      string `json:"reponame"`
+	Description   string `json:"description"`
+	Visibility    bool   `json:"visibility"`
+	DefaultBranch string `json:"defaultbranch"`
 }
 
 var Current ApiTypes
