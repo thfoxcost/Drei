@@ -1,13 +1,14 @@
 package utils
 
 import (
+	"backend/db"
 	"fmt"
+	"time"
 )
 
 type RepoResponse struct {
 	Name          string       `json:"name"`
 	Owner         string       `json:"owner"`
-	Email         string       `json:"email"`
 	Description   string       `json:"description"`
 	Visibility    bool         `json:"visibility"`
 	HasCommits    bool         `json:"hasCommits"`
@@ -25,10 +26,9 @@ type RepoResponse struct {
 }
 
 func GetRepo(owner, repo string) (*RepoResponse, error) {
-
 	cloneURL := fmt.Sprintf("https://localhost:3200/git/%s/%s.git", owner, repo)
 
-	info, err := GetRepoMetadata(owner, repo)
+	info, err := db.GetRepository(owner, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +36,28 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 	hasCommits, err := CheckPush(owner, repo)
 	if err != nil {
 		return nil, err
+	}
+
+	// Empty repository
+	if !hasCommits {
+		return &RepoResponse{
+			Name:          info.Name,
+			Owner:         info.Owner,
+			Description:   info.Description,
+			Visibility:    info.Visibility,
+			HasCommits:    false,
+			Created:       info.CreatedAt.Format(time.RFC3339),
+			DefaultBranch: "main",
+			CloneURL:      cloneURL,
+			Langs:         []Language{},
+			Branches:      []string{},
+			Tags:          []string{},
+			Commits:       []CommitInfo{},
+			LastCommit:    CommitInfo{},
+			Files:         []FileInfo{},
+			Size:          0,
+			Contributors:  []string{},
+		}, nil
 	}
 
 	langs, err := GetLang(owner, repo)
@@ -58,21 +80,12 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 		return nil, err
 	}
 
-	lastCommitInfo := CommitInfo{
-		Hash:    lastCommit.Hash.String(),
-		Message: lastCommit.Message,
-		Author:  lastCommit.Author.Name,
-		Date:    lastCommit.Author.When.String(),
-	}
-
 	files, err := GetFiles(owner, repo)
-
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
-	Reposize, err := CalcRepoSize(owner, repo)
+	repoSize, err := CalcRepoSize(owner, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -83,22 +96,26 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 	}
 
 	return &RepoResponse{
-		Name:          repo,
-		Owner:         info.Name,
-		Email:         info.Email,
+		Name:          info.Name,
+		Owner:         info.Owner,
 		Description:   info.Description,
 		Visibility:    info.Visibility,
-		HasCommits:    hasCommits,
-		Created:       info.Created,
+		HasCommits:    true,
+		Created:       info.CreatedAt.Format(time.RFC3339),
 		Langs:         langs,
 		Branches:      branches,
 		DefaultBranch: defaultBranch,
 		Tags:          tags,
 		CloneURL:      cloneURL,
 		Commits:       commits,
-		LastCommit:    lastCommitInfo,
-		Files:         files,
-		Size:          Reposize,
-		Contributors:  contributors,
+		LastCommit: CommitInfo{
+			Hash:    lastCommit.Hash.String(),
+			Message: lastCommit.Message,
+			Author:  lastCommit.Author.Name,
+			Date:    lastCommit.Author.When.Format(time.RFC3339),
+		},
+		Files:        files,
+		Size:         repoSize,
+		Contributors: contributors,
 	}, nil
 }

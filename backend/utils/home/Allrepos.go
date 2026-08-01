@@ -2,6 +2,7 @@ package home
 
 import (
 	"backend/config"
+	"backend/db"
 	"backend/utils"
 	"encoding/json"
 	"net/http"
@@ -129,7 +130,7 @@ func GetRepos(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get metadata
-		meta, err := utils.GetRepoMetadata(
+		meta, err := db.GetRepository(
 			owner,
 			repoName,
 		)
