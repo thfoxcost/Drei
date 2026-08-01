@@ -107,22 +107,10 @@ func createRepoFiles(userPath, repoPath string) error {
 		return err
 	}
 
-	if err := utils.Edit(
-		repoPath,
-		data.Current.Description,
-		data.Current.Visibility,
-		data.Current.Useremail,
-		data.Current.Username,
-		data.Current.UserId,
-	); err != nil {
-		return err
-	}
-
 	fmt.Println("[OK] Repository created:", repoPath)
 
 	return nil
 }
-
 func RepoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
