@@ -4,11 +4,13 @@ import (
 	"backend/apis"
 	"backend/config"
 	"backend/data"
+	"backend/db"
 	"backend/sample"
 	"backend/utils"
 	"backend/utils/home"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,7 +18,7 @@ import (
 
 func RepoExists(path string) bool {
 	_, err := os.Stat(path)
-	return err == nil
+	return !os.IsNotExist(err)
 }
 
 func createRepo(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +58,29 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := createRepoFiles(userPath, repoPath); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// store the repo in the pg DB
+	if err := db.CreateRepository(db.Repository{
+		OwnerID:       data.Current.UserId,
+		Owner:         data.Current.Username,
+		Name:          data.Current.Reponame,
+		Description:   data.Current.Description,
+		Visibility:    data.Current.Visibility,
+		Path:          repoPath,
+		DefaultBranch: "main",
+	}); err != nil {
+		// Remove the repository from disk if the database insert failed.
+		_ = os.RemoveAll(repoPath)
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 
@@ -127,8 +152,19 @@ func RepoHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	if err := config.Load(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
+
+	// connect to the database
+	if err := db.Connect(config.App.DatabaseURL); err != nil {
+		log.Fatal(err)
+	}
+	defer db.DB.Close()
+
+	if err := db.Migrate(); err != nil {
+		log.Fatal(err)
+	}
+
 	http.HandleFunc("/api/contribution", sample.Contribution)
 	http.HandleFunc("/api/users/{owner}/repos", home.GetRepos)
 	http.HandleFunc("/api/status", sample.Status)
@@ -138,7 +174,5 @@ func main() {
 
 	fmt.Printf("[OK] Server listening on :%s\n", config.App.Port)
 
-	if err := http.ListenAndServe(":"+config.App.Port, nil); err != nil {
-		panic(err)
-	}
+	log.Fatal(http.ListenAndServe(":"+config.App.Port, nil))
 }
