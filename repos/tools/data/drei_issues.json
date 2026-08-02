@@ -1,0 +1,8 @@
+{
+  "title": "Add repository fork settings",
+  "priority": "P1",
+  "milestone": "v1.0.0",
+  "labels": ["feature", "settings"],
+  "assignee": "thfoxcost",
+  "body": "Allow repository owners to enable or disable forks for their repository.\n\nIncludes:\n- Add a 'Allow forks' setting in the repository settings page.\n- Prevent users from forking when disabled.\n- Display a clear message when forking is not allowed.\n- Existing forks should remain unaffected."
+}

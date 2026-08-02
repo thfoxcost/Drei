@@ -28,7 +28,7 @@ interface RepoFile {
   type: boolean;
   content: string;
   lastCommit: Commit;
-  isNested: boolean
+  isNested: boolean;
 }
 
 interface Lang {
@@ -58,7 +58,6 @@ interface RepoData {
 }
 
 function Repo({ owner, repo }: RepoProps) {
-
   const [repoData, setRepoData] = useState<RepoData | null>(null);
 
   useEffect(() => {
@@ -90,24 +89,106 @@ function Repo({ owner, repo }: RepoProps) {
     );
   }
 
+  const documentFiles = [
+    {
+      title: "README",
+      names: [
+        "readme.md",
+        "readme.mdx",
+        "readme.markdown",
+        "readme.txt",
+        "readme",
+      ],
+    },
+    {
+      title: "License",
+      names: [
+        "license",
+        "license.md",
+        "license.txt",
+        "copying",
+        "copying.md",
+      ],
+    },
+    {
+      title: "Changelog",
+      names: [
+        "changelog",
+        "changelog.md",
+        "changes",
+        "changes.md",
+      ],
+    },
+    {
+      title: "Contributing",
+      names: [
+        "contributing",
+        "contributing.md",
+      ],
+    },
+    {
+      title: "Security",
+      names: [
+        "security",
+        "security.md",
+      ],
+    },
+    {
+      title: "Code of Conduct",
+      names: [
+        "code_of_conduct.md",
+        "code-of-conduct.md",
+      ],
+    },
+    {
+      title: "Support",
+      names: [
+        "support",
+        "support.md",
+      ],
+    },
+    {
+      title: "Authors",
+      names: [
+        "authors",
+        "authors.md",
+      ],
+    },
+  ];
 
-  const readme = repoData.files.find((file) =>
-  [
-    "readme.md",
-    "readme.mdx",
-    "readme.markdown",
-    "readme.txt",
-    "readme",
-  ].includes(file.name.toLowerCase())
-);
+  const docs = documentFiles
+    .map((doc) => {
+      const file = repoData.files.find((file) =>
+        doc.names.includes(file.name.toLowerCase())
+      );
+
+      if (!file) return null;
+
+      return {
+        name: doc.title,
+        content: file.content,
+      };
+    })
+    .filter(
+      (
+        doc
+      ): doc is {
+        name: string;
+        content: string;
+      } => doc !== null
+    );
+
   return (
-    <div className="flex flex-col px-10 h-full overflow-y-auto mx-16">
-      <RepoStarsheader reponame={repoData.name} visibility={repoData.visibility} />
+    <div className="mx-16 flex h-full flex-col overflow-y-auto px-10">
+      <RepoStarsheader
+        reponame={repoData.name}
+        visibility={repoData.visibility}
+      />
 
       <Separator />
 
-      <div className="flex flex-row justify-between gap-8 mt-4">
-        <div className="flex-1 min-w-0 mr-8">
+      <div className="mt-4 flex flex-row justify-between gap-8">
+        <div className="mr-8 min-w-0 flex-1">
           <Tableheader
             defaultBranch={repoData.defaultBranch}
             branches={repoData.branches}
@@ -144,7 +225,9 @@ function Repo({ owner, repo }: RepoProps) {
                 isFile={file.type}
               />
             ))}
-          {readme?.content && <Readme content={readme.content} />}        </div>
+
+          {docs.length > 0 && <Readme docs={docs} />}
+        </div>
 
         <div className="w-full max-w-xs shrink-0">
           <Rightpanel data={repoData} />
