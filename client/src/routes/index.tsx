@@ -15,14 +15,13 @@ function Home() {
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-
     return () => {
       document.body.style.overflow = previous;
     };
   }, []);
 
   return (
-    <div className="m-auto">
+    <div className="flex flex-col h-dvh overflow-hidden">
       <Header />
       <Main />
     </div>
