@@ -29,11 +29,11 @@ function Cell({
 
   return (
     <div className="group flex cursor-pointer flex-row items-center gap-4 border border-t-0 px-3 py-2 text-sm transition-colors hover:bg-muted/50">
-      <div className="flex min-w-0 flex-[1.2] items-center gap-2.5">
+      <div className="flex min-w-0 flex-[1.2] items-left gap-2.5">
         <img
           src={getFileIcon(filename, isFile)}
           alt=""
-          className="h-[18px] w-[18px] shrink-0 object-contain opacity-90 transition-opacity group-hover:opacity-100"
+          className="h-[18px] w-[18px] shrink-0 object-contain opacity-90 transition-opacity group-hover:opacity-100 grayscale group-hover:grayscale-0"
         />
 
         <span
@@ -45,7 +45,7 @@ function Cell({
       </div>
 
       <span
-        className="min-w-0 flex-[2] truncate text-muted-foreground"
+        className="min-w-0 flex-[2] truncate text-muted-foreground text-sm group-hover:text-foreground"
         title={message}
       >
         {message}
