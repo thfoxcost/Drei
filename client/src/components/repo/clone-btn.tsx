@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Code,
   CopyIcon,
@@ -21,7 +20,7 @@ export function CloneButton() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="inline-flex items-center gap-2 bg-green-600 text-white hover:bg-green-700">
+        <Button className="inline-flex items-center gap-2 bg-green-600 text-white hover:bg-green-600 focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
           <Code className="h-4 w-4" />
           <span>Clone</span>
 

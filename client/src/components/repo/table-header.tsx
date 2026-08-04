@@ -4,8 +4,10 @@ import {
   ChevronDown,
   Code,
   Copy,
+  FileArchive,
   GitBranch,
   SearchIcon,
+  SquareTerminal,
   Tag,
   Terminal,
 } from "lucide-react";
@@ -13,6 +15,7 @@ import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -20,7 +23,8 @@ import {
 } from "../ui/dropdown-menu";
 import { Field } from "../ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
-import { Tabs, TabsContent } from "../ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Separator } from "../ui/separator";
 
 interface TableheaderProps {
   defaultBranch: string;
@@ -214,15 +218,74 @@ function Tableheader({
             </Button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent align="end" className="w-80 p-3">
-            <DropdownMenuLabel className="flex items-center gap-2 px-0 pb-2">
-              <Terminal className="h-4 w-4" /> Clone
+          <DropdownMenuContent align="end" className="w-80 p-2">
+            <DropdownMenuLabel className="flex items-bottom gap-1 px-0 pb-2">
+              <SquareTerminal className="h-4.5 w-4.5" />
+              <span className="text-sm font-medium text-muted-foreground">
+                <span className="muted-foreground text-sm">
+                  Clone
+                </span>
+
+              </span>
+
             </DropdownMenuLabel>
-            <Tabs defaultValue="HTTP">
-              <TabsContent value="HTTP" className="mt-3">
+            <Tabs defaultValue="http" className="w-full">
+              <div className="border-b border-border w-full" >
+                <TabsList variant="line">
+                  <TabsTrigger value="http">HTTP</TabsTrigger>
+                  <TabsTrigger value="ssh">SSH</TabsTrigger>
+                  <TabsTrigger value="cli">CLI</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="http" className="mt-1">
                 <CloneUrlField url={cloneUrl} />
               </TabsContent>
+              <TabsContent value="ssh" className="mt-1">
+                <CloneUrlField url="SSH Coming Soon" />
+              </TabsContent>
+              <TabsContent value="cli" className="mt-1">
+                <CloneUrlField url="CLI Coming Soon" />
+              </TabsContent>
             </Tabs>
+            <DropdownMenuGroup className="mt-2">
+              <DropdownMenuItem disabled>
+                <img src="/icons/vscode.svg" alt="vscode icon" className="h-4 w-4 grayscale" />
+                <a href="https://code.visualstudio.com/" className=" hover:underline text-sm text-foreground">
+                  Open with VS Code
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <img src="/logo-dark.svg" alt="drei icon" className="h-5 w-5 grayscale" />
+                <a href="https://code.visualstudio.com/" className=" hover:underline text-sm text-foreground">
+                  Open with Drei Desktop
+                </a>
+              </DropdownMenuItem>
+
+              <Separator className="my-1" />
+
+              <DropdownMenuItem disabled>
+                <FileArchive className="size-4" />
+                <a href="https://code.visualstudio.com/" className=" hover:underline text-sm text-foreground">
+                  Download ZIP
+                </a>
+              </DropdownMenuItem>
+
+
+              <DropdownMenuItem disabled>
+                <FileArchive className="size-4" />
+                <a href="https://code.visualstudio.com/" className=" hover:underline text-sm text-foreground">
+                  Download TAR.GZ
+                </a>
+              </DropdownMenuItem>
+
+
+              <DropdownMenuItem disabled>
+                <img src="/icons/readme.svg" alt="drei icon" className="h-4.5 w-4.5 grayscale" />
+                <a href="https://code.visualstudio.com/" className=" hover:underline text-sm text-foreground">
+                  Download README
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
