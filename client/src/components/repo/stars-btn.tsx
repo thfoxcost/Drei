@@ -16,7 +16,7 @@ import {
 export function StartsBtn() {
   return (
     <ButtonGroup>
-      <Button variant="outline" >
+      <Button variant="secondary" >
         <StarIcon className="size-4" aria-hidden="true" />
         <span>Star</span>
         <Badge variant="secondary">2.4k</Badge>
@@ -24,7 +24,7 @@ export function StartsBtn() {
 
       <DropdownMenu >
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" >
+          <Button variant="secondary" size="icon" >
             <ChevronDownIcon className="size-4" aria-hidden="true" />
             <span className="sr-only">Toggle dropdown</span>
           </Button>
