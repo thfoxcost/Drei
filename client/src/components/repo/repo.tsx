@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Separator } from "../ui/separator";
 import RepoStarsheader from "./repo-stars-header";
 import Rightpanel from "./right-panel";
@@ -7,79 +6,15 @@ import Cell from "./table/cell";
 import Mainheader from "./table/header";
 import { NoRepo } from "./norepo";
 import Readme from "./reademe";
+import { useRepoData } from "@/hooks/useRepoData";
 
 interface RepoProps {
   owner: string;
   repo: string;
 }
 
-interface Commit {
-  hash: string;
-  message: string;
-  author: string;
-  date: string;
-}
-
-interface RepoFile {
-  name: string;
-  path: string;
-  size: number;
-  hash: string;
-  type: boolean;
-  content: string;
-  lastCommit: Commit;
-  isNested: boolean;
-}
-
-interface Lang {
-  name: string;
-  bytes: number;
-  percent: number;
-}
-
-interface RepoData {
-  name: string;
-  owner: string;
-  email: string;
-  description: string;
-  visibility: boolean;
-  hasCommits: boolean;
-  created: string;
-  langs: Lang[];
-  branches: string[];
-  defaultBranch: string;
-  tags: string[] | null;
-  cloneUrl: string;
-  commits: Commit[];
-  lastCommit: Commit;
-  files: RepoFile[];
-  size: number;
-  contributors: string[];
-}
-
 function Repo({ owner, repo }: RepoProps) {
-  const [repoData, setRepoData] = useState<RepoData | null>(null);
-
-  useEffect(() => {
-    async function getRepo() {
-      try {
-        const res = await fetch(
-          `http://localhost:3200/api/repos/${owner}/${repo}`
-        );
-
-        if (!res.ok) {
-          return;
-        }
-
-        const data: RepoData = await res.json();
-        setRepoData(data);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    getRepo();
-  }, [owner, repo]);
+  const { data: repoData } = useRepoData(owner, repo);
 
   if (!repoData) {
     return (
@@ -112,47 +47,27 @@ function Repo({ owner, repo }: RepoProps) {
     },
     {
       title: "Changelog",
-      names: [
-        "changelog",
-        "changelog.md",
-        "changes",
-        "changes.md",
-      ],
+      names: ["changelog", "changelog.md", "changes", "changes.md"],
     },
     {
       title: "Contributing",
-      names: [
-        "contributing",
-        "contributing.md",
-      ],
+      names: ["contributing", "contributing.md"],
     },
     {
       title: "Security",
-      names: [
-        "security",
-        "security.md",
-      ],
+      names: ["security", "security.md"],
     },
     {
       title: "Code of Conduct",
-      names: [
-        "code_of_conduct.md",
-        "code-of-conduct.md",
-      ],
+      names: ["code_of_conduct.md", "code-of-conduct.md"],
     },
     {
       title: "Support",
-      names: [
-        "support",
-        "support.md",
-      ],
+      names: ["support", "support.md"],
     },
     {
       title: "Authors",
-      names: [
-        "authors",
-        "authors.md",
-      ],
+      names: ["authors", "authors.md"],
     },
   ];
 
@@ -170,12 +85,7 @@ function Repo({ owner, repo }: RepoProps) {
       };
     })
     .filter(
-      (
-        doc
-      ): doc is {
-        name: string;
-        content: string;
-      } => doc !== null
+      (doc): doc is { name: string; content: string } => doc !== null
     );
 
   return (
