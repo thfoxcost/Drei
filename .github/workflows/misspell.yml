@@ -1,0 +1,23 @@
+name: Misspell Fixer
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  misspell:
+    name: Check spelling
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: misspell-fixer-action
+        uses: sobolevn/misspell-fixer-action@0.1.0
