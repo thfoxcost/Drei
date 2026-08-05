@@ -179,7 +179,7 @@ function Repo({ owner, repo }: RepoProps) {
     );
 
   return (
-    <div className="mx-16 flex h-full flex-col overflow-y-auto px-10">
+    <div className="mx-16 flex h-full flex-col overflow-y-auto px-15">
       <div className="mt-2 flex flex-row justify-between">
         <div className="mr-6 min-w-0 flex-1">
           <Tableheader
