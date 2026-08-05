@@ -95,7 +95,7 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
         link="https://thefoxcost.vercel.app/"
       />
       <Tabs defaultValue="files" className="gap-4">
-        <div className="w-full border-b pb-1 bg-muted/10 pl-23">          <TabsList
+        <div className="w-full border-b pb-1 bg-muted/10">          <TabsList
           variant="line"
           className="rounded-none p-0"
         >
