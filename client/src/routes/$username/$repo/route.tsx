@@ -16,7 +16,7 @@ function RepositoryLayout() {
   return (
     <>
       <ReposMainHeader username={username} repo={repo} />
-      <RepoTabs />
+      <RepoTabs owner={username} repo={repo}/>
       <Outlet />
     </>
   )

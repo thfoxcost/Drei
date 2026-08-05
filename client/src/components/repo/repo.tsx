@@ -180,15 +180,8 @@ function Repo({ owner, repo }: RepoProps) {
 
   return (
     <div className="mx-16 flex h-full flex-col overflow-y-auto px-10">
-      <RepoStarsheader
-        reponame={repoData.name}
-        visibility={repoData.visibility}
-      />
-
-      <Separator />
-
-      <div className="mt-4 flex flex-row justify-between gap-8">
-        <div className="mr-8 min-w-0 flex-1">
+      <div className="mt-2 flex flex-row justify-between">
+        <div className="mr-6 min-w-0 flex-1">
           <Tableheader
             defaultBranch={repoData.defaultBranch}
             branches={repoData.branches}

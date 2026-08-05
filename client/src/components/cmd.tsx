@@ -37,7 +37,7 @@ export function Cmd() {
       <Button onClick={() => setOpen(true)} variant="outline" className="w-52">
         <SearchIcon className="size-4" />
         Search repositories...
-        <Kbd className="ml-auto">⌘K</Kbd>
+        <Kbd className="ml-auto px-3">⌘K</Kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <Command className="**:data-[selected=true]:bg-muted **:data-selected:bg-transparent">

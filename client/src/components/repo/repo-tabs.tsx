@@ -8,6 +8,9 @@ import {
   Settings,
   Code,
 } from "lucide-react"
+import RepoStarsheader from "./repo-stars-header"
+import { useEffect, useState } from "react";
+import type { RepoData } from "./right-panel";
 
 const tabs = [
   {
@@ -54,11 +57,45 @@ const tabs = [
   },
 ]
 
-export default function RepoTabs() {
+
+interface RepoProps {
+  owner: string;
+  repo: string;
+}
+
+
+export default function RepoTabs({ owner, repo }: RepoProps) {
+  const [repoData, setRepoData] = useState<RepoData | null>(null);
+
+    useEffect(() => {
+      async function getRepo() {
+        try {
+          const res = await fetch(
+            `http://localhost:3200/api/repos/${owner}/${repo}`
+          );
+  
+          if (!res.ok) {
+            return;
+          }
+  
+          const data: RepoData = await res.json();
+          setRepoData(data);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+  
+      getRepo();
+    }, [owner, repo]);
   return (
     <div className="w-full">
+      <RepoStarsheader
+        reponame={repo}
+        visibility={repoData?.visibility || true}
+        link="https://thefoxcost.vercel.app/"
+      />
       <Tabs defaultValue="files" className="gap-4">
-        <div className="w-full border-b pb-1 bg-muted/10">          <TabsList
+        <div className="w-full border-b pb-1 bg-muted/10 pl-23">          <TabsList
           variant="line"
           className="rounded-none p-0"
         >
