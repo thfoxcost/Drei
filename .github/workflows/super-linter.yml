@@ -1,48 +1,14 @@
-name: Super Linter
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-on:
-  pull_request:
-  push:
-    branches:
-      - main
+  VALIDATE_ALL_CODEBASE: false
+  DEFAULT_BRANCH: main
 
-permissions:
-  contents: read
-  statuses: write
-
-jobs:
-  super-linter:
-    name: Super Linter
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Super-Linter
-        uses: super-linter/super-linter@v8.7.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-          # Only check changed files in PRs
-          VALIDATE_ALL_CODEBASE: false
-
-          # Your default branch
-          DEFAULT_BRANCH: main
-
-          # Enable what Drei uses
-          VALIDATE_GO: true
-          VALIDATE_TYPESCRIPT_ES: true
-          VALIDATE_JAVASCRIPT_ES: true
-          VALIDATE_JSON: true
-          VALIDATE_YAML: true
-          VALIDATE_MARKDOWN: true
-          VALIDATE_DOCKERFILE: true
-          VALIDATE_BASH: true
-
-          # Disable unused languages
-          VALIDATE_PYTHON: false
-          VALIDATE_RUST: false
-          VALIDATE_JAVA: false
+  VALIDATE_GO: true
+  VALIDATE_TYPESCRIPT_ES: true
+  VALIDATE_JAVASCRIPT_ES: true
+  VALIDATE_JSON: true
+  VALIDATE_YAML: true
+  VALIDATE_MARKDOWN: true
+  VALIDATE_DOCKERFILE: true
+  VALIDATE_BASH: true
