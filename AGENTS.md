@@ -19,7 +19,7 @@ Drei is a self-hosted Git platform: a Go backend + a TanStack Start (React 19) c
 Both servers fail at startup if their gitignored `.env` files are missing:
 
 - `backend/.env`: `PORT=3200`, `REPOS_PATH=...`, `DATABASE_URL=postgres://user:password@localhost:5432/pg`, `GIT_HTTP_BACKEND=/usr/lib/git-core/git-http-backend`.
-- `client/.env`: `BETTER_AUTH_URL=http://localhost:3000`, `BETTER_AUTH_SECRET=...`, `VITE_BACKEND_URL=http://localhost:3200`, `DB_HOST=postgres://...`, `VITE_DEFAULT_AVATAR_URL=...`.
+- `client/.env`: `BETTER_AUTH_URL=http://localhost:3000`, `BETTER_AUTH_SECRET=...`, `VITE_BACKEND_URL=http://localhost:3200`, `DB_HOST=postgres://...`.
 
 ## Architecture — facts that aren't obvious from filenames
 
