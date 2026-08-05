@@ -9,11 +9,7 @@ import {
 } from "lucide-react"
 import { createFileRoute } from "@tanstack/react-router"
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "#/components/ui/avatar"
+import { UserAvatar } from "#/components/UserAvatar"
 import { Button } from "#/components/ui/button"
 import {
   DropdownMenu,
@@ -139,14 +135,6 @@ function New() {
 
   const SelectedIcon = selectedVisibility.icon
 
-  const initials =
-    session?.user.name
-      ?.split(" ")
-      .map((word) => word[0]!)
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() ?? "??"
-
   return (
     <main className="mx-auto w-full max-w-3xl space-y-8 p-6">
       <header className="space-y-1">
@@ -171,15 +159,11 @@ function New() {
           <div className="flex flex-wrap items-end gap-3">
             <DropdownMenu>            
               <Button variant="outline">
-                <Avatar className="size-5.5">
-                  <AvatarImage src={
-                        session?.user.image ??
-                        import.meta.env.VITE_DEFAULT_AVATAR_URL
-                      } alt="@shadcn" />
-                  <AvatarFallback>
-
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  src={session?.user.image}
+                  name={session?.user.name}
+                  className="size-5.5"
+                />
                 <span className="text-xs">@{session?.user.name ?? "Unknown User"}</span>
               </Button>
 

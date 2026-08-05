@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import {
   Check,
@@ -16,6 +16,7 @@ import {
   Rss,
 } from "lucide-react";
 import { ForksBtn } from "./forks-btn";
+import { authClient } from "#/lib/auth-client";
 import { Badge } from "../ui/badge";
 import { ButtonGroup } from "../ui/button-group";
 import {
@@ -40,18 +41,17 @@ function RepoStarsheader({
   link,
 }: RepoStarsheaderProps) {
   const status = visibility ? "Public" : "Private";
+  const { data: session } = authClient.useSession();
 
   return (
     <div className="flex items-center justify-between bg-muted/10 px-5 py-2">
       {/* Left */}
       <div className="flex items-center gap-2">
-        <Avatar className="rounded-full">
-          <AvatarImage
-            src="http://localhost:3000/lofichr.png"
-            alt="avatar"
-          />
-          <AvatarFallback>AV</AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          src={session?.user.image}
+          name={session?.user.name}
+          className="rounded-full"
+        />
 
         <p className="font-semibold text-foreground hover:underline">
           {reponame}
