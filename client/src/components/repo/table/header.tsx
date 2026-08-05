@@ -1,4 +1,4 @@
-import { Avatar, AvatarImage } from "#/components/ui/avatar"
+import { UserAvatar } from "#/components/UserAvatar"
 import { authClient } from "#/lib/auth-client"
 import { absoluteDate, timeAgo } from "#/lib/time-ago"
 import { ClockFading } from "lucide-react"
@@ -22,12 +22,11 @@ function Mainheader({
     return (
         <div className="mt-4 flex items-center justify-between gap-4 rounded-t-sm border bg-muted/40 px-3 py-3">
             <div className="flex min-w-0 flex-1 items-center gap-2">
-                <Avatar size="sm">
-                    <AvatarImage src={
-                        session?.user.image ??
-                        import.meta.env.VITE_DEFAULT_AVATAR_URL
-                    } />
-                </Avatar>
+                <UserAvatar
+                    src={session?.user.image}
+                    name={owner}
+                    size="sm"
+                />
 
                 <p className="shrink-0 text-sm font-medium text-foreground hover:underline">
                     {owner}
