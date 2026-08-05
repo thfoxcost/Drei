@@ -29,10 +29,10 @@ jobs:
           # Only check changed files in PRs
           VALIDATE_ALL_CODEBASE: false
 
-          # Your default branch
+          # Default branch
           DEFAULT_BRANCH: main
 
-          # Enable what Drei uses
+          # Enable only the languages used by Drei
           VALIDATE_GO: true
           VALIDATE_TYPESCRIPT_ES: true
           VALIDATE_JAVASCRIPT_ES: true
@@ -41,8 +41,3 @@ jobs:
           VALIDATE_MARKDOWN: true
           VALIDATE_DOCKERFILE: true
           VALIDATE_BASH: true
-
-          # Disable unused languages
-          VALIDATE_PYTHON: false
-          VALIDATE_RUST: false
-          VALIDATE_JAVA: false
