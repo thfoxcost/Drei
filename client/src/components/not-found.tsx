@@ -28,7 +28,7 @@ export function NotFoundPage() {
 						<EmptyContent>
 							<div className="flex gap-2">
 								<Button asChild>
-									<a href="/home">
+									<a href="/">
 										<HomeIcon data-icon="inline-start" />
 										Go Home
 									</a>

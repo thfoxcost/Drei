@@ -46,16 +46,20 @@ export default function Weather() {
   return (
     <Widget design="mumbai" className="gap-6">
       <WidgetHeader className="flex items-center justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <Label>{city || "Unknown"}</Label>
-          <Label className="text-muted-foreground">
-            Feels Like {weather?.feelsLike}&deg;
-          </Label>
-        </div>
-        <WidgetTitle className="text-3xl">
-          {weather?.temperature}&deg;
-        </WidgetTitle>
-      </WidgetHeader>
+  <div className="flex min-w-0 flex-col gap-2">
+    <Label className="truncate">
+      {city || "Unknown"}
+    </Label>
+
+    <Label className="text-muted-foreground">
+      Feels Like {weather?.feelsLike}&deg;
+    </Label>
+  </div>
+
+  <WidgetTitle className="shrink-0 text-3xl">
+    {weather?.temperature}&deg;
+  </WidgetTitle>
+</WidgetHeader>
       <WidgetContent className="items-start">
         <div className="flex h-max w-full items-center justify-start">
           <MoveUpIcon

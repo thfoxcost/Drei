@@ -32,7 +32,7 @@ export function SignInPage() {
 		defaultValues: {
 			email: "",
 			password: "",
-			callbackURL: "/home",
+			callbackURL: "/",
 		},
 		validators: {
 			onSubmit: formSchema,
@@ -60,11 +60,6 @@ export function SignInPage() {
 		},
 	});
 
-	const signIn = async () => {
-		const data = await authClient.signIn.social({
-			provider: "github"
-		})
-	}
 
 	return (
 		<div className="relative flex h-screen w-full items-center justify-center overflow-hidden px-6 md:px-8">
@@ -163,7 +158,7 @@ export function SignInPage() {
 						</form>
 						<AuthDivider>OR</AuthDivider>
 						<div className="grid grid-cols-1 gap-2 space-y-2">
-							<Button onClick={signIn} className="w-full" type="button" variant="outline">
+							<Button className="w-full" type="button" variant="outline">
 								<GithubIcon data-icon="inline-start" />
 								GitHub
 							</Button>

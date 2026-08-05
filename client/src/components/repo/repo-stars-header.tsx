@@ -42,7 +42,7 @@ function RepoStarsheader({
   const status = visibility ? "Public" : "Private";
 
   return (
-    <div className="flex items-center justify-between bg-muted/10 px-28 py-4">
+    <div className="flex items-center justify-between bg-muted/10 px-5 py-2">
       {/* Left */}
       <div className="flex items-center gap-2">
         <Avatar className="rounded-full">

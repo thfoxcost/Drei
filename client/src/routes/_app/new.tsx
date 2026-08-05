@@ -292,7 +292,7 @@ function New() {
       </Card>
 
       <div className="flex justify-end gap-3">
-        <a href="/home">
+        <a href="/">
           <Button variant="outline">Cancel</Button>
         </a>
         <Button
