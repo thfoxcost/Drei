@@ -9,8 +9,7 @@ import {
   Code,
 } from "lucide-react"
 import RepoStarsheader from "./repo-stars-header"
-import { useEffect, useState } from "react";
-import type { RepoData } from "./right-panel";
+import { useRepoData } from "@/hooks/useRepoData"
 
 const tabs = [
   {
@@ -57,36 +56,14 @@ const tabs = [
   },
 ]
 
-
 interface RepoProps {
-  owner: string;
-  repo: string;
+  owner: string
+  repo: string
 }
 
-
 export default function RepoTabs({ owner, repo }: RepoProps) {
-  const [repoData, setRepoData] = useState<RepoData | null>(null);
+  const { data: repoData } = useRepoData(owner, repo)
 
-    useEffect(() => {
-      async function getRepo() {
-        try {
-          const res = await fetch(
-            `http://localhost:3200/api/repos/${owner}/${repo}`
-          );
-  
-          if (!res.ok) {
-            return;
-          }
-  
-          const data: RepoData = await res.json();
-          setRepoData(data);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-  
-      getRepo();
-    }, [owner, repo]);
   return (
     <div className="w-full">
       <RepoStarsheader
@@ -95,38 +72,35 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
         link="https://thefoxcost.vercel.app/"
       />
       <Tabs defaultValue="files" className="gap-4">
-        <div className="w-full border-b pb-1 bg-muted/10">          <TabsList
-          variant="line"
-          className="rounded-none p-0"
-        >
-          {tabs.map((tab) => {
-            const Icon = tab.icon
+        <div className="w-full border-b pb-1 bg-muted/10">
+          <TabsList variant="line" className="rounded-none p-0">
+            {tabs.map((tab) => {
+              const Icon = tab.icon
 
-            return (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                disabled={tab.disabled}
-                className={`
-                  mx-3 gap-2 rounded-t-md border-0
-                  data-[state=active]:bg-muted
-                  group-data-horizontal/tabs:after:bottom-[-6px]
-                  not-data-active:hover:group-data-horizontal/tabs:after:bg-muted-foreground/30
-                  not-data-active:hover:group-data-horizontal/tabs:after:opacity-100
-                  ${tab.value === "settings" ? "ml-auto mr-3" : ""}
-                `}
-              >
-                <Icon className="size-4" />
-                <span className="text-sm">{tab.name}</span>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+              return (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  disabled={tab.disabled}
+                  className={`
+                    mx-3 gap-2 rounded-t-md border-0
+                    data-[state=active]:bg-muted
+                    group-data-horizontal/tabs:after:bottom-[-6px]
+                    not-data-active:hover:group-data-horizontal/tabs:after:bg-muted-foreground/30
+                    not-data-active:hover:group-data-horizontal/tabs:after:opacity-100
+                    ${tab.value === "settings" ? "ml-auto mr-3" : ""}
+                  `}
+                >
+                  <Icon className="size-4" />
+                  <span className="text-sm">{tab.name}</span>
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
         </div>
 
         {tabs.map((tab) => (
-          <TabsContent key={tab.value} value={tab.value}>
-          </TabsContent>
+          <TabsContent key={tab.value} value={tab.value}></TabsContent>
         ))}
       </Tabs>
     </div>
