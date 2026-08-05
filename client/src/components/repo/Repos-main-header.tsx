@@ -7,12 +7,8 @@ import { Pattern } from "@/components/mode-toggle"
 import { authClient } from "#/lib/auth-client"
 import { Cmd } from "../cmd"
 
-import {
-  Inbox,
-  BookPlus,
-  GitPullRequest,
-  CircleDot,
-} from "lucide-react"
+import { BookOpen, ChevronDown, CircleDot, FilePlus2, FolderPlus, GitBranchPlus, GitPullRequest, Inbox, PackagePlus, Plus, Tag } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu"
 
 type ReposMainHeaderProps = {
   username: string
@@ -49,61 +45,66 @@ export default function ReposMainHeader({
 
       <div className="flex items-center gap-2 sm:gap-3">
         <Cmd />
-
-        <a href="/new">
-          <Button>
-            <BookPlus className="h-4 w-4 sm:mr-1" />
-            <span className="hidden sm:inline">Create</span>
-          </Button>
-        </a>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="outline"
-              aria-label="Pull Requests"
-              disabled
-            >
-              <GitPullRequest className="size-4" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default">
+              <Plus className=" h-4 w-4" />
+              <ChevronDown className="h-4 w-4" />
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Pull Requests</p>
-          </TooltipContent>
-        </Tooltip>
+          </DropdownMenuTrigger>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="outline"
-              aria-label="Issues"
-              disabled
-            >
-              <CircleDot className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Issues</p>
-          </TooltipContent>
-        </Tooltip>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Create</DropdownMenuLabel>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="outline"
-              aria-label="Inbox"
-              disabled
-            >
-              <Inbox className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Inbox</p>
-          </TooltipContent>
-        </Tooltip>
+            <DropdownMenuItem>
+              <a href="/new" className="flex items-center gap-1">
+                <FolderPlus className="mr-1.5 h-4 w-4" />
+                New repository
+              </a>
+
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem disabled>
+              <GitPullRequest className="mr-1.5 h-4 w-4" />
+              New pull request
+            </DropdownMenuItem>
+
+            <DropdownMenuItem disabled>
+              <CircleDot className="mr-1.5 h-4 w-4" />
+              New issue
+            </DropdownMenuItem>
+
+            <DropdownMenuItem disabled>
+              <GitBranchPlus className="mr-1.5 h-4 w-4" />
+              New branch
+            </DropdownMenuItem>
+
+            <DropdownMenuItem disabled>
+              <Tag className="mr-1.5 h-4 w-4" />
+              New release
+            </DropdownMenuItem>
+
+            <DropdownMenuItem disabled>
+              <PackagePlus className="mr-1.5 h-4 w-4" />
+              New package
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem disabled>
+              <BookOpen className="mr-1.5 h-4 w-4" />
+              New wiki
+            </DropdownMenuItem>
+
+            <DropdownMenuItem disabled>
+              <FilePlus2 className="mr-1.5 h-4 w-4" />
+              New gist
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
 
         <Pattern />
 

@@ -20,7 +20,7 @@ function Mainheader({
 }: MainheaderProps) {
     const { data: session } = authClient.useSession()
     return (
-        <div className="mt-7 flex items-center justify-between gap-4 rounded-t-sm border bg-muted/40 px-3 py-3">
+        <div className="mt-4 flex items-center justify-between gap-4 rounded-t-sm border bg-muted/40 px-3 py-3">
             <div className="flex min-w-0 flex-1 items-center gap-2">
                 <Avatar size="sm">
                     <AvatarImage src={
