@@ -100,8 +100,9 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 		return nil, err
 	}
 
-	// Persist commit-derived authors so the database remains the source of
-	// truth for contributors, then read the deduplicated list back.
+	// When someone contributes, add any newly discovered registered users to
+	// the contributors table. Already-stored contributors are never changed,
+	// and the API response below is read straight from the database.
 	if err := db.SyncContributors(info.ID, commitAuthors); err != nil {
 		return nil, err
 	}
