@@ -1,11 +1,10 @@
-import { Separator } from "../ui/separator";
-import RepoStarsheader from "./repo-stars-header";
 import Rightpanel from "./right-panel";
 import Tableheader from "./table-header";
 import Cell from "./table/cell";
 import Mainheader from "./table/header";
 import { NoRepo } from "./norepo";
 import Readme from "./reademe";
+import { Spinner } from "../ui/spinner";
 import { useRepoData } from "@/hooks/useRepoData";
 
 interface RepoProps {
@@ -13,13 +12,23 @@ interface RepoProps {
   repo: string;
 }
 
-function Repo({ owner, repo }: RepoProps) {
-  const { data: repoData } = useRepoData(owner, repo);
 
-  if (!repoData) {
+function Repo({ owner, repo }: RepoProps) {
+  const { data: repoData, error } = useRepoData(owner, repo);
+
+
+  if (error) {
     return (
       <div className="p-10">
         <NoRepo />
+      </div>
+    );
+  }
+
+  if (!repoData) {
+    return (
+      <div className="flex h-[60vh] w-full items-center justify-center">
+        <Spinner />
       </div>
     );
   }
@@ -89,7 +98,7 @@ function Repo({ owner, repo }: RepoProps) {
     );
 
   return (
-    <div className="mx-16 flex h-full flex-col overflow-y-auto px-15">
+    <div className="mx-32 flex h-full flex-col overflow-y-auto">
       <div className="mt-2 flex flex-row justify-between">
         <div className="mr-6 min-w-0 flex-1">
           <Tableheader

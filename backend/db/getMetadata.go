@@ -6,7 +6,7 @@ import (
 )
 
 type RepoInfo struct {
-	ID            string
+	ID            int64
 	OwnerID       string
 	Owner         string
 	Name          string

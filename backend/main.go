@@ -69,7 +69,7 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// store the repo in the pg DB
-	if err := db.CreateRepository(db.Repository{
+	repoID, err := db.CreateRepository(db.Repository{
 		OwnerID:       data.Current.UserId,
 		Owner:         data.Current.Username,
 		Name:          data.Current.Reponame,
@@ -77,8 +77,34 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 		Visibility:    data.Current.Visibility,
 		Path:          repoPath,
 		DefaultBranch: "main",
-	}); err != nil {
+	})
+	if err != nil {
 		// Remove the repository from disk if the database insert failed.
+		_ = os.RemoveAll(repoPath)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(map[string]any{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Add the repository creator as the first contributor.
+	var avatar *string
+
+	if data.Current.Avatar != "" {
+		avatar = &data.Current.Avatar
+	}
+
+	if err := db.CreateContributor(repoID, db.Contributor{
+		ID:       data.Current.UserId,
+		Username: data.Current.Username,
+		Avatar:   avatar,
+	}); err != nil {
+		// Remove the repository from disk if the contributor insert failed.
 		_ = os.RemoveAll(repoPath)
 
 		w.Header().Set("Content-Type", "application/json")

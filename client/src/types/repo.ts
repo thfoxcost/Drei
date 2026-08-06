@@ -1,3 +1,4 @@
+import type { Contributor } from "@/components/repo/right-panel";
 export interface Commit {
   hash: string;
   message: string;
@@ -39,5 +40,5 @@ export interface RepoData {
   lastCommit: Commit;
   files: RepoFile[];
   size: number;
-  contributors: string[];
+  contributors: Contributor[];
 }

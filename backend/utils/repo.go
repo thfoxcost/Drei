@@ -7,22 +7,22 @@ import (
 )
 
 type RepoResponse struct {
-	Name          string       `json:"name"`
-	Owner         string       `json:"owner"`
-	Description   string       `json:"description"`
-	Visibility    bool         `json:"visibility"`
-	HasCommits    bool         `json:"hasCommits"`
-	Created       string       `json:"created"`
-	Langs         []Language   `json:"langs"`
-	Branches      []string     `json:"branches"`
-	DefaultBranch string       `json:"defaultBranch"`
-	Tags          []string     `json:"tags"`
-	CloneURL      string       `json:"cloneUrl"`
-	Commits       []CommitInfo `json:"commits"`
-	LastCommit    CommitInfo   `json:"lastCommit"`
-	Files         []FileInfo   `json:"files"`
-	Size          int64        `json:"size"`
-	Contributors  []string     `json:"contributors"`
+	Name          string           `json:"name"`
+	Owner         string           `json:"owner"`
+	Description   string           `json:"description"`
+	Visibility    bool             `json:"visibility"`
+	HasCommits    bool             `json:"hasCommits"`
+	Created       string           `json:"created"`
+	Langs         []Language       `json:"langs"`
+	Branches      []string         `json:"branches"`
+	DefaultBranch string           `json:"defaultBranch"`
+	Tags          []string         `json:"tags"`
+	CloneURL      string           `json:"cloneUrl"`
+	Commits       []CommitInfo     `json:"commits"`
+	LastCommit    CommitInfo       `json:"lastCommit"`
+	Files         []FileInfo       `json:"files"`
+	Size          int64            `json:"size"`
+	Contributors  []db.Contributor `json:"contributors"`
 }
 
 func GetRepo(owner, repo string) (*RepoResponse, error) {
@@ -40,6 +40,11 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 
 	// Empty repository
 	if !hasCommits {
+		contributors, err := db.GetContributors(info.ID)
+		if err != nil {
+			return nil, err
+		}
+
 		return &RepoResponse{
 			Name:          info.Name,
 			Owner:         info.Owner,
@@ -56,7 +61,7 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 			LastCommit:    CommitInfo{},
 			Files:         []FileInfo{},
 			Size:          0,
-			Contributors:  []string{},
+			Contributors:  contributors,
 		}, nil
 	}
 
@@ -90,7 +95,18 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 		return nil, err
 	}
 
-	contributors, err := GetContributors(owner, repo)
+	commitAuthors, err := GetCommitAuthors(owner, repo)
+	if err != nil {
+		return nil, err
+	}
+
+	// Persist commit-derived authors so the database remains the source of
+	// truth for contributors, then read the deduplicated list back.
+	if err := db.SyncContributors(info.ID, commitAuthors); err != nil {
+		return nil, err
+	}
+
+	contributors, err := db.GetContributors(info.ID)
 	if err != nil {
 		return nil, err
 	}
