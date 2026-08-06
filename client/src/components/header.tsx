@@ -97,9 +97,6 @@ export default function Header() {
                     </Button>
                 </a>
 
-                <Button size="icon" aria-label="Search" variant="outline" disabled>
-                    <Inbox className="size-4" aria-hidden="true" />
-                </Button>
 
                 <Pattern />
 
