@@ -86,7 +86,7 @@ function Repo({ owner, repo }: RepoProps) {
         doc.names.includes(file.name.toLowerCase())
       );
 
-      if (!file) return null;
+      if (!file || !file.content) return null;
 
       return {
         name: doc.title,
@@ -98,7 +98,7 @@ function Repo({ owner, repo }: RepoProps) {
     );
 
   return (
-    <div className="mx-32 flex h-full flex-col overflow-y-auto">
+    <div className="mx-32 flex h-full flex-col overflow-y-auto overflow-x-hidden mb-20">
       <div className="mt-2 flex flex-row justify-between">
         <div className="mr-6 min-w-0 flex-1">
           <Tableheader
