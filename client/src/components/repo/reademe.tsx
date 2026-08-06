@@ -61,6 +61,17 @@ const components: Components = {
   ),
 };
 
+function decodeDocContent(content: string): string {
+  if (!content) return "";
+  try {
+    const binary = atob(content);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder("utf-8").decode(bytes);
+  } catch {
+    return "";
+  }
+}
+
 function Markdown({ content }: { content: string }) {
   return (
     <article
@@ -147,7 +158,7 @@ export default function Readme({ docs }: ReadmeProps) {
             value={doc.name}
             className="m-0 p-6"
           >
-            <Markdown content={atob(doc.content)} />
+            <Markdown content={decodeDocContent(doc.content)} />
           </TabsContent>
         ))}
       </Tabs>

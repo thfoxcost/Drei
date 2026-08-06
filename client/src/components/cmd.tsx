@@ -44,7 +44,7 @@ export function Cmd() {
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.repeat) return;
 
-			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+			if ((e.metaKey || e.ctrlKey) && e.key === "k") {
 				e.preventDefault();
 				setOpen((prev) => !prev);
 			}

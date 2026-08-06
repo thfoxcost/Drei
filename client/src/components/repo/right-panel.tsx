@@ -12,6 +12,7 @@ import {
   ContributorAvatars,
   type Contributor,
 } from "./contributor-avatars";
+import { Badge } from "../ui/badge";
 
 export type { Contributor };
 
@@ -178,7 +179,8 @@ export default function RightPanel({ data }: RightPanelProps) {
           <Separator />
           <div className="space-y-2">
             <p className="text-sm font-semibold">
-              Contributors ({contributors.length})
+              Contributors
+              <Badge variant="secondary" className="mx-1">{contributors.length}</Badge>
             </p>
             <ContributorAvatars contributors={contributors} />
           </div>
@@ -202,20 +204,22 @@ export default function RightPanel({ data }: RightPanelProps) {
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-              {sortedLangs.map((lang) => (
-                <span key={lang.name} className="flex items-center gap-1.5">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: getLanguageColor(lang.name) }}
-                  />
-                  {lang.name}
-                  <span className="font-medium text-foreground">
-                    {lang.percent.toFixed(1)}%
+            {sortedLangs.some((lang) => lang.percent > 0) && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+                {sortedLangs.map((lang) => (
+                  <span key={lang.name} className="flex items-center gap-1.5">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: getLanguageColor(lang.name) }}
+                    />
+                    {lang.name}
+                    <span className="font-medium text-foreground">
+                      {lang.percent.toFixed(1)}%
+                    </span>
                   </span>
-                </span>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
