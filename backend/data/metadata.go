@@ -13,6 +13,7 @@ type ApiTypes struct {
 	Description   string `json:"description"`
 	Visibility    bool   `json:"visibility"`
 	DefaultBranch string `json:"defaultbranch"`
+	Avatar        string `json:"avatar"`
 }
 
 var Current ApiTypes
