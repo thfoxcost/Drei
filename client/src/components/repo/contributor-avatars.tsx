@@ -8,7 +8,7 @@ import {
   AvatarImage,
 } from "../ui/avatar";
 
-const MAX_VISIBLE = 4;
+const MAX_VISIBLE = 3;
 
 export interface Contributor {
   id: string;
@@ -20,9 +20,30 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
+function contributorKey(contributor: Contributor): string {
+  return (contributor.id || contributor.username).toLowerCase();
+}
+
+function dedupeContributors(
+  contributors: Contributor[]
+): Contributor[] {
+  const seen = new Set<string>();
+
+  return contributors.filter((contributor) => {
+    const key = contributorKey(contributor);
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
 function renderAvatar(contributor: Contributor, className?: string) {
   return (
-    <Avatar key={contributor.username} title={contributor.username} className={className}>
+    <Avatar key={contributorKey(contributor)} title={contributor.username} className={className}>
       {contributor.avatar ? (
         <AvatarImage src={contributor.avatar} alt={contributor.username} />
       ) : null}
@@ -40,15 +61,17 @@ interface ContributorAvatarsProps {
 export function ContributorAvatars({
   contributors,
 }: ContributorAvatarsProps) {
-  if (contributors.length === 0) {
+  const uniqueContributors = dedupeContributors(contributors);
+
+  if (uniqueContributors.length === 0) {
     return null;
   }
 
-  if (contributors.length < MAX_VISIBLE) {
+  if (uniqueContributors.length < MAX_VISIBLE) {
     return (
       <ul className="space-y-2">
-        {contributors.map((contributor) => (
-          <li key={contributor.username} className="flex items-center gap-2">
+        {uniqueContributors.map((contributor) => (
+          <li key={contributorKey(contributor)} className="flex items-center gap-2">
             {renderAvatar(contributor, "h-7 w-7")}
             <span className="text-sm text-muted-foreground">
               {contributor.username}
@@ -59,11 +82,11 @@ export function ContributorAvatars({
     );
   }
 
-  const remaining = contributors.length - MAX_VISIBLE;
+  const remaining = uniqueContributors.length - MAX_VISIBLE;
 
   return (
     <AvatarGroup>
-      {contributors.slice(0, MAX_VISIBLE).map((contributor) =>
+      {uniqueContributors.slice(0, MAX_VISIBLE).map((contributor) =>
         renderAvatar(contributor)
       )}
       {remaining > 0 && (
