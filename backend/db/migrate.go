@@ -86,6 +86,20 @@ func Migrate() error {
 		return err
 	}
 
+	// Backfill user_id and avatar for stored contributors that match a user so
+	// the contributors table only holds complete user records.
+	_, err = DB.Exec(context.Background(), `
+		UPDATE contributors c
+		SET user_id = u.id,
+		    avatar = u.image
+		FROM "user" u
+		WHERE lower(u.name) = lower(c.username)
+		  AND (c.user_id = '' OR c.avatar IS NULL);
+	`)
+	if err != nil {
+		return err
+	}
+
 	_, err = DB.Exec(context.Background(), `
 		ALTER TABLE repositories
 		DROP COLUMN IF EXISTS contributors;
