@@ -1,7 +1,7 @@
 
 import ReactCountryFlag from "react-country-flag"
 import { authClient } from "#/lib/auth-client"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/UserAvatar"
 import {
     Testimonial,
     TestimonialAuthor,
@@ -22,20 +22,12 @@ function Profile() {
 
     return (
         <div className="flex flex-col items-center gap-2 sm:items-start px-4 sm:px-0">
-            <Avatar className="w-30 h-30 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 ring-2 ring-muted ring-offset-2 ring-offset-background sm:mb-4">
-                <AvatarImage
-                    src={session?.user.image ?? import.meta.env.VITE_DEFAULT_AVATAR_URL}
-                    alt={session?.user.name ?? "User"}
-                />
-                <AvatarFallback>
-                    {session?.user.name
-                        ?.split(" ")
-                        .map((word) => word[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase() ?? "??"}
-                </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+                src={session?.user.image}
+                name={session?.user.name}
+                uploadable
+                className="w-30 h-30 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 ring-2 ring-muted ring-offset-2 ring-offset-background sm:mb-4"
+            />
 
             <div className="flex flex-row items-center gap-2 flex-wrap justify-center sm:justify-start">
                 <h1 className="text-xl sm:text-2xl font-bold text-foreground text-center sm:text-left">

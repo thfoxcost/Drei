@@ -1,9 +1,9 @@
 import { Separator } from "@/components/ui/separator"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
 import { Pattern } from "@/components/mode-toggle"
 import { authClient } from "#/lib/auth-client"
+import { UserAvatar } from "@/components/UserAvatar"
 import { Cmd } from "../cmd"
 
 import { ArrowLeftRight, BookMarked, BookOpen, Building2, ChevronDown, CircleDot, CircleQuestionMark, FilePlus2, FolderGit2, FolderPlus, GitBranchPlus, GitPullRequest, Inbox, LogOut, PackagePlus, Plus, Settings, Tag, User } from "lucide-react";
@@ -115,46 +115,20 @@ export default function ReposMainHeader({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="rounded-full outline-none ring-offset-background transition focus-visible:ring-2 focus-visible:ring-ring">
-              <Avatar>
-                <AvatarImage
-                  src={
-                    session?.user.image ??
-                    import.meta.env.VITE_DEFAULT_AVATAR_URL
-                  }
-                  alt={session?.user.name ?? "User"}
-                />
-                <AvatarFallback>
-                  {session?.user.name
-                    ?.split(" ")
-                    .map((word) => word[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase() ?? "??"}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                src={session?.user.image}
+                name={session?.user.name}
+              />
             </button>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent className="w-64" align="end">
             <DropdownMenuLabel className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage
-                    src={
-                      session?.user.image ??
-                      import.meta.env.VITE_DEFAULT_AVATAR_URL
-                    }
-                    alt={session?.user.name ?? "User"}
-                  />
-                  <AvatarFallback>
-                    {session?.user.name
-                      ?.split(" ")
-                      .map((word) => word[0])
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase() ?? "??"}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  src={session?.user.image}
+                  name={session?.user.name}
+                />
 
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate font-semibold">
