@@ -29,7 +29,7 @@ function Cell({
 
   return (
     <div className="group flex cursor-pointer flex-row items-center gap-4 border border-t-0 px-3 py-2 text-sm transition-colors hover:bg-muted/50">
-      <div className="flex min-w-0 flex-[1.2] items-left gap-2.5">
+      <div className="flex w-60 shrink-0 items-center gap-2.5">
         <img
           src={getFileIcon(filename, isFile)}
           alt=""
@@ -45,7 +45,7 @@ function Cell({
       </div>
 
       <span
-        className="min-w-0 flex-[2] truncate text-muted-foreground text-sm group-hover:text-foreground"
+        className="min-w-0 flex-1 truncate text-muted-foreground text-sm group-hover:text-foreground"
         title={message}
       >
         {message}
