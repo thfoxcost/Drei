@@ -72,6 +72,7 @@ function New() {
           userid: session?.user.id,
           userEmail: session?.user.email,
           username: session?.user.name,
+          avatar: session?.user.image ?? "",
           reponame: name,
           description,
           visibility: visibility === "Public",

@@ -1,7 +1,19 @@
-import { Badge } from "@/components/ui/badge";
+"use client";
+
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "../ui/avatar";
 import * as linguistLanguages from "linguist-languages";
+import { ContributionChart } from "./chart-area-default";
+import { repoItems } from "./repo-items";
+import { useRepoItemsVisibility } from "./hooks/use-repo-items-visibility";
+import { RepoVisibilitySettings } from "./hooks/repo-visibility-settings";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { ActivityRadarChart } from "./chart-radar";
+import {
+  ContributorAvatars,
+  type Contributor,
+} from "./contributor-avatars";
+
+export type { Contributor };
 
 // Stable color for languages that don't have one defined by Linguist
 function fallbackColor(name: string) {
@@ -14,16 +26,24 @@ function fallbackColor(name: string) {
 }
 
 function getLanguageColor(name: string): string {
-  const entry = (linguistLanguages as Record<string, { color?: string }>)[name];
+  const entry = (linguistLanguages as Record<string, { color?: string }>)[
+    name
+  ];
   return entry?.color ?? fallbackColor(name);
 }
 
-// The API sometimes duplicates the UTC offset (e.g. "-0700 -0700").
-// Keep just the date + time portion for display.
-function formatDate(raw: string): string {
-  const parts = raw.trim().split(" ");
-  return parts.slice(0, 2).join(" ") || raw;
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1
+  );
+  const value = bytes / Math.pow(1024, i);
+  return `${value.toFixed(value >= 100 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
+
+
 
 interface Lang {
   name: string;
@@ -55,7 +75,7 @@ export interface RepoData {
   lastCommit: Commit;
   files: unknown[];
   size: number;
-  contributors: string[];
+  contributors: Contributor[];
 }
 
 interface RightPanelProps {
@@ -63,33 +83,113 @@ interface RightPanelProps {
 }
 
 export default function RightPanel({ data }: RightPanelProps) {
-  const sortedLangs = [...(data.langs ?? [])].sort((a, b) => b.percent - a.percent);
+  const sortedLangs = [...(data.langs ?? [])].sort(
+    (a, b) => b.percent - a.percent
+  );
+  const { visibility, setItemVisible } = useRepoItemsVisibility();
+  const visibleItems = repoItems.filter((item) => visibility[item.id] ?? true);
+  const contributors = data.contributors ?? [];
 
   return (
-    <div className="w-full max-w-xs space-y-5">
+    <div className="w-full max-w-xs space-y-6">
       {/* About */}
-      <div>
-        <p className="font-semibold">About</p>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="font-semibold">About</p>
+          <RepoVisibilitySettings
+            visibility={visibility}
+            onToggle={setItemVisible}
+          />
+        </div>
         <p
-          className={`mt-2 text-sm ${
-            data.description ? "text-foreground" : "italic text-muted-foreground"
-          }`}
+          className={`text-sm ${data.description
+            ? "text-foreground"
+            : "italic text-muted-foreground"
+            }`}
         >
           {data.description || "No description"}
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Badge variant="secondary">{data.visibility ? "Public" : "Private"}</Badge>
-        <Badge variant="secondary">{data.defaultBranch}</Badge>
-      </div>
+      {visibleItems.length > 0 && (
+        <nav className="flex flex-col gap-2.5">
+          {visibleItems.map((item) => {
+            const Icon = item.icon;
 
+            let value: React.ReactNode = null;
+
+            switch (item.id) {
+              case "size":
+                value = formatBytes(data.size);
+                break;
+              case "branches":
+                value = data.branches.length;
+                break;
+              case "tags":
+                value = data.tags?.length ?? 0;
+                break;
+              case "commits":
+                value = data.commits.length;
+                break;
+              default:
+                value = null;
+            }
+
+            return (
+              <a
+                key={item.id}
+                href={item.href}
+                className="flex items-center justify-between text-sm text-muted-foreground transition-colors hover:text-white"
+              >
+                <div className="flex items-center gap-2">
+                  <Icon size={16} />
+                  <span>{item.name}</span>
+                </div>
+
+                {value && (
+                  <span className="text-foreground">{value}</span>
+                )}
+              </a>
+            );
+          })}
+        </nav>
+      )}
+
+      <Separator />
+      <Tabs defaultValue="activity" className="w-[400px] h-[208px]">
+        <TabsList>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="contribution">Contribution</TabsTrigger>
+        </TabsList>
+        <TabsContent value="activity">
+          <ContributionChart />
+        </TabsContent>
+        <TabsContent value="contribution" className="h-[208px]">
+          <ActivityRadarChart />
+        </TabsContent>
+      </Tabs>
+
+
+
+
+      {/* Contributors — API returns unique contributors with username + avatar */}
+      {contributors.length > 0 && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">
+              Contributors ({contributors.length})
+            </p>
+            <ContributorAvatars contributors={contributors} />
+          </div>
+        </>
+      )}
       {/* Languages */}
       {sortedLangs.length > 0 && (
         <>
           <Separator />
           <div className="space-y-2">
-            <p className="font-semibold text-sm">Languages</p>
+            <p className="text-sm font-semibold">Languages</p>
             <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
               {sortedLangs.map((lang) => (
                 <div
@@ -102,7 +202,7 @@ export default function RightPanel({ data }: RightPanelProps) {
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
               {sortedLangs.map((lang) => (
                 <span key={lang.name} className="flex items-center gap-1.5">
                   <span
@@ -120,43 +220,18 @@ export default function RightPanel({ data }: RightPanelProps) {
         </>
       )}
 
-      {/* Contributors — API only gives usernames, no avatar images */}
-      {data.contributors?.length > 0 && (
-        <>
-          <Separator />
-          <div>
-            <p className="mb-2 font-semibold text-sm">
-              Contributors ({data.contributors.length})
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {data.contributors.map((name) => (
-                <Avatar key={name}>
-                  <AvatarFallback>{name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
       <Separator />
+      <div className=" text-sm">
+        <p className="text">
+          <span className="font-medium text-white">Created at : </span>
 
-      {/* Last commit */}
-      {data.hasCommits && data.lastCommit ? (
-        <div className="space-y-1 text-sm">
-          <p>
-            Last commit:{" "}
-            <span className="text-muted-foreground">
-              {formatDate(data.lastCommit.date)}
-            </span>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {data.lastCommit.message?.trim()} — {data.lastCommit.author}
-          </p>
-        </div>
-      ) : (
-        <p className="text-xs text-muted-foreground">No commits yet</p>
-      )}
+          {new Date(data.created).toLocaleString("en-GB", {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+          })}
+        </p>
+      </div>
     </div>
   );
 }
