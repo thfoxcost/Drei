@@ -13,6 +13,8 @@ import {
   UsersRound,
   Webhook,
 } from 'lucide-react'
+import General from './general'
+import DangerZone from './danger-zone'
 
 const DiscordIcon = () => (
   <svg
@@ -63,7 +65,7 @@ const TabsVerticalLinedDemo = () => {
     <Tabs
       defaultValue="general"
       orientation="vertical"
-      className="flex w-full flex-row mx-40 mt-2"
+      className="flex w-full flex-row mx-60 mt-2"
     >
       <TabsList className="bg-background h-full w-[200px] flex-col items-stretch rounded-none p-0">
         {/* General */}
@@ -134,12 +136,7 @@ const TabsVerticalLinedDemo = () => {
       <div className="flex-1 px-6">
         {/* General */}
         <TabsContent value="general">
-          <div className="space-y-1">
-            <h3 className="font-medium">General</h3>
-            <p className="text-muted-foreground text-sm">
-              Manage your general project settings and preferences.
-            </p>
-          </div>
+          <General />
         </TabsContent>
 
         {/* Collaborators */}
@@ -174,6 +171,7 @@ const TabsVerticalLinedDemo = () => {
             </p>
           </div>
         </TabsContent>
+        <DangerZone />
       </div>
     </Tabs>
   )

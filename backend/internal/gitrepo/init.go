@@ -1,9 +1,12 @@
 package gitrepo
 
 import (
+	"backend/internal/config"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 func CreateReposDIR(path string) {
@@ -46,4 +49,37 @@ func Init(repoPath string) error {
 	)
 
 	return cmd.Run()
+}
+
+func validRepoName(name string) bool {
+	if name == "" || len(name) > 30 ||
+		strings.HasPrefix(name, "-") || strings.HasPrefix(name, ".") ||
+		strings.HasSuffix(name, ".") {
+		return false
+	}
+
+	for _, r := range name {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
+			r == '.' || r == '-' || r == '_') {
+			return false
+		}
+	}
+
+	return true
+}
+
+// RenameRepository renames the bare repository directory on disk.
+func RenameRepository(owner, oldName, newName string) error {
+	if !validRepoName(newName) {
+		return fmt.Errorf("invalid repository name %q", newName)
+	}
+
+	oldPath := filepath.Join(config.App.ReposPath, owner, oldName+".git")
+	newPath := filepath.Join(config.App.ReposPath, owner, newName+".git")
+
+	if _, err := os.Stat(newPath); err == nil {
+		return fmt.Errorf("repository %q already exists", newName)
+	}
+
+	return os.Rename(oldPath, newPath)
 }

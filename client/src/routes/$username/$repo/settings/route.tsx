@@ -6,7 +6,7 @@ export const Route = createFileRoute('/$username/$repo/settings')({
 })
 
 function RouteComponent() {
-  return <div>
+  return <div className="overflow-hidden">
     <SettingTabs />
     <Outlet />
   </div>
