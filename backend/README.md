@@ -4,7 +4,7 @@ Go HTTP server powering the Drei self-hosted Git platform. Module `backend`, Go 
 
 ## Folder structure
 
-```
+```text
 backend/
 ├── cmd/
 │   └── server/
