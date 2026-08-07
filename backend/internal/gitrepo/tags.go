@@ -1,7 +1,7 @@
-package utils
+package gitrepo
 
 import (
-	"backend/config"
+	"backend/internal/config"
 	"path/filepath"
 
 	"github.com/go-git/go-git/v6"

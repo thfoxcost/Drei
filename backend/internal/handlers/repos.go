@@ -1,27 +1,59 @@
-package main
+package handlers
 
 import (
-	"backend/apis"
-	"backend/config"
-	"backend/data"
-	"backend/db"
-	"backend/sample"
-	"backend/utils"
-	"backend/utils/home"
+	"backend/internal/config"
+	"backend/internal/database"
+	"backend/internal/gitrepo"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 )
 
-func RepoExists(path string) bool {
+type CreateRepoRequest struct {
+	UserId        string `json:"userid"`
+	Useremail     string `json:"useremail"`
+	Username      string `json:"username"`
+	Reponame      string `json:"reponame"`
+	Description   string `json:"description"`
+	Visibility    bool   `json:"visibility"`
+	DefaultBranch string `json:"defaultbranch"`
+	Avatar        string `json:"avatar"`
+}
+
+var current CreateRepoRequest
+
+func parseRequest(r *http.Request) error {
+	var req CreateRepoRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return err
+	}
+
+	current = req
+	return nil
+}
+
+func repoExists(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
 }
 
-func createRepo(w http.ResponseWriter, r *http.Request) {
+func createRepoFiles(userPath, repoPath string) error {
+	gitrepo.CreateReposDIR(config.App.ReposPath)
+	gitrepo.CreateUserDIR(userPath)
+
+	if err := gitrepo.Init(repoPath); err != nil {
+		return err
+	}
+
+	fmt.Println("[OK] Repository created:", repoPath)
+
+	return nil
+}
+
+func CreateRepo(w http.ResponseWriter, r *http.Request) {
 	// CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -32,7 +64,7 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := data.ParseRequest(r); err != nil {
+	if err := parseRequest(r); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 
@@ -43,10 +75,10 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userPath := filepath.Join(config.App.ReposPath, data.Current.Username)
-	repoPath := filepath.Join(userPath, data.Current.Reponame+".git")
+	userPath := filepath.Join(config.App.ReposPath, current.Username)
+	repoPath := filepath.Join(userPath, current.Reponame+".git")
 
-	if RepoExists(repoPath) {
+	if repoExists(repoPath) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 
@@ -69,12 +101,12 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// store the repo in the pg DB
-	repoID, err := db.CreateRepository(db.Repository{
-		OwnerID:       data.Current.UserId,
-		Owner:         data.Current.Username,
-		Name:          data.Current.Reponame,
-		Description:   data.Current.Description,
-		Visibility:    data.Current.Visibility,
+	repoID, err := database.CreateRepository(database.Repository{
+		OwnerID:       current.UserId,
+		Owner:         current.Username,
+		Name:          current.Reponame,
+		Description:   current.Description,
+		Visibility:    current.Visibility,
 		Path:          repoPath,
 		DefaultBranch: "main",
 	})
@@ -95,13 +127,13 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 	// Add the repository creator as the first contributor.
 	var avatar *string
 
-	if data.Current.Avatar != "" {
-		avatar = &data.Current.Avatar
+	if current.Avatar != "" {
+		avatar = &current.Avatar
 	}
 
-	if err := db.CreateContributor(repoID, db.Contributor{
-		ID:       data.Current.UserId,
-		Username: data.Current.Username,
+	if err := database.CreateContributor(repoID, database.Contributor{
+		ID:       current.UserId,
+		Username: current.Username,
 		Avatar:   avatar,
 	}); err != nil {
 		// Remove the repository from disk if the contributor insert failed.
@@ -125,18 +157,6 @@ func createRepo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func createRepoFiles(userPath, repoPath string) error {
-	utils.CreateReposDIR(config.App.ReposPath)
-	utils.CreateUserDIR(userPath)
-
-	if err := utils.Init(repoPath); err != nil {
-		return err
-	}
-
-	fmt.Println("[OK] Repository created:", repoPath)
-
-	return nil
-}
 func RepoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
@@ -152,7 +172,7 @@ func RepoHandler(w http.ResponseWriter, r *http.Request) {
 	owner := r.PathValue("owner")
 	repo := r.PathValue("repo")
 
-	repository, err := utils.GetRepo(owner, repo)
+	repository, err := gitrepo.GetRepo(owner, repo)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -162,31 +182,4 @@ func RepoHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-func main() {
-	if err := config.Load(); err != nil {
-		log.Fatal(err)
-	}
-
-	// connect to the database
-	if err := db.Connect(config.App.DatabaseURL); err != nil {
-		log.Fatal(err)
-	}
-	defer db.DB.Close()
-
-	if err := db.Migrate(); err != nil {
-		log.Fatal(err)
-	}
-
-	http.HandleFunc("/api/contribution", sample.Contribution)
-	http.HandleFunc("/api/users/{owner}/repos", home.GetRepos)
-	http.HandleFunc("/api/status", sample.Status)
-	http.HandleFunc("/api/repos", createRepo)
-	http.HandleFunc("/api/repos/{owner}/{repo}", RepoHandler)
-	http.HandleFunc("/git/", apis.GitHandler)
-
-	fmt.Printf("[OK] Server listening on :%s\n", config.App.Port)
-
-	log.Fatal(http.ListenAndServe(":"+config.App.Port, nil))
 }

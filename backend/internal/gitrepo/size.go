@@ -1,4 +1,4 @@
-package utils
+package gitrepo
 
 func CalcRepoSize(owner, repo string) (int64, error) {
 
