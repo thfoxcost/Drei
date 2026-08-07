@@ -4,7 +4,7 @@ Drei is a self-hosted Git platform: a Go backend + a TanStack Start (React 19) c
 
 ## Layout
 
-- `backend/` — Go HTTP server (module `backend`, Go 1.26). Entrypoint `backend/main.go`, listens on port 3200.
+- `backend/` — Go HTTP server (module `backend`, Go 1.26). Entrypoint `backend/cmd/server/main.go`, listens on port 3200.
 - `client/` — TanStack Start app (React 19, Vite, Tailwind). Dev server on port 3000. Bun is the package manager.
 - `repos/` — bare git repos created at runtime under `REPOS_PATH/<username>/<repo>.git`. Gitignored except `repos/tools/` (tracked Python maintenance scripts).
 - `test/` — gitignored experiment, not part of the app.
@@ -12,7 +12,7 @@ Drei is a self-hosted Git platform: a Go backend + a TanStack Start (React 19) c
 ## Running locally
 
 1. Start Postgres: `docker compose up -d` (postgres:17, db `pg`, user `user` / password `password`, port 5432).
-2. Backend: `cd backend && air` (hot reload; builds to `tmp/main`). Falls back to `go run .`.
+2. Backend: `cd backend && air` (hot reload; builds to `tmp/main`). Falls back to `go run ./cmd/server`.
 3. Client: `cd client && bun install && bun run dev`.
 4. `short.sh` runs both concurrently.
 
@@ -24,9 +24,9 @@ Both servers fail at startup if their gitignored `.env` files are missing:
 ## Architecture — facts that aren't obvious from filenames
 
 - **Auth lives in the client, not the Go backend.** better-auth runs inside the TanStack Start server (`client/src/lib/auth.ts`) using its own pg Pool from `DB_HOST`. The Go backend keeps a separate pgx connection from `DATABASE_URL`. Both hit the same `pg` database.
-- **Schema is split across two systems.** `db.Migrate()` (`backend/db/migrate.go`) only creates the `repositories` table. better-auth manages `user`/`session`/`account`/`verification` itself; migrations are applied manually and stored in `client/better-auth_migrations/`.
-- **Git-over-HTTP is a CGI passthrough.** The `/git/` route (`backend/apis/githandler.go`) forwards to the system `git-http-backend` via `net/http/cgi`, so `git`/git-core must be installed on the host. Repos are created as bare repos with `git init --bare --initial-branch=main` (`backend/utils/init.go`) and must have `http.receivepack` enabled there.
-- **Go API surface** (`backend/main.go`): `POST /api/repos` (create bare repo + DB row), `GET /api/repos/{owner}/{repo}` (repo metadata assembled with go-git v6 in `backend/utils/repo.go`), `GET /api/users/{owner}/repos`, plus demo endpoints `/api/status` and `/api/contribution`.
+- **Schema is split across two systems.** `database.Migrate()` (`backend/internal/database/migrate.go`) only creates the `repositories` table. better-auth manages `user`/`session`/`account`/`verification` itself; migrations are applied manually and stored in `client/better-auth_migrations/`.
+- **Git-over-HTTP is a CGI passthrough.** The `/git/` route (`backend/internal/handlers/git.go`) forwards to the system `git-http-backend` via `net/http/cgi`, so `git`/git-core must be installed on the host. Repos are created as bare repos with `git init --bare --initial-branch=main` (`backend/internal/gitrepo/init.go`) and must have `http.receivepack` enabled there.
+- **Go API surface** (`backend/cmd/server/main.go`): `POST /api/repos` (create bare repo + DB row), `GET /api/repos/{owner}/{repo}` (repo metadata assembled with go-git v6 in `backend/internal/gitrepo/repo.go`), `GET /api/users/{owner}/repos`, plus demo endpoints `/api/status` and `/api/contribution`.
 - Client routes are TanStack Router file-based under `client/src/routes/`; repo pages live under `$username/$repo/`.
 
 ## Generated code & conventions
