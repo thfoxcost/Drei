@@ -1,34 +1,34 @@
-package utils
+package gitrepo
 
 import (
-	"backend/db"
+	"backend/internal/database"
 	"fmt"
 	"time"
 )
 
 type RepoResponse struct {
-	Name          string           `json:"name"`
-	Owner         string           `json:"owner"`
-	Description   string           `json:"description"`
-	Visibility    bool             `json:"visibility"`
-	HasCommits    bool             `json:"hasCommits"`
-	Created       string           `json:"created"`
-	Langs         []Language       `json:"langs"`
-	Branches      []string         `json:"branches"`
-	DefaultBranch string           `json:"defaultBranch"`
-	Tags          []string         `json:"tags"`
-	CloneURL      string           `json:"cloneUrl"`
-	Commits       []CommitInfo     `json:"commits"`
-	LastCommit    CommitInfo       `json:"lastCommit"`
-	Files         []FileInfo       `json:"files"`
-	Size          int64            `json:"size"`
-	Contributors  []db.Contributor `json:"contributors"`
+	Name          string                 `json:"name"`
+	Owner         string                 `json:"owner"`
+	Description   string                 `json:"description"`
+	Visibility    bool                   `json:"visibility"`
+	HasCommits    bool                   `json:"hasCommits"`
+	Created       string                 `json:"created"`
+	Langs         []Language             `json:"langs"`
+	Branches      []string               `json:"branches"`
+	DefaultBranch string                 `json:"defaultBranch"`
+	Tags          []string               `json:"tags"`
+	CloneURL      string                 `json:"cloneUrl"`
+	Commits       []CommitInfo           `json:"commits"`
+	LastCommit    CommitInfo             `json:"lastCommit"`
+	Files         []FileInfo             `json:"files"`
+	Size          int64                  `json:"size"`
+	Contributors  []database.Contributor `json:"contributors"`
 }
 
 func GetRepo(owner, repo string) (*RepoResponse, error) {
 	cloneURL := fmt.Sprintf("https://localhost:3200/git/%s/%s.git", owner, repo)
 
-	info, err := db.GetRepository(owner, repo)
+	info, err := database.GetRepository(owner, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 
 	// Empty repository
 	if !hasCommits {
-		contributors, err := db.GetContributors(info.ID)
+		contributors, err := database.GetContributors(info.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -103,11 +103,11 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 	// When someone contributes, add any newly discovered registered users to
 	// the contributors table. Already-stored contributors are never changed,
 	// and the API response below is read straight from the database.
-	if err := db.SyncContributors(info.ID, commitAuthors); err != nil {
+	if err := database.SyncContributors(info.ID, commitAuthors); err != nil {
 		return nil, err
 	}
 
-	contributors, err := db.GetContributors(info.ID)
+	contributors, err := database.GetContributors(info.ID)
 	if err != nil {
 		return nil, err
 	}

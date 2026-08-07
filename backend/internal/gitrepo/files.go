@@ -1,7 +1,7 @@
-package utils
+package gitrepo
 
 import (
-	"backend/config"
+	"backend/internal/config"
 	"encoding/base64"
 	"errors"
 	"io"
@@ -14,13 +14,6 @@ import (
 )
 
 var errStop = errors.New("stop iteration")
-
-type CommitInfo2 struct {
-	Hash    string `json:"hash"`
-	Message string `json:"message"`
-	Author  string `json:"author"`
-	Date    string `json:"date"`
-}
 
 type FileInfo struct {
 	Name       string     `json:"name"`

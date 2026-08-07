@@ -35,7 +35,9 @@ jobs:
           DEFAULT_BRANCH: main
 
           # Enable only the languages used by Drei
-          VALIDATE_GO: true
+          # Go is linted at the module level (golangci-lint run) so changed
+          # files are not passed as named files from multiple packages
+          VALIDATE_GO_MODULES: true
           VALIDATE_TYPESCRIPT_ES: true
           VALIDATE_JAVASCRIPT_ES: true
           VALIDATE_JSON: true
