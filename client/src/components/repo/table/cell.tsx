@@ -37,7 +37,9 @@ function Cell({
         />
 
         <span
-          className="truncate font-medium text-foreground group-hover:underline group-hover:decoration-muted-foreground/40 group-hover:underline-offset-2"
+          className="truncate font-medium text-foreground group-hover:underline group-hover:decoration-muted-foreground/40 group-hover:underline-offset-2
+          
+          "
           title={filename}
         >
           {filename}
@@ -45,7 +47,9 @@ function Cell({
       </div>
 
       <span
-        className="min-w-0 flex-1 truncate text-muted-foreground text-sm group-hover:text-foreground"
+        className="min-w-0 flex-1 truncate text-muted-foreground text-sm group-hover:text-foreground
+        pl-20
+        "
         title={message}
       >
         {message}
