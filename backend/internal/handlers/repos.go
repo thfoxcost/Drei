@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type CreateRepoRequest struct {
@@ -157,9 +158,102 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type UpdateRepoRequest struct {
+	Name                string `json:"name"`
+	Description         string `json:"description"`
+	DefaultBranch       string `json:"defaultBranch"`
+	RenameDefaultBranch string `json:"renameDefaultBranch"`
+}
+
+func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string) {
+	writeErr := func(status int, msg string) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		json.NewEncoder(w).Encode(map[string]any{
+			"success": false,
+			"error":   msg,
+		})
+	}
+
+	var req UpdateRepoRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	req.Description = strings.TrimSpace(req.Description)
+	req.DefaultBranch = strings.TrimSpace(req.DefaultBranch)
+	req.RenameDefaultBranch = strings.TrimSpace(req.RenameDefaultBranch)
+
+	currentDefault, err := gitrepo.DefaultBranch(owner, repo)
+	if err != nil {
+		writeErr(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Rename the current default branch first so the rename always applies to
+	// the branch HEAD points to when the request arrives.
+	if req.RenameDefaultBranch != "" && req.RenameDefaultBranch != currentDefault {
+		if err := gitrepo.RenameDefaultBranch(owner, repo, req.RenameDefaultBranch); err != nil {
+			writeErr(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		currentDefault = req.RenameDefaultBranch
+	}
+
+	// Switch the default branch (HEAD) to an existing branch.
+	if req.DefaultBranch != "" && req.DefaultBranch != currentDefault {
+		if err := gitrepo.SetDefaultBranch(owner, repo, req.DefaultBranch); err != nil {
+			writeErr(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		currentDefault = req.DefaultBranch
+	}
+
+	// Rename the repository itself (bare repo directory + database row).
+	if req.Name != "" && req.Name != repo {
+		if err := gitrepo.RenameRepository(owner, repo, req.Name); err != nil {
+			writeErr(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		newPath := filepath.Join(config.App.ReposPath, owner, req.Name+".git")
+
+		if err := database.UpdateRepositoryName(owner, repo, req.Name, newPath); err != nil {
+			writeErr(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		repo = req.Name
+	}
+
+	if err := database.UpdateRepositoryDescription(owner, repo, req.Description); err != nil {
+		writeErr(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := database.UpdateRepositoryDefaultBranch(owner, repo, currentDefault); err != nil {
+		writeErr(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"success":       true,
+		"name":          req.Name,
+		"description":   req.Description,
+		"defaultBranch": currentDefault,
+	})
+}
+
 func RepoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, PATCH, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 	if r.Method == http.MethodOptions {
@@ -167,10 +261,15 @@ func RepoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
 	owner := r.PathValue("owner")
 	repo := r.PathValue("repo")
+
+	if r.Method == http.MethodPatch {
+		updateRepository(w, r, owner, repo)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 
 	repository, err := gitrepo.GetRepo(owner, repo)
 	if err != nil {
