@@ -1,9 +1,9 @@
-package home
+package handlers
 
 import (
-	"backend/config"
-	"backend/db"
-	"backend/utils"
+	"backend/internal/config"
+	"backend/internal/database"
+	"backend/internal/gitrepo"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -130,7 +130,7 @@ func GetRepos(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get metadata
-		meta, err := db.GetRepository(
+		meta, err := database.GetRepository(
 			owner,
 			repoName,
 		)
@@ -165,7 +165,7 @@ func GetRepos(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// languages
-		langs, err := utils.GetLang(
+		langs, err := gitrepo.GetLang(
 			owner,
 			repoName,
 		)
