@@ -9,6 +9,7 @@ import (
 type RepoResponse struct {
 	Name           string                 `json:"name"`
 	Owner          string                 `json:"owner"`
+	OwnerID        string                 `json:"ownerId"`
 	Description    string                 `json:"description"`
 	Visibility     bool                   `json:"visibility"`
 	Logo           string                 `json:"logo"`
@@ -72,6 +73,7 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 		return &RepoResponse{
 			Name:           info.Name,
 			Owner:          info.Owner,
+			OwnerID:        info.OwnerID,
 			Description:    info.Description,
 			Visibility:     info.Visibility,
 			Logo:           logoURL(info.Logo),
@@ -149,6 +151,7 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 	return &RepoResponse{
 		Name:           info.Name,
 		Owner:          info.Owner,
+		OwnerID:        info.OwnerID,
 		Description:    info.Description,
 		Visibility:     info.Visibility,
 		Logo:           logoURL(info.Logo),

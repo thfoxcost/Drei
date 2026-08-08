@@ -14,6 +14,7 @@ import {
   Webhook,
 } from 'lucide-react'
 import General from './general'
+import Collab from './collab'
 
 const DiscordIcon = () => (
   <svg
@@ -139,6 +140,7 @@ const TabsVerticalLinedDemo = () => {
 
         {/* Collaborators */}
         <TabsContent value="collaborators">
+          <Collab />
         </TabsContent>
 
         {/* Code Management */}

@@ -26,6 +26,7 @@ export interface Lang {
 export interface RepoData {
   name: string;
   owner: string;
+  ownerId: string;
   email: string;
   description: string;
   visibility: boolean;
