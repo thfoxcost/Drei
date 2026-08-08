@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"time"
 )
 
 type Repository struct {
@@ -73,6 +74,75 @@ func UpdateRepositoryDescription(owner, name, description string) error {
 		owner,
 		name,
 		description,
+	)
+
+	return err
+}
+
+func UpdateRepositoryWebsite(owner, name, website string) error {
+	_, err := DB.Exec(
+		context.Background(),
+		`UPDATE repositories
+		SET website = $3, updated_at = NOW()
+		WHERE owner = $1 AND name = $2`,
+		owner,
+		name,
+		website,
+	)
+
+	return err
+}
+
+func UpdateRepositoryLogo(owner, name, logo string) error {
+	_, err := DB.Exec(
+		context.Background(),
+		`UPDATE repositories
+		SET logo = $3, updated_at = NOW()
+		WHERE owner = $1 AND name = $2`,
+		owner,
+		name,
+		logo,
+	)
+
+	return err
+}
+
+func UpdateRepositoryArchived(owner, name string, archived bool, archivedAt *time.Time) error {
+	_, err := DB.Exec(
+		context.Background(),
+		`UPDATE repositories
+		SET archived = $3, archived_at = $4, updated_at = NOW()
+		WHERE owner = $1 AND name = $2`,
+		owner,
+		name,
+		archived,
+		archivedAt,
+	)
+
+	return err
+}
+
+func UpdateRepositoryVisibility(owner, name string, visibility bool) error {
+	_, err := DB.Exec(
+		context.Background(),
+		`UPDATE repositories
+		SET visibility = $3, updated_at = NOW()
+		WHERE owner = $1 AND name = $2`,
+		owner,
+		name,
+		visibility,
+	)
+
+	return err
+}
+
+func DeleteRepository(owner, name string) error {
+	_, err := DB.Exec(
+		context.Background(),
+		`DELETE FROM repositories
+		WHERE owner = $1 AND name = $2`,
+		owner,
+		name,
 	)
 
 	return err

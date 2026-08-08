@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 )
 
 func main() {
@@ -29,7 +30,14 @@ func main() {
 	http.HandleFunc("/api/status", handlers.Status)
 	http.HandleFunc("/api/repos", handlers.CreateRepo)
 	http.HandleFunc("/api/repos/{owner}/{repo}", handlers.RepoHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/archive", handlers.ArchiveHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/visibility", handlers.VisibilityHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/logo", handlers.LogoHandler)
 	http.HandleFunc("/git/", handlers.GitHandler)
+
+	// Serve uploaded repo logos from <REPOS_PATH>/logos under /uploads/.
+	logosDir := filepath.Join(config.App.ReposPath, "logos")
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(logosDir))))
 
 	fmt.Printf("[OK] Server listening on :%s\n", config.App.Port)
 

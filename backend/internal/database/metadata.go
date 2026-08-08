@@ -12,6 +12,10 @@ type RepoInfo struct {
 	Name          string
 	Description   string
 	Visibility    bool
+	Logo          string
+	Website       string
+	Archived      bool
+	ArchivedAt    *time.Time
 	DefaultBranch string
 	Path          string
 	CreatedAt     time.Time
@@ -30,6 +34,10 @@ func GetRepository(owner, name string) (*RepoInfo, error) {
 			name,
 			description,
 			visibility,
+			COALESCE(logo, ''),
+			COALESCE(website, ''),
+			archived,
+			archived_at,
 			default_branch,
 			path,
 			created_at
@@ -45,6 +53,10 @@ func GetRepository(owner, name string) (*RepoInfo, error) {
 		&repo.Name,
 		&repo.Description,
 		&repo.Visibility,
+		&repo.Logo,
+		&repo.Website,
+		&repo.Archived,
+		&repo.ArchivedAt,
 		&repo.DefaultBranch,
 		&repo.Path,
 		&repo.CreatedAt,

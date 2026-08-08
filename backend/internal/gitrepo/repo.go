@@ -11,6 +11,10 @@ type RepoResponse struct {
 	Owner         string                 `json:"owner"`
 	Description   string                 `json:"description"`
 	Visibility    bool                   `json:"visibility"`
+	Logo          string                 `json:"logo"`
+	Website       string                 `json:"website"`
+	Archived      bool                   `json:"archived"`
+	ArchivedAt    string                 `json:"archivedAt"`
 	HasCommits    bool                   `json:"hasCommits"`
 	Created       string                 `json:"created"`
 	Langs         []Language             `json:"langs"`
@@ -23,6 +27,25 @@ type RepoResponse struct {
 	Files         []FileInfo             `json:"files"`
 	Size          int64                  `json:"size"`
 	Contributors  []database.Contributor `json:"contributors"`
+}
+
+// logoURL builds the public URL for a stored logo path. The stored value is
+// relative to the logos directory; empty logos produce an empty URL.
+func logoURL(logo string) string {
+	if logo == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("http://localhost:3200/uploads/%s", logo)
+}
+
+// archivedAtString formats the archived timestamp for the API response,
+// returning an empty string when the repository has never been archived.
+func archivedAtString(archivedAt *time.Time) string {
+	if archivedAt == nil {
+		return ""
+	}
+	return archivedAt.Format(time.RFC3339)
 }
 
 func GetRepo(owner, repo string) (*RepoResponse, error) {
@@ -50,6 +73,10 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 			Owner:         info.Owner,
 			Description:   info.Description,
 			Visibility:    info.Visibility,
+			Logo:          logoURL(info.Logo),
+			Website:       info.Website,
+			Archived:      info.Archived,
+			ArchivedAt:    archivedAtString(info.ArchivedAt),
 			HasCommits:    false,
 			Created:       info.CreatedAt.Format(time.RFC3339),
 			DefaultBranch: "main",
@@ -117,6 +144,10 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 		Owner:         info.Owner,
 		Description:   info.Description,
 		Visibility:    info.Visibility,
+		Logo:          logoURL(info.Logo),
+		Website:       info.Website,
+		Archived:      info.Archived,
+		ArchivedAt:    archivedAtString(info.ArchivedAt),
 		HasCommits:    true,
 		Created:       info.CreatedAt.Format(time.RFC3339),
 		Langs:         langs,
