@@ -19,6 +19,7 @@ import { Spinner } from "#/components/ui/spinner"
 import { Textarea } from "#/components/ui/textarea"
 import { useFileUpload } from "#/hooks/use-file-upload"
 import { useRepoData } from "#/hooks/useRepoData"
+import DangerZone from "./danger-zone"
 
 function General() {
   const { username, repo } = useParams({ strict: false })
@@ -249,9 +250,9 @@ function General() {
       </div>
 
       <div className="flex justify-end pt-2 gap-2">
-              <a href="/">
-               <Button variant="outline">Back</Button>
-</a>
+        <a href="/">
+          <Button variant="outline">Back</Button>
+        </a>
         <Button onClick={handleUpdate} disabled={!canSave}>
           {updating ? (
             <>
@@ -263,6 +264,7 @@ function General() {
           )}
         </Button>
       </div>
+      <DangerZone />
     </div>
   )
 }

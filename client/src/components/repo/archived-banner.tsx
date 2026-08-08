@@ -13,7 +13,7 @@ function ArchivedBanner({ owner, repo }: ArchivedBannerProps) {
   if (!repoData?.archived) return null
 
   return (
-    <div className="flex w-full items-center gap-2 border-y border-yellow-500/40 bg-yellow-50 px-5 py-2.5 text-sm text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-300 mb-3">
+    <div className="flex w-full items-center justify-center gap-2 border-y border-yellow-500/40 bg-yellow-50 px-5 py-2.5 text-sm text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-300 mb-3">
       <Archive className="size-4 shrink-0" />
       <p>
         This repo was archived on{" "}

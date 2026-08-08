@@ -1,3 +1,5 @@
+import { useState } from "react";
+import QRCode from "react-qr-code";
 import { Button } from "@/components/ui/button";
 import {
   ChevronDown,
@@ -26,11 +28,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface RepoStarsheaderProps {
   reponame: string;
   visibility: boolean;
   link: string;
+  website?: string;
   logo?: string;
 }
 
@@ -38,9 +47,11 @@ function RepoStarsheader({
   reponame,
   visibility,
   link,
+  website,
   logo,
 }: RepoStarsheaderProps) {
   const status = visibility ? "Public" : "Private";
+  const [qrOpen, setQrOpen] = useState(false);
 
   return (
     <div className="flex items-center justify-between bg-muted/10 px-5 py-2">
@@ -188,19 +199,51 @@ function RepoStarsheader({
                   <Link2 className="mr-2 h-4 w-4" />
                   <span>Copy Repository URL</span>
                 </DropdownMenuItem>
-                <a href="">
-                  <DropdownMenuItem className="hover:underline cursor-pointer">
+                {website ? (
+                  <a
+                    href={website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <DropdownMenuItem className="hover:underline cursor-pointer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      <span>Open in Browser</span>
+                    </DropdownMenuItem>
+                  </a>
+                ) : (
+                  <DropdownMenuItem disabled>
                     <ExternalLink className="mr-2 h-4 w-4" />
                     <span>Open in Browser</span>
                   </DropdownMenuItem>
-                </a>
-                <DropdownMenuItem disabled>
+                )}
+                <DropdownMenuItem
+                  disabled={!website}
+                  onClick={() => setQrOpen(true)}
+                >
                   <QrCode className="mr-2 h-4 w-4" />
                   <span>Generate QR Code</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+            <DialogContent className="sm:max-w-xs">
+              <DialogHeader>
+                <DialogTitle>Scan me</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col items-center gap-4 py-2">
+                <QRCode
+                  value={website ?? ""}
+                  size={180}
+                  className="rounded-lg ring-1 ring-foreground/10"
+                />
+                <p className="max-w-full break-all text-center text-xs text-muted-foreground">
+                  {website}
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
         </ButtonGroup>
       </div>
     </div>

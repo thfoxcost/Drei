@@ -73,6 +73,7 @@ export interface RepoData {
   tags: string[] | null;
   cloneUrl: string;
   commits: Commit[];
+  commitActivity: { date: string; count: number }[];
   lastCommit: Commit;
   files: unknown[];
   size: number;
@@ -163,10 +164,10 @@ export default function RightPanel({ data }: RightPanelProps) {
           <TabsTrigger value="contribution">Contribution</TabsTrigger>
         </TabsList>
         <TabsContent value="activity">
-          <ContributionChart />
+          <ContributionChart data={data.commitActivity} />
         </TabsContent>
         <TabsContent value="contribution" className="h-[208px]">
-          <ActivityRadarChart />
+          <ActivityRadarChart commitCount={data.commits.length} />
         </TabsContent>
       </Tabs>
 

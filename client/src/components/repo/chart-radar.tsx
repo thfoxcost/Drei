@@ -16,10 +16,10 @@ import {
 } from "recharts";
 
 import {
+  type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
 } from "@/components/ui/chart";
 
 interface ActivityDatum {
@@ -28,11 +28,14 @@ interface ActivityDatum {
   icon: LucideIcon;
 }
 
-const chartData: ActivityDatum[] = [
-  { activity: "Commits", value: 324, icon: GitCommit },
-  { activity: "PRs", value: 123, icon: GitPullRequest },
-  { activity: "Issues", value: 100, icon: CircleDot },
-];
+interface ActivityRadarChartProps {
+  commitCount?: number;
+}
+
+// TODO: PR and issue counts are static placeholders. Replace them with real
+// counts once PRs and issues are implemented.
+const DUMMY_PR_COUNT = 123;
+const DUMMY_ISSUE_COUNT = 100;
 
 const chartConfig = {
   value: {
@@ -41,7 +44,14 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function ActivityRadarChart() {
+export function ActivityRadarChart({
+  commitCount = 0,
+}: ActivityRadarChartProps) {
+  const chartData: ActivityDatum[] = [
+    { activity: "Commits", value: commitCount, icon: GitCommit },
+    { activity: "PRs", value: DUMMY_PR_COUNT, icon: GitPullRequest },
+    { activity: "Issues", value: DUMMY_ISSUE_COUNT, icon: CircleDot },
+  ];
   return (
     <div className="w-full">
       <ChartContainer config={chartConfig} className="mx-auto h-56 w-full">
