@@ -1,7 +1,5 @@
-import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import {
-  Check,
   ChevronDown,
   CircleDot,
   CloudBackup,
@@ -16,7 +14,7 @@ import {
   Rss,
 } from "lucide-react";
 import { ForksBtn } from "./forks-btn";
-import { authClient } from "#/lib/auth-client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "../ui/badge";
 import { ButtonGroup } from "../ui/button-group";
 import {
@@ -33,25 +31,29 @@ interface RepoStarsheaderProps {
   reponame: string;
   visibility: boolean;
   link: string;
+  logo?: string;
 }
 
 function RepoStarsheader({
   reponame,
   visibility,
   link,
+  logo,
 }: RepoStarsheaderProps) {
   const status = visibility ? "Public" : "Private";
-  const { data: session } = authClient.useSession();
 
   return (
     <div className="flex items-center justify-between bg-muted/10 px-5 py-2">
       {/* Left */}
       <div className="flex items-center gap-2">
-        <UserAvatar
-          src={session?.user.image}
-          name={session?.user.name}
-          className="rounded-full"
-        />
+        <Avatar className="rounded-sm after:rounded-[inherit]">
+          <AvatarImage
+            src={logo}
+            alt={reponame}
+            className="rounded-sm"
+          />
+          <AvatarFallback>{reponame.slice(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
 
         <p className="font-semibold text-foreground hover:underline">
           {reponame}
@@ -171,7 +173,7 @@ function RepoStarsheader({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" disabled>
+              <Button variant="outline" size="icon">
                 <Globe className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -186,12 +188,12 @@ function RepoStarsheader({
                   <Link2 className="mr-2 h-4 w-4" />
                   <span>Copy Repository URL</span>
                 </DropdownMenuItem>
-
-                <DropdownMenuItem disabled>
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  <span>Open in Browser</span>
-                </DropdownMenuItem>
-
+                <a href="">
+                  <DropdownMenuItem className="hover:underline cursor-pointer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    <span>Open in Browser</span>
+                  </DropdownMenuItem>
+                </a>
                 <DropdownMenuItem disabled>
                   <QrCode className="mr-2 h-4 w-4" />
                   <span>Generate QR Code</span>

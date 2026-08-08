@@ -83,3 +83,35 @@ func RenameRepository(owner, oldName, newName string) error {
 
 	return os.Rename(oldPath, newPath)
 }
+
+// RemoveRepository removes the bare repository directory and any stored logo
+// file from disk. Removing a non-existent repository is not an error. The logo
+// argument is a path relative to the logos directory.
+func RemoveRepository(owner, name, logo string) error {
+	repoPath := filepath.Join(config.App.ReposPath, owner, name+".git")
+
+	if err := os.RemoveAll(repoPath); err != nil {
+		return err
+	}
+
+	if logo != "" {
+		if err := os.RemoveAll(filepath.Join(config.App.ReposPath, "logos", logo)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// RenameLogo renames a repository's stored logo file so it matches the new
+// repository name. It is a no-op when there is no logo to rename.
+func RenameLogo(owner, oldName, newName, logo string) error {
+	if logo == "" {
+		return nil
+	}
+
+	oldPath := filepath.Join(config.App.ReposPath, "logos", logo)
+	newPath := filepath.Join(config.App.ReposPath, "logos", owner, newName+filepath.Ext(logo))
+
+	return os.Rename(oldPath, newPath)
+}

@@ -108,5 +108,17 @@ func Migrate() error {
 		return err
 	}
 
+	// Project settings: custom logo path, website URL, and archived flag.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE repositories
+		ADD COLUMN IF NOT EXISTS logo TEXT,
+		ADD COLUMN IF NOT EXISTS website TEXT,
+		ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE,
+		ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

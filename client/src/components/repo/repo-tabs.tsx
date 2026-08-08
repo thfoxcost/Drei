@@ -59,10 +59,11 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
     <div className="w-full">
       <RepoStarsheader
         reponame={repo}
-        visibility={repoData?.visibility || true}
+        visibility={repoData?.visibility ?? true}
         link="https://thefoxcost.vercel.app/"
+        logo={repoData?.logo}
       />
-      <Tabs value={currentTab} className="gap-4">
+      <Tabs value={currentTab} className="gap-4 ">
         <div className="w-full border-b pb-1 bg-muted/10">
           <TabsList variant="line" className="rounded-none p-0">
             {tabs.map((tab) => {

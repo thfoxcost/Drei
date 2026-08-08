@@ -6,6 +6,7 @@ import { NoRepo } from "./norepo";
 import Readme from "./reademe";
 import { Spinner } from "../ui/spinner";
 import { useRepoData } from "@/hooks/useRepoData";
+import ArchivedBanner from "./archived-banner";
 
 interface RepoProps {
   owner: string;
@@ -98,8 +99,11 @@ function Repo({ owner, repo }: RepoProps) {
     );
 
   return (
-    <div className="mx-32 flex h-full flex-col overflow-y-auto overflow-x-hidden mb-20">
-      <div className="mt-2 flex flex-row justify-between">
+    <>
+      <ArchivedBanner owner={owner} repo={repo} />
+
+      <div className="mx-32 flex h-full flex-col overflow-y-auto overflow-x-hidden mb-20">
+        <div className="mt-2 flex flex-row justify-between">
         <div className="mr-6 min-w-0 flex-1">
           <Tableheader
             defaultBranch={repoData.defaultBranch}
@@ -145,7 +149,8 @@ function Repo({ owner, repo }: RepoProps) {
           <Rightpanel data={repoData} />
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
