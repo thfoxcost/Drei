@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { useNavigate, useParams } from "@tanstack/react-router"
-import { Check, ChevronDown, GitBranch } from "lucide-react"
+import { Check, ChevronDown, GitBranch, Image } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -11,11 +11,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu"
+import { FileUploadCompact } from "#/components/ui/file-upload-compact"
 import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
 import { Separator } from "#/components/ui/separator"
 import { Spinner } from "#/components/ui/spinner"
 import { Textarea } from "#/components/ui/textarea"
+import { useFileUpload } from "#/hooks/use-file-upload"
 import { useRepoData } from "#/hooks/useRepoData"
 
 function General() {
@@ -26,16 +28,43 @@ function General() {
 
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
+  const [website, setWebsite] = useState("")
   const [defaultBranch, setDefaultBranch] = useState("")
   const [renameValue, setRenameValue] = useState("")
   const [updating, setUpdating] = useState(false)
 
   const branches = data?.branches ?? []
 
+  const { uploading: uploadingLogo, error: logoError, handleSelect } = useFileUpload({
+    acceptedTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
+    maxSize: 2 * 1024 * 1024,
+    onFile: uploadLogo,
+  })
+
+  async function uploadLogo(file: File) {
+    const formData = new FormData()
+    formData.append("logo", file)
+
+    const res = await fetch(
+      `http://localhost:3200/api/repos/${username}/${repo}/logo`,
+      { method: "POST", body: formData },
+    )
+
+    const result = await res.json()
+
+    if (!res.ok) {
+      throw new Error(result.error || result.message || "Failed to upload logo")
+    }
+
+    toast.success("Logo updated")
+    await queryClient.invalidateQueries({ queryKey: ["repo", username, repo] })
+  }
+
   useEffect(() => {
     if (data) {
       setName(data.name)
       setDescription(data.description)
+      setWebsite(data.website)
       setDefaultBranch(data.defaultBranch)
       setRenameValue(data.defaultBranch)
     }
@@ -45,6 +74,7 @@ function General() {
     !isLoading &&
     (name !== data?.name ||
       description !== data?.description ||
+      website !== data?.website ||
       defaultBranch !== data?.defaultBranch ||
       renameValue !== data?.defaultBranch)
 
@@ -62,6 +92,7 @@ function General() {
         body: JSON.stringify({
           name: name.trim(),
           description,
+          website,
           defaultBranch,
           renameDefaultBranch: renameValue.trim(),
         }),
@@ -123,6 +154,44 @@ function General() {
           disabled={updating}
         />
       </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="repo-website">Website</Label>
+        <Input
+          id="repo-website"
+          type="url"
+          className="max-w-md"
+          placeholder="https://example.com"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          disabled={updating}
+        />
+      </div>
+
+      <div className="mt-8">
+        <h1 className="text-2xl">Logo</h1>
+        <Separator className='my-2' />
+        <div className="flex items-center gap-4">
+          {data?.logo ? (
+            <img
+              src={data.logo}
+              alt={`${data.name} logo`}
+              className="size-16 rounded-lg border border-border object-cover"
+            />
+          ) : (
+            <div className="flex size-16 items-center justify-center rounded-lg border border-dashed border-input text-muted-foreground">
+              <Image className="size-6" />
+            </div>
+          )}
+
+          <FileUploadCompact
+            hint="PNG, JPG, WebP or GIF, up to 2 MB."
+            uploading={uploadingLogo}
+            error={logoError}
+            onSelect={handleSelect}
+          />
+        </div>
+      </div>
       <div className="mt-8">
         <h1 className="text-2xl">Default branch</h1>
         <Separator className='my-2' />
@@ -136,7 +205,7 @@ function General() {
               <Button
                 variant="outline"
                 className="w-40 justify-between"
-                disabled={isLoading || updating}
+                disabled={updating || !data}
               >
                 <span>{isLoading ? "..." : defaultBranch}</span>
                 <ChevronDown className="size-4 opacity-60" />
@@ -174,7 +243,7 @@ function General() {
             className="max-w-xs"
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
-            disabled={isLoading || updating}
+            disabled={updating || !data}
           />
         </div>
       </div>

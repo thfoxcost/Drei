@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -31,13 +32,17 @@ func Load() error {
 	}
 
 	if err := godotenv.Load(envPath); err != nil {
-		return err
+		log.Printf("warning: could not load %s (%v); falling back to environment variables", envPath, err)
 	}
 
 	App = Config{
 		Port:        os.Getenv("PORT"),
 		ReposPath:   os.Getenv("REPOS_PATH"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
+	}
+
+	if App.Port == "" {
+		App.Port = "3200"
 	}
 
 	return nil

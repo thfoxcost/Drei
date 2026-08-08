@@ -29,6 +29,10 @@ export interface RepoData {
   email: string;
   description: string;
   visibility: boolean;
+  logo: string;
+  website: string;
+  archived: boolean;
+  archivedAt: string;
   hasCommits: boolean;
   created: string;
   langs: Lang[];
