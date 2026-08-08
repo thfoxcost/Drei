@@ -22,6 +22,7 @@ import { Route as UsernameRepoIndexRouteImport } from './routes/$username/$repo/
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as UsernameRepoPrsRouteImport } from './routes/$username/$repo/prs'
 import { Route as UsernameRepoSettingsRouteRouteImport } from './routes/$username/$repo/settings/route'
+import { Route as UsernameRepoIssuesRouteRouteImport } from './routes/$username/$repo/issues/route'
 import { Route as UsernameRepoTreeBranchRouteImport } from './routes/$username/$repo/tree/$branch'
 
 const AuthRoute = AuthRouteImport.update({
@@ -88,6 +89,11 @@ const UsernameRepoSettingsRouteRoute =
     path: '/settings',
     getParentRoute: () => UsernameRepoRouteRoute,
   } as any)
+const UsernameRepoIssuesRouteRoute = UsernameRepoIssuesRouteRouteImport.update({
+  id: '/issues',
+  path: '/issues',
+  getParentRoute: () => UsernameRepoRouteRoute,
+} as any)
 const UsernameRepoTreeBranchRoute = UsernameRepoTreeBranchRouteImport.update({
   id: '/tree/$branch',
   path: '/tree/$branch',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
   '/$username/': typeof UsernameIndexRoute
+  '/$username/$repo/issues': typeof UsernameRepoIssuesRouteRoute
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/$username/$repo/prs': typeof UsernameRepoPrsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
   '/$username': typeof UsernameIndexRoute
+  '/$username/$repo/issues': typeof UsernameRepoIssuesRouteRoute
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/$username/$repo/prs': typeof UsernameRepoPrsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/_auth/signin': typeof AuthSigninRoute
   '/_auth/signup': typeof AuthSignupRoute
   '/$username/': typeof UsernameIndexRoute
+  '/$username/$repo/issues': typeof UsernameRepoIssuesRouteRoute
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/$username/$repo/prs': typeof UsernameRepoPrsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/signup'
     | '/$username/'
+    | '/$username/$repo/issues'
     | '/$username/$repo/settings'
     | '/$username/$repo/prs'
     | '/api/auth/$'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/signup'
     | '/$username'
+    | '/$username/$repo/issues'
     | '/$username/$repo/settings'
     | '/$username/$repo/prs'
     | '/api/auth/$'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/_auth/signin'
     | '/_auth/signup'
     | '/$username/'
+    | '/$username/$repo/issues'
     | '/$username/$repo/settings'
     | '/$username/$repo/prs'
     | '/api/auth/$'
@@ -287,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsernameRepoSettingsRouteRouteImport
       parentRoute: typeof UsernameRepoRouteRoute
     }
+    '/$username/$repo/issues': {
+      id: '/$username/$repo/issues'
+      path: '/issues'
+      fullPath: '/$username/$repo/issues'
+      preLoaderRoute: typeof UsernameRepoIssuesRouteRouteImport
+      parentRoute: typeof UsernameRepoRouteRoute
+    }
     '/$username/$repo/tree/$branch': {
       id: '/$username/$repo/tree/$branch'
       path: '/tree/$branch'
@@ -320,6 +339,7 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface UsernameRepoRouteRouteChildren {
+  UsernameRepoIssuesRouteRoute: typeof UsernameRepoIssuesRouteRoute
   UsernameRepoSettingsRouteRoute: typeof UsernameRepoSettingsRouteRoute
   UsernameRepoPrsRoute: typeof UsernameRepoPrsRoute
   UsernameRepoIndexRoute: typeof UsernameRepoIndexRoute
@@ -327,6 +347,7 @@ interface UsernameRepoRouteRouteChildren {
 }
 
 const UsernameRepoRouteRouteChildren: UsernameRepoRouteRouteChildren = {
+  UsernameRepoIssuesRouteRoute: UsernameRepoIssuesRouteRoute,
   UsernameRepoSettingsRouteRoute: UsernameRepoSettingsRouteRoute,
   UsernameRepoPrsRoute: UsernameRepoPrsRoute,
   UsernameRepoIndexRoute: UsernameRepoIndexRoute,
