@@ -14,7 +14,6 @@ import {
   Webhook,
 } from 'lucide-react'
 import General from './general'
-import DangerZone from './danger-zone'
 
 const DiscordIcon = () => (
   <svg
@@ -86,7 +85,6 @@ const TabsVerticalLinedDemo = () => {
 
         <TabsTrigger
           value="collaborators"
-          disabled
           className="w-full justify-start gap-2 text-left"
         >
           <UsersRound />
@@ -141,12 +139,6 @@ const TabsVerticalLinedDemo = () => {
 
         {/* Collaborators */}
         <TabsContent value="collaborators">
-          <div className="space-y-1">
-            <h3 className="font-medium">Collaborators</h3>
-            <p className="text-muted-foreground text-sm">
-              Manage who has access to this project and what they can do.
-            </p>
-          </div>
         </TabsContent>
 
         {/* Code Management */}
@@ -171,7 +163,6 @@ const TabsVerticalLinedDemo = () => {
             </p>
           </div>
         </TabsContent>
-        <DangerZone />
       </div>
     </Tabs>
   )

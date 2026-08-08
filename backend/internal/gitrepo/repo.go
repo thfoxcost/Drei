@@ -7,26 +7,27 @@ import (
 )
 
 type RepoResponse struct {
-	Name          string                 `json:"name"`
-	Owner         string                 `json:"owner"`
-	Description   string                 `json:"description"`
-	Visibility    bool                   `json:"visibility"`
-	Logo          string                 `json:"logo"`
-	Website       string                 `json:"website"`
-	Archived      bool                   `json:"archived"`
-	ArchivedAt    string                 `json:"archivedAt"`
-	HasCommits    bool                   `json:"hasCommits"`
-	Created       string                 `json:"created"`
-	Langs         []Language             `json:"langs"`
-	Branches      []string               `json:"branches"`
-	DefaultBranch string                 `json:"defaultBranch"`
-	Tags          []string               `json:"tags"`
-	CloneURL      string                 `json:"cloneUrl"`
-	Commits       []CommitInfo           `json:"commits"`
-	LastCommit    CommitInfo             `json:"lastCommit"`
-	Files         []FileInfo             `json:"files"`
-	Size          int64                  `json:"size"`
-	Contributors  []database.Contributor `json:"contributors"`
+	Name           string                 `json:"name"`
+	Owner          string                 `json:"owner"`
+	Description    string                 `json:"description"`
+	Visibility     bool                   `json:"visibility"`
+	Logo           string                 `json:"logo"`
+	Website        string                 `json:"website"`
+	Archived       bool                   `json:"archived"`
+	ArchivedAt     string                 `json:"archivedAt"`
+	HasCommits     bool                   `json:"hasCommits"`
+	Created        string                 `json:"created"`
+	Langs          []Language             `json:"langs"`
+	Branches       []string               `json:"branches"`
+	DefaultBranch  string                 `json:"defaultBranch"`
+	Tags           []string               `json:"tags"`
+	CloneURL       string                 `json:"cloneUrl"`
+	Commits        []CommitInfo           `json:"commits"`
+	CommitActivity []CommitDay            `json:"commitActivity"`
+	LastCommit     CommitInfo             `json:"lastCommit"`
+	Files          []FileInfo             `json:"files"`
+	Size           int64                  `json:"size"`
+	Contributors   []database.Contributor `json:"contributors"`
 }
 
 // logoURL builds the public URL for a stored logo path. The stored value is
@@ -69,26 +70,27 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 		}
 
 		return &RepoResponse{
-			Name:          info.Name,
-			Owner:         info.Owner,
-			Description:   info.Description,
-			Visibility:    info.Visibility,
-			Logo:          logoURL(info.Logo),
-			Website:       info.Website,
-			Archived:      info.Archived,
-			ArchivedAt:    archivedAtString(info.ArchivedAt),
-			HasCommits:    false,
-			Created:       info.CreatedAt.Format(time.RFC3339),
-			DefaultBranch: "main",
-			CloneURL:      cloneURL,
-			Langs:         []Language{},
-			Branches:      []string{},
-			Tags:          []string{},
-			Commits:       []CommitInfo{},
-			LastCommit:    CommitInfo{},
-			Files:         []FileInfo{},
-			Size:          0,
-			Contributors:  contributors,
+			Name:           info.Name,
+			Owner:          info.Owner,
+			Description:    info.Description,
+			Visibility:     info.Visibility,
+			Logo:           logoURL(info.Logo),
+			Website:        info.Website,
+			Archived:       info.Archived,
+			ArchivedAt:     archivedAtString(info.ArchivedAt),
+			HasCommits:     false,
+			Created:        info.CreatedAt.Format(time.RFC3339),
+			DefaultBranch:  "main",
+			CloneURL:       cloneURL,
+			Langs:          []Language{},
+			Branches:       []string{},
+			Tags:           []string{},
+			Commits:        []CommitInfo{},
+			CommitActivity: []CommitDay{},
+			LastCommit:     CommitInfo{},
+			Files:          []FileInfo{},
+			Size:           0,
+			Contributors:   contributors,
 		}, nil
 	}
 
@@ -108,6 +110,11 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 	}
 
 	commits, lastCommit, err := GetCommits(owner, repo)
+	if err != nil {
+		return nil, err
+	}
+
+	commitActivity, err := GetCommitActivity(owner, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -140,22 +147,23 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 	}
 
 	return &RepoResponse{
-		Name:          info.Name,
-		Owner:         info.Owner,
-		Description:   info.Description,
-		Visibility:    info.Visibility,
-		Logo:          logoURL(info.Logo),
-		Website:       info.Website,
-		Archived:      info.Archived,
-		ArchivedAt:    archivedAtString(info.ArchivedAt),
-		HasCommits:    true,
-		Created:       info.CreatedAt.Format(time.RFC3339),
-		Langs:         langs,
-		Branches:      branches,
-		DefaultBranch: defaultBranch,
-		Tags:          tags,
-		CloneURL:      cloneURL,
-		Commits:       commits,
+		Name:           info.Name,
+		Owner:          info.Owner,
+		Description:    info.Description,
+		Visibility:     info.Visibility,
+		Logo:           logoURL(info.Logo),
+		Website:        info.Website,
+		Archived:       info.Archived,
+		ArchivedAt:     archivedAtString(info.ArchivedAt),
+		HasCommits:     true,
+		Created:        info.CreatedAt.Format(time.RFC3339),
+		Langs:          langs,
+		Branches:       branches,
+		DefaultBranch:  defaultBranch,
+		Tags:           tags,
+		CloneURL:       cloneURL,
+		Commits:        commits,
+		CommitActivity: commitActivity,
 		LastCommit: CommitInfo{
 			Hash:    lastCommit.Hash.String(),
 			Message: lastCommit.Message,
