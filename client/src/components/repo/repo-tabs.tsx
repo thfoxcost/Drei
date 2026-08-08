@@ -16,13 +16,14 @@ import RepoStarsheader from "./repo-stars-header";
 
 const tabs = [
 	{ name: "Code", value: "files", icon: Code, disabled: false },
+		{ name: "Issues", value: "issues", icon: CircleDot, disabled: false },
+
 	{
 		name: "Pull Requests",
 		value: "pulls",
 		icon: GitPullRequest,
 		disabled: true,
 	},
-	{ name: "Issues", value: "issues", icon: CircleDot, disabled: true },
 	{ name: "Actions", value: "actions", icon: Play, disabled: true },
 	{ name: "Security", value: "security", icon: Shield, disabled: true },
 	{ name: "Insights", value: "insights", icon: BarChart3, disabled: true },
