@@ -120,5 +120,92 @@ func Migrate() error {
 		return err
 	}
 
+	// Repository issues. Issue numbers are unique per repository, never
+	// globally. author_id / assignee_id / closed_by reference the better-auth
+	// "user" table by id.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS issues (
+			id BIGSERIAL PRIMARY KEY,
+			repo_id BIGINT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+			number INTEGER NOT NULL,
+			title TEXT NOT NULL,
+			description TEXT NOT NULL DEFAULT '',
+			state TEXT NOT NULL DEFAULT 'open',
+			author_id TEXT NOT NULL,
+			assignee_id TEXT,
+			due_date TIMESTAMPTZ,
+			closed_at TIMESTAMPTZ,
+			closed_by TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			UNIQUE(repo_id, number)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS issues_repo_state_idx
+		ON issues (repo_id, state);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Issue labels are scoped to a repository so the same label name can exist
+	// independently on different repositories.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS issue_labels (
+			id BIGSERIAL PRIMARY KEY,
+			repo_id BIGINT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+			name TEXT NOT NULL,
+			color TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			UNIQUE(repo_id, name)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Many-to-many link between issues and their labels.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS issue_label_links (
+			issue_id BIGINT NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
+			label_id BIGINT NOT NULL REFERENCES issue_labels(id) ON DELETE CASCADE,
+
+			PRIMARY KEY (issue_id, label_id)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Issue comments. created_by references the better-auth "user" table.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS issue_comments (
+			id BIGSERIAL PRIMARY KEY,
+			issue_id BIGINT NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
+			body TEXT NOT NULL,
+			created_by TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS issue_comments_issue_id_idx
+		ON issue_comments (issue_id);
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

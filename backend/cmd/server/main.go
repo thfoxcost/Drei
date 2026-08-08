@@ -34,6 +34,14 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/visibility", handlers.VisibilityHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/logo", handlers.LogoHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/collaborators", handlers.CollaboratorsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/issues", handlers.IssuesHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}", handlers.IssueHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}/state", handlers.IssueStateHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}/assignee", handlers.IssueAssigneeHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}/comments", handlers.IssueCommentsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}/comments/{commentId}", handlers.IssueCommentHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/labels", handlers.IssueLabelsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/labels/{labelId}", handlers.IssueLabelHandler)
 	http.HandleFunc("/git/", handlers.GitHandler)
 
 	// Serve uploaded repo logos from <REPOS_PATH>/logos under /uploads/.
