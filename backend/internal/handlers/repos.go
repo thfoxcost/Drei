@@ -163,6 +163,7 @@ type UpdateRepoRequest struct {
 	Description         string `json:"description"`
 	DefaultBranch       string `json:"defaultBranch"`
 	RenameDefaultBranch string `json:"renameDefaultBranch"`
+	Website             string `json:"website"`
 }
 
 func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string) {
@@ -186,6 +187,13 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 	req.Description = strings.TrimSpace(req.Description)
 	req.DefaultBranch = strings.TrimSpace(req.DefaultBranch)
 	req.RenameDefaultBranch = strings.TrimSpace(req.RenameDefaultBranch)
+	req.Website = strings.TrimSpace(req.Website)
+
+	info, err := database.GetRepository(owner, repo)
+	if err != nil {
+		writeErr(http.StatusNotFound, "repository not found")
+		return
+	}
 
 	currentDefault, err := gitrepo.DefaultBranch(owner, repo)
 	if err != nil {
@@ -228,10 +236,30 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 			return
 		}
 
+		// Keep the stored logo in sync so its public URL still works.
+		if info.Logo != "" {
+			if err := gitrepo.RenameLogo(owner, repo, req.Name, info.Logo); err != nil {
+				writeErr(http.StatusInternalServerError, err.Error())
+				return
+			}
+
+			newLogo := fmt.Sprintf("%s/%s%s", owner, req.Name, filepath.Ext(info.Logo))
+
+			if err := database.UpdateRepositoryLogo(owner, req.Name, newLogo); err != nil {
+				writeErr(http.StatusInternalServerError, err.Error())
+				return
+			}
+		}
+
 		repo = req.Name
 	}
 
 	if err := database.UpdateRepositoryDescription(owner, repo, req.Description); err != nil {
+		writeErr(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := database.UpdateRepositoryWebsite(owner, repo, req.Website); err != nil {
 		writeErr(http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -251,9 +279,43 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 	})
 }
 
+func deleteRepository(w http.ResponseWriter, r *http.Request, owner, repo string) {
+	writeErr := func(status int, msg string) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		json.NewEncoder(w).Encode(map[string]any{
+			"success": false,
+			"error":   msg,
+		})
+	}
+
+	info, err := database.GetRepository(owner, repo)
+	if err != nil {
+		writeErr(http.StatusNotFound, "repository not found")
+		return
+	}
+
+	if err := gitrepo.RemoveRepository(owner, repo, info.Logo); err != nil {
+		writeErr(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := database.DeleteRepository(owner, repo); err != nil {
+		writeErr(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"success": true,
+		"message": "Repository deleted successfully",
+	})
+}
+
 func RepoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, PATCH, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, PATCH, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 	if r.Method == http.MethodOptions {
@@ -266,6 +328,11 @@ func RepoHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPatch {
 		updateRepository(w, r, owner, repo)
+		return
+	}
+
+	if r.Method == http.MethodDelete {
+		deleteRepository(w, r, owner, repo)
 		return
 	}
 
