@@ -1,8 +1,8 @@
 package gitrepo
 
-func CalcRepoSize(owner, repo string) (int64, error) {
+func CalcRepoSize(owner, repo, branch string) (int64, error) {
 
-	files, err := GetFiles(owner, repo)
+	files, err := GetFiles(owner, repo, branch)
 	if err != nil {
 		return 0, err
 	}

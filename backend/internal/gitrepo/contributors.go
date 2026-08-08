@@ -11,8 +11,8 @@ func normalizeKey(name string) string {
 }
 
 // GetCommitAuthors returns the unique author names present in the git history.
-func GetCommitAuthors(owner, repo string) ([]string, error) {
-	commits, _, err := GetCommits(owner, repo)
+func GetCommitAuthors(owner, repo, branch string) ([]string, error) {
+	commits, _, err := GetCommits(owner, repo, branch)
 	if err != nil {
 		return nil, err
 	}

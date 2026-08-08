@@ -325,6 +325,7 @@ func RepoHandler(w http.ResponseWriter, r *http.Request) {
 
 	owner := r.PathValue("owner")
 	repo := r.PathValue("repo")
+	branch := r.URL.Query().Get("branch")
 
 	if r.Method == http.MethodPatch {
 		updateRepository(w, r, owner, repo)
@@ -338,7 +339,7 @@ func RepoHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	repository, err := gitrepo.GetRepo(owner, repo)
+	repository, err := gitrepo.GetRepo(owner, repo, branch)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

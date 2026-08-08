@@ -168,6 +168,7 @@ func GetRepos(w http.ResponseWriter, r *http.Request) {
 		langs, err := gitrepo.GetLang(
 			owner,
 			repoName,
+			"",
 		)
 
 		if err == nil && len(langs) > 0 {

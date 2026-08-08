@@ -18,7 +18,7 @@ type CommitDay struct {
 // GetCommitActivity walks the repository history and returns the number of
 // commits per day. Every day from the first commit through today is
 // represented, including days with zero commits.
-func GetCommitActivity(owner, repo string) ([]CommitDay, error) {
+func GetCommitActivity(owner, repo, branch string) ([]CommitDay, error) {
 	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
 
 	r, err := git.PlainOpen(repoPath)
@@ -26,13 +26,13 @@ func GetCommitActivity(owner, repo string) ([]CommitDay, error) {
 		return nil, err
 	}
 
-	head, err := r.Head()
+	commit, err := ResolveBranch(r, branch)
 	if err != nil {
 		return nil, err
 	}
 
 	commitIter, err := r.Log(&git.LogOptions{
-		From: head.Hash(),
+		From: commit.Hash,
 	})
 	if err != nil {
 		return nil, err

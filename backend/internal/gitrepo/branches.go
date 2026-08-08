@@ -9,7 +9,30 @@ import (
 
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/go-git/go-git/v6/plumbing/object"
 )
+
+// ResolveBranch returns the commit the given branch points at. An empty branch
+// resolves to the repository HEAD, which is the default branch.
+func ResolveBranch(r *git.Repository, branch string) (*object.Commit, error) {
+	var hash plumbing.Hash
+
+	if branch == "" {
+		head, err := r.Head()
+		if err != nil {
+			return nil, err
+		}
+		hash = head.Hash()
+	} else {
+		resolved, err := r.ResolveRevision(plumbing.Revision("refs/heads/" + branch))
+		if err != nil {
+			return nil, err
+		}
+		hash = *resolved
+	}
+
+	return r.CommitObject(hash)
+}
 
 func GetBranches(owner, repo string) ([]string, string, error) {
 	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
