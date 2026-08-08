@@ -15,7 +15,7 @@ type CommitInfo struct {
 	Date    string `json:"date"`
 }
 
-func GetCommits(owner, repo string) ([]CommitInfo, *object.Commit, error) {
+func GetCommits(owner, repo, branch string) ([]CommitInfo, *object.Commit, error) {
 	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
 
 	r, err := git.PlainOpen(repoPath)
@@ -23,18 +23,15 @@ func GetCommits(owner, repo string) ([]CommitInfo, *object.Commit, error) {
 		return nil, nil, err
 	}
 
-	head, err := r.Head()
+	commit, err := ResolveBranch(r, branch)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	lastCommit, err := r.CommitObject(head.Hash())
-	if err != nil {
-		return nil, nil, err
-	}
+	lastCommit := commit
 
 	commitIter, err := r.Log(&git.LogOptions{
-		From: head.Hash(),
+		From: commit.Hash,
 	})
 	if err != nil {
 		return nil, nil, err

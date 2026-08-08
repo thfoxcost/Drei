@@ -1,157 +1,151 @@
-import Rightpanel from "./right-panel";
-import Tableheader from "./table-header";
-import Cell from "./table/cell";
-import Mainheader from "./table/header";
+import { useRepoData } from "@/hooks/useRepoData";
+import { Spinner } from "../ui/spinner";
+import ArchivedBanner from "./archived-banner";
 import { NoRepo } from "./norepo";
 import Readme from "./reademe";
-import { Spinner } from "../ui/spinner";
-import { useRepoData } from "@/hooks/useRepoData";
-import ArchivedBanner from "./archived-banner";
+import Rightpanel from "./right-panel";
+import Cell from "./table/cell";
+import Mainheader from "./table/header";
+import Tableheader from "./table-header";
 
 interface RepoProps {
-  owner: string;
-  repo: string;
+	owner: string;
+	repo: string;
+	branch?: string;
 }
 
+function Repo({ owner, repo, branch }: RepoProps) {
+	const { data: repoData, error } = useRepoData(owner, repo, branch);
 
-function Repo({ owner, repo }: RepoProps) {
-  const { data: repoData, error } = useRepoData(owner, repo);
+	if (error) {
+		return (
+			<div className="p-10">
+				<NoRepo />
+			</div>
+		);
+	}
 
+	if (!repoData) {
+		return (
+			<div className="flex h-[60vh] w-full items-center justify-center">
+				<Spinner />
+			</div>
+		);
+	}
 
-  if (error) {
-    return (
-      <div className="p-10">
-        <NoRepo />
-      </div>
-    );
-  }
+	const documentFiles = [
+		{
+			title: "README",
+			names: [
+				"readme.md",
+				"readme.mdx",
+				"readme.markdown",
+				"readme.txt",
+				"readme",
+			],
+		},
+		{
+			title: "License",
+			names: ["license", "license.md", "license.txt", "copying", "copying.md"],
+		},
+		{
+			title: "Changelog",
+			names: ["changelog", "changelog.md", "changes", "changes.md"],
+		},
+		{
+			title: "Contributing",
+			names: ["contributing", "contributing.md"],
+		},
+		{
+			title: "Security",
+			names: ["security", "security.md"],
+		},
+		{
+			title: "Code of Conduct",
+			names: ["code_of_conduct.md", "code-of-conduct.md"],
+		},
+		{
+			title: "Support",
+			names: ["support", "support.md"],
+		},
+		{
+			title: "Authors",
+			names: ["authors", "authors.md"],
+		},
+	];
 
-  if (!repoData) {
-    return (
-      <div className="flex h-[60vh] w-full items-center justify-center">
-        <Spinner />
-      </div>
-    );
-  }
+	const docs = documentFiles
+		.map((doc) => {
+			const file = repoData.files.find((file) =>
+				doc.names.includes(file.name.toLowerCase()),
+			);
 
-  const documentFiles = [
-    {
-      title: "README",
-      names: [
-        "readme.md",
-        "readme.mdx",
-        "readme.markdown",
-        "readme.txt",
-        "readme",
-      ],
-    },
-    {
-      title: "License",
-      names: [
-        "license",
-        "license.md",
-        "license.txt",
-        "copying",
-        "copying.md",
-      ],
-    },
-    {
-      title: "Changelog",
-      names: ["changelog", "changelog.md", "changes", "changes.md"],
-    },
-    {
-      title: "Contributing",
-      names: ["contributing", "contributing.md"],
-    },
-    {
-      title: "Security",
-      names: ["security", "security.md"],
-    },
-    {
-      title: "Code of Conduct",
-      names: ["code_of_conduct.md", "code-of-conduct.md"],
-    },
-    {
-      title: "Support",
-      names: ["support", "support.md"],
-    },
-    {
-      title: "Authors",
-      names: ["authors", "authors.md"],
-    },
-  ];
+			if (!file || !file.content) return null;
 
-  const docs = documentFiles
-    .map((doc) => {
-      const file = repoData.files.find((file) =>
-        doc.names.includes(file.name.toLowerCase())
-      );
+			return {
+				name: doc.title,
+				content: file.content,
+			};
+		})
+		.filter((doc): doc is { name: string; content: string } => doc !== null);
 
-      if (!file || !file.content) return null;
+	return (
+		<>
+			<ArchivedBanner owner={owner} repo={repo} />
 
-      return {
-        name: doc.title,
-        content: file.content,
-      };
-    })
-    .filter(
-      (doc): doc is { name: string; content: string } => doc !== null
-    );
+			<div className="mx-32 flex h-full flex-col overflow-y-auto overflow-x-hidden mb-20">
+				<div className="mt-2 flex flex-row justify-between">
+					<div className="mr-6 min-w-0 flex-1">
+						<Tableheader
+							defaultBranch={repoData.defaultBranch}
+							activeBranch={branch ?? repoData.defaultBranch}
+							owner={owner}
+							repo={repo}
+							branches={repoData.branches}
+							nBranches={repoData.branches.length}
+							tags={repoData.tags}
+							nTags={repoData.tags?.length ?? 0}
+							cloneUrl={repoData.cloneUrl}
+						/>
 
-  return (
-    <>
-      <ArchivedBanner owner={owner} repo={repo} />
+						<Mainheader
+							owner={repoData.owner}
+							lastcommit={repoData.lastCommit.message}
+							commithash={repoData.lastCommit.hash.slice(0, 7)}
+							commitDate={repoData.lastCommit.date}
+							commitNum={repoData.commits.length.toLocaleString()}
+						/>
 
-      <div className="mx-32 flex h-full flex-col overflow-y-auto overflow-x-hidden mb-20">
-        <div className="mt-2 flex flex-row justify-between">
-        <div className="mr-6 min-w-0 flex-1">
-          <Tableheader
-            defaultBranch={repoData.defaultBranch}
-            branches={repoData.branches}
-            nBranches={repoData.branches.length}
-            tags={repoData.tags}
-            nTags={repoData.tags?.length ?? 0}
-            cloneUrl={repoData.cloneUrl}
-          />
+						{repoData.files
+							.filter((file) => !file.isNested)
+							.map((file) => (
+								<Cell
+									key={file.path}
+									filename={file.name}
+									commitmessage={
+										file.lastCommit.message.trim() === ""
+											? repoData.lastCommit.message
+											: file.lastCommit.message
+									}
+									date={
+										file.lastCommit.date.trim() === ""
+											? repoData.lastCommit.date
+											: file.lastCommit.date
+									}
+									isFile={file.type}
+								/>
+							))}
 
-          <Mainheader
-            owner={repoData.owner}
-            lastcommit={repoData.lastCommit.message}
-            commithash={repoData.lastCommit.hash.slice(0, 7)}
-            commitDate={repoData.lastCommit.date}
-            commitNum={repoData.commits.length.toLocaleString()}
-          />
+						{docs.length > 0 && <Readme docs={docs} />}
+					</div>
 
-          {repoData.files
-            .filter((file) => !file.isNested)
-            .map((file) => (
-              <Cell
-                key={file.path}
-                filename={file.name}
-                commitmessage={
-                  file.lastCommit.message.trim() === ""
-                    ? repoData.lastCommit.message
-                    : file.lastCommit.message
-                }
-                date={
-                  file.lastCommit.date.trim() === ""
-                    ? repoData.lastCommit.date
-                    : file.lastCommit.date
-                }
-                isFile={file.type}
-              />
-            ))}
-
-          {docs.length > 0 && <Readme docs={docs} />}
-        </div>
-
-        <div className="w-full max-w-xs shrink-0">
-          <Rightpanel data={repoData} />
-        </div>
-      </div>
-      </div>
-    </>
-  );
+					<div className="w-full max-w-xs shrink-0">
+						<Rightpanel data={repoData} />
+					</div>
+				</div>
+			</div>
+		</>
+	);
 }
 
 export default Repo;

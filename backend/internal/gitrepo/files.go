@@ -26,7 +26,7 @@ type FileInfo struct {
 	LastCommit CommitInfo `json:"lastCommit"`
 }
 
-func GetFiles(owner, repo string) ([]FileInfo, error) {
+func GetFiles(owner, repo, branch string) ([]FileInfo, error) {
 	repoPath := filepath.Join(
 		config.App.ReposPath,
 		owner,
@@ -38,17 +38,12 @@ func GetFiles(owner, repo string) ([]FileInfo, error) {
 		return nil, err
 	}
 
-	head, err := r.Head()
+	commit, err := ResolveBranch(r, branch)
 	if err != nil {
 		return nil, err
 	}
 
-	headCommit, err := r.CommitObject(head.Hash())
-	if err != nil {
-		return nil, err
-	}
-
-	rootTree, err := headCommit.Tree()
+	rootTree, err := commit.Tree()
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +58,7 @@ func GetFiles(owner, repo string) ([]FileInfo, error) {
 		}
 
 		iter, err := r.Log(&git.LogOptions{
-			From: head.Hash(),
+			From: commit.Hash,
 		})
 		if err != nil {
 			return CommitInfo{}, err

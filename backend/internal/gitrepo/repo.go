@@ -50,8 +50,8 @@ func archivedAtString(archivedAt *time.Time) string {
 	return archivedAt.Format(time.RFC3339)
 }
 
-func GetRepo(owner, repo string) (*RepoResponse, error) {
-	cloneURL := fmt.Sprintf("https://localhost:3200/git/%s/%s.git", owner, repo)
+func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
+	cloneURL := fmt.Sprintf("http://localhost:3200/git/%s/%s.git", owner, repo)
 
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
@@ -96,7 +96,7 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 		}, nil
 	}
 
-	langs, err := GetLang(owner, repo)
+	langs, err := GetLang(owner, repo, branch)
 	if err != nil {
 		return nil, err
 	}
@@ -111,27 +111,27 @@ func GetRepo(owner, repo string) (*RepoResponse, error) {
 		return nil, err
 	}
 
-	commits, lastCommit, err := GetCommits(owner, repo)
+	commits, lastCommit, err := GetCommits(owner, repo, branch)
 	if err != nil {
 		return nil, err
 	}
 
-	commitActivity, err := GetCommitActivity(owner, repo)
+	commitActivity, err := GetCommitActivity(owner, repo, branch)
 	if err != nil {
 		return nil, err
 	}
 
-	files, err := GetFiles(owner, repo)
+	files, err := GetFiles(owner, repo, branch)
 	if err != nil {
 		return nil, err
 	}
 
-	repoSize, err := CalcRepoSize(owner, repo)
+	repoSize, err := CalcRepoSize(owner, repo, branch)
 	if err != nil {
 		return nil, err
 	}
 
-	commitAuthors, err := GetCommitAuthors(owner, repo)
+	commitAuthors, err := GetCommitAuthors(owner, repo, branch)
 	if err != nil {
 		return nil, err
 	}
