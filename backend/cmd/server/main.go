@@ -33,6 +33,7 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/archive", handlers.ArchiveHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/visibility", handlers.VisibilityHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/logo", handlers.LogoHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/collaborators", handlers.CollaboratorsHandler)
 	http.HandleFunc("/git/", handlers.GitHandler)
 
 	// Serve uploaded repo logos from <REPOS_PATH>/logos under /uploads/.
