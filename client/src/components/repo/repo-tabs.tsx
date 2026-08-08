@@ -61,6 +61,7 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
         reponame={repo}
         visibility={repoData?.visibility ?? true}
         link="https://thefoxcost.vercel.app/"
+        website={repoData?.website}
         logo={repoData?.logo}
       />
       <Tabs value={currentTab} className="gap-4 ">

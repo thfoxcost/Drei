@@ -41,6 +41,7 @@ export interface RepoData {
   tags: string[] | null;
   cloneUrl: string;
   commits: Commit[];
+  commitActivity: { date: string; count: number }[];
   lastCommit: Commit;
   files: RepoFile[];
   size: number;
