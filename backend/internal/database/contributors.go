@@ -78,6 +78,63 @@ func CreateContributor(repoID int64, c Contributor) error {
 	return err
 }
 
+// GetCollaboratorCandidates returns every registered user that is not already a
+// contributor (collaborator) of the repository, so the UI can offer them in a
+// search dropdown without risking duplicates. The repository owner is always a
+// contributor, so they are naturally excluded. Users are ordered by name.
+func GetCollaboratorCandidates(repoID int64) ([]Contributor, error) {
+	rows, err := DB.Query(
+		context.Background(),
+		`
+		SELECT u.id, u.name, u.image
+		FROM "user" u
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM contributors c
+			WHERE c.repo_id = $1
+			  AND lower(c.username) = lower(u.name)
+		)
+		ORDER BY u.name
+		`,
+		repoID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []Contributor
+
+	for rows.Next() {
+		var c Contributor
+
+		if err := rows.Scan(&c.ID, &c.Username, &c.Avatar); err != nil {
+			return nil, err
+		}
+
+		users = append(users, c)
+	}
+
+	return users, rows.Err()
+}
+
+// DeleteContributor removes a user from a repository's contributors by
+// username. It is intentionally keyed on the case-insensitive username, the
+// same way contributors are inserted, so the deletion always matches.
+func DeleteContributor(repoID int64, username string) error {
+	_, err := DB.Exec(
+		context.Background(),
+		`
+		DELETE FROM contributors
+		WHERE repo_id = $1 AND lower(username) = lower($2)
+		`,
+		repoID,
+		username,
+	)
+
+	return err
+}
+
 // SyncContributors records the registered users behind the given commit
 // author names as contributors for a repository. Only usernames that resolve
 // to a row in the "user" table are stored, so every stored contributor is a
