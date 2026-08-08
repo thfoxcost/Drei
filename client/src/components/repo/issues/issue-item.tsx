@@ -1,91 +1,115 @@
-import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar"
-import { CircleDot } from "lucide-react"
-
-interface IssueComment {
-  id: number
-  body: string
-  createdAt: string
-  updatedAt: string
-  createdBy: number
-}
+import { CircleDot, MessageSquare } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
+import { timeAgo } from "#/lib/time-ago";
+import type { IssueComment, IssueUser } from "#/types/issues";
 
 interface IssueItemProps {
-  title: string
-  assignedTo: number | null
-  number: number
-  state: string
-  description: string
-  author: number
-  tags: string[]
-  createdAt: string
-  updatedAt: string
-  closedAt: string | null
-  closedBy: number | null
-  comments: IssueComment[]
+	id: number;
+	number: number;
+	title: string;
+	description: string;
+	state: "open" | "closed";
+	author: IssueUser;
+	assignee: IssueUser | null;
+	labels: string[];
+	createdAt: string;
+	updatedAt: string;
+	closedAt: string | null;
+	closedBy: IssueUser | null;
+	dueDate: string | null;
+	commentCount: number;
+	comments?: IssueComment[];
+	onNavigate?: (number: number) => void;
+}
+
+function getInitials(name: string): string {
+	return name.slice(0, 2).toUpperCase();
 }
 
 function IssueItem({
-  title,
-  assignedTo,
-  number,
-  state,
-  description,
-  author,
-  tags,
-  createdAt,
-  updatedAt,
-  closedAt,
-  closedBy,
-  comments,
+	title,
+	number,
+	state,
+	author,
+	assignee,
+	labels,
+	createdAt,
+	closedAt,
+	closedBy,
+	commentCount,
+	onNavigate,
 }: IssueItemProps) {
-  return (
-    <div className="group flex flex-row items-center gap-3 border-b p-3 transition-colors hover:bg-muted/50">
-      <CircleDot
-        size={18}
-        className={
-          state === "open"
-            ? "text-green-500"
-            : "text-muted-foreground"
-        }
-      />
+	const closed = state === "closed";
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="cursor-pointer truncate font-semibold hover:text-blue-400 hover:underline">
-            {title}
-          </span>
+	return (
+		// biome-ignore lint/a11y/useSemanticElements: presentational row wired to onNavigate, not a router link
+		<div
+			className="group flex cursor-pointer flex-row items-center gap-3 border-b p-3 transition-colors hover:bg-muted/50"
+			role="link"
+			tabIndex={0}
+			onClick={() => onNavigate?.(number)}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onNavigate?.(number);
+				}
+			}}
+		>
+			<CircleDot
+				size={18}
+				className={closed ? "text-muted-foreground" : "text-green-500"}
+			/>
 
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+			<div className="min-w-0 flex-1">
+				<div className="flex items-center gap-2">
+					<span className="cursor-pointer truncate font-semibold hover:text-blue-400 hover:underline">
+						{title}
+					</span>
 
-        <div className="mt-1 text-xs text-muted-foreground">
-          #{number} · {author} opened {createdAt}
-        </div>
-      </div>
+					{labels.map((tag) => (
+						<span
+							key={tag}
+							className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+						>
+							{tag}
+						</span>
+					))}
+				</div>
 
-      <div className="flex items-center gap-2">
-        {assignedTo && (
-          <Avatar
-            size="sm"
-            className="transition-transform group-hover:scale-105"
-          >
-            <AvatarImage
-              src="https://github.com/shadcn.png"
-              alt={`User ${assignedTo}`}
-            />
-            <AvatarFallback>{assignedTo}</AvatarFallback>
-          </Avatar>
-        )}
-      </div>
-    </div>
-  )
+				<div className="mt-1 text-xs text-muted-foreground">
+					#{number} ·{" "}
+					{closed && closedAt
+						? `${closedBy?.username ?? "someone"} closed ${timeAgo(closedAt)}`
+						: `${author.username} opened ${timeAgo(createdAt)}`}
+				</div>
+			</div>
+
+			<div className="flex items-center gap-2">
+				{commentCount > 0 && (
+					<span
+						className="flex items-center gap-1 text-xs text-muted-foreground"
+						title={`${commentCount} comment${commentCount === 1 ? "" : "s"}`}
+					>
+						<MessageSquare size={14} />
+						{commentCount}
+					</span>
+				)}
+
+				{assignee && (
+					<Avatar
+						size="sm"
+						className="transition-transform group-hover:scale-105"
+						title={assignee.username}
+					>
+						{assignee.avatar ? (
+							<AvatarImage src={assignee.avatar} alt={assignee.username} />
+						) : null}
+						<AvatarFallback>{getInitials(assignee.username)}</AvatarFallback>
+					</Avatar>
+				)}
+			</div>
+		</div>
+	);
 }
 
-export default IssueItem
+export default IssueItem;
