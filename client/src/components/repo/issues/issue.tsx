@@ -102,8 +102,8 @@ function Issues() {
 	const assigneeList = matchQuery(contributors, assigneeQuery);
 
 	return (
-		<div className="mx-40">
-			<h1 className="mb-4 text-2xl font-semibold">All issues</h1>
+		<div className="mx-40 my-5">
+			<h1 className="mb-4 text-xl font-semibold">All issues</h1>
 
 			<div className="my-2 flex flex-row items-center justify-between">
 				<Tabs

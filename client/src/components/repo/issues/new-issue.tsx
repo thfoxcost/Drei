@@ -1,16 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useState } from "react";
+import { Check, Circle, Settings, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import type { Contributor } from "#/components/repo/contributor-avatars";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
-import { Input } from "#/components/ui/input";
-import { Label } from "#/components/ui/label";
-import { Separator } from "#/components/ui/separator";
-import { Spinner } from "#/components/ui/spinner";
-import { Textarea } from "#/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
-import { authClient } from "#/lib/auth-client";
-import { Circle, Settings, X } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -20,10 +16,23 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
+import { Input } from "#/components/ui/input";
+import { Label } from "#/components/ui/label";
+import { Separator } from "#/components/ui/separator";
+import { Spinner } from "#/components/ui/spinner";
+import { Textarea } from "#/components/ui/textarea";
+import { useRepoData } from "#/hooks/useRepoData";
+import { authClient } from "#/lib/auth-client";
 
 type IssueLabel = {
 	id: string;
 	text: string;
+};
+
+type LabelOption = {
+	name: string;
+	description: string;
+	dot: string;
 };
 
 const labelStyles: Record<string, string> = {
@@ -31,13 +40,12 @@ const labelStyles: Record<string, string> = {
 	documentation: "border-blue-500/70 bg-blue-500/10 text-blue-400",
 	duplicate: "border-gray-500/70 bg-gray-500/10 text-gray-400",
 	enhancement: "border-cyan-500/70 bg-cyan-500/10 text-cyan-400",
-	"good first issue":
-		"border-violet-500/70 bg-violet-500/10 text-violet-400",
+	"good first issue": "border-violet-500/70 bg-violet-500/10 text-violet-400",
 	question: "border-pink-500/70 bg-pink-500/10 text-pink-400",
 	invalid: "border-yellow-500/70 bg-yellow-500/10 text-yellow-400",
 };
 
-const labelOptions = [
+const labelOptions: LabelOption[] = [
 	{
 		name: "bug",
 		description: "Something isn't working correctly",
@@ -75,18 +83,89 @@ const labelOptions = [
 	},
 ];
 
+function getInitials(name: string): string {
+	return name.slice(0, 2).toUpperCase();
+}
+
 function NewIssue() {
 	const { username, repo } = useParams({ strict: false });
 	const navigate = useNavigate();
 	const { data: session } = authClient.useSession();
+	const { data: repoData } = useRepoData(username, repo);
 
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [submitting, setSubmitting] = useState(false);
 
 	const [labels, setLabels] = useState<IssueLabel[]>([]);
+	const [assignees, setAssignees] = useState<Contributor[]>([]);
+
+	const [labelQuery, setLabelQuery] = useState("");
+	const [assigneeQuery, setAssigneeQuery] = useState("");
 
 	const canSubmit = title.trim() !== "" && !submitting;
+
+	const contributors = repoData?.contributors ?? [];
+
+	// Labels defined on the repository take priority over the defaults, so
+	// selecting a label reuses the existing repository label instead of
+	// creating a duplicate.
+	const { data: repoLabels } = useQuery({
+		queryKey: ["repo-labels", username, repo],
+		queryFn: async (): Promise<{ name: string; color: string | null }[]> => {
+			const res = await fetch(
+				`http://localhost:3200/api/repos/${username}/${repo}/labels`,
+			);
+			if (!res.ok) throw new Error("Failed to fetch labels");
+			const json = (await res.json()) as {
+				labels?: { name: string; color: string | null }[];
+			};
+			return json.labels ?? [];
+		},
+	});
+
+	const availableLabels = useMemo(() => {
+		const existing = repoLabels ?? [];
+		const existingNames = new Set(
+			existing.map((label) => label.name.toLowerCase()),
+		);
+
+		// Repository labels come first so picking one reuses the existing
+		// repository label (matched case-insensitively by the backend).
+		const fromRepo = existing.map((label) => {
+			const option = labelOptions.find(
+				(o) => o.name.toLowerCase() === label.name.toLowerCase(),
+			);
+
+			return {
+				name: label.name,
+				description: option?.description ?? "Label on this repository",
+				dot: option?.dot ?? "fill-gray-400 text-gray-400",
+			};
+		});
+
+		const defaults = labelOptions.filter(
+			(option) => !existingNames.has(option.name.toLowerCase()),
+		);
+
+		return [...fromRepo, ...defaults];
+	}, [repoLabels]);
+
+	const filteredLabels = useMemo(() => {
+		const query = labelQuery.trim().toLowerCase();
+		if (!query) return availableLabels;
+		return availableLabels.filter((label) =>
+			label.name.toLowerCase().includes(query),
+		);
+	}, [availableLabels, labelQuery]);
+
+	const filteredContributors = useMemo(() => {
+		const query = assigneeQuery.trim().toLowerCase();
+		if (!query) return contributors;
+		return contributors.filter((contributor) =>
+			contributor.username.toLowerCase().includes(query),
+		);
+	}, [contributors, assigneeQuery]);
 
 	function addLabel(labelName: string) {
 		if (labels.some((label) => label.text === labelName)) {
@@ -106,8 +185,21 @@ function NewIssue() {
 		setLabels(labels.filter((label) => label.id !== labelId));
 	}
 
+	function toggleAssignee(contributor: Contributor) {
+		setAssignees((prev) =>
+			prev.some((assignee) => assignee.id === contributor.id)
+				? prev.filter((assignee) => assignee.id !== contributor.id)
+				: [...prev, contributor],
+		);
+	}
+
 	async function handleSubmit() {
 		if (!canSubmit) return;
+
+		if (!session?.user.id) {
+			toast.error("You must be signed in to create an issue");
+			return;
+		}
 
 		setSubmitting(true);
 
@@ -116,17 +208,15 @@ function NewIssue() {
 				`http://localhost:3200/api/repos/${username}/${repo}/issues`,
 				{
 					method: "POST",
+					credentials: "include",
 					headers: {
 						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
-						userId: session?.user.id ?? "",
-						username: session?.user.name ?? "",
 						title: title.trim(),
 						description,
-						labels: labels
-							.map((label) => label.text)
-							.filter(Boolean),
+						labels: labels.map((label) => label.text).filter(Boolean),
+						assignees: assignees.map((assignee) => assignee.id),
 					}),
 				},
 			);
@@ -135,9 +225,7 @@ function NewIssue() {
 
 			if (!res.ok) {
 				throw new Error(
-					result.error ||
-						result.message ||
-						"Failed to create issue",
+					result.error || result.message || "Failed to create issue",
 				);
 			}
 
@@ -147,34 +235,24 @@ function NewIssue() {
 				to: `/${username}/${repo}/issues/${result.number}`,
 			});
 		} catch (err) {
-			toast.error(
-				err instanceof Error
-					? err.message
-					: "Something went wrong",
-			);
+			toast.error(err instanceof Error ? err.message : "Something went wrong");
 		} finally {
 			setSubmitting(false);
 		}
 	}
 
 	return (
-		<div className="ml-35 my-3 max-w-6xl">
-			{/* Header */}
+		<div className="ml-35 my-7 max-w-7xl">
 			<div className="flex items-center gap-2">
 				<Avatar>
-					<AvatarImage
-						src="https://github.com/shadcn.png"
-						alt="@shadcn"
-					/>
+					<AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
 					<AvatarFallback>CN</AvatarFallback>
 				</Avatar>
 
-				<span className="font-semibold">
-					Create new issue
-				</span>
+				<span className="font-semibold">Create new issue</span>
 			</div>
 
-			<div className="mt-4 grid grid-cols-1 items-start gap-8 md:grid-cols-[1fr_240px]">
+			<div className="mt-4 grid grid-cols-1 items-start gap-8 md:grid-cols-[1fr_240px] mx-10">
 				{/* Main form */}
 				<div className="space-y-4">
 					{/* Title */}
@@ -197,9 +275,7 @@ function NewIssue() {
 
 					{/* Description */}
 					<div className="space-y-2">
-						<Label htmlFor="issue-description">
-							Add a description
-						</Label>
+						<Label htmlFor="issue-description">Add a description</Label>
 
 						<Textarea
 							id="issue-description"
@@ -207,9 +283,7 @@ function NewIssue() {
 							className="h-[420px]"
 							placeholder="Type your description here..."
 							value={description}
-							onChange={(e) =>
-								setDescription(e.target.value)
-							}
+							onChange={(e) => setDescription(e.target.value)}
 							disabled={submitting}
 						/>
 					</div>
@@ -235,9 +309,7 @@ function NewIssue() {
 							{submitting ? (
 								<>
 									<Spinner />
-									<span className="ml-2">
-										Creating...
-									</span>
+									<span className="ml-2">Creating...</span>
 								</>
 							) : (
 								"Create issue"
@@ -255,9 +327,7 @@ function NewIssue() {
 								variant="ghost"
 								className="flex w-full items-center justify-between px-2 text-muted-foreground"
 							>
-								<span className="text-xs font-bold">
-									Assignees
-								</span>
+								<span className="text-xs font-bold">Assignees</span>
 
 								<Settings className="size-4" />
 							</Button>
@@ -265,70 +335,90 @@ function NewIssue() {
 
 						<DropdownMenuContent className="w-60 p-1">
 							<DropdownMenuGroup>
-								<DropdownMenuLabel>
-									Select Assignees
-								</DropdownMenuLabel>
+								<DropdownMenuLabel>Select Assignees</DropdownMenuLabel>
 
-								<Input placeholder="Filter assignees" />
+								<Input
+									placeholder="Filter assignees"
+									value={assigneeQuery}
+									onChange={(e) => setAssigneeQuery(e.target.value)}
+								/>
 							</DropdownMenuGroup>
 
 							<DropdownMenuSeparator />
 
 							<DropdownMenuGroup>
-								<DropdownMenuItem className="cursor-pointer">
-									<Avatar size="sm">
-										<AvatarImage
-											src="https://github.com/shadcn.png"
-											alt="@shadcn"
-										/>
+								{filteredContributors.length === 0 ? (
+									<DropdownMenuItem disabled>
+										No contributors found
+									</DropdownMenuItem>
+								) : (
+									filteredContributors.map((contributor) => (
+										<DropdownMenuItem
+											key={contributor.id || contributor.username}
+											className="cursor-pointer"
+											onClick={() => toggleAssignee(contributor)}
+										>
+											<span className="flex items-center gap-2">
+												<Avatar size="sm">
+													{contributor.avatar ? (
+														<AvatarImage
+															src={contributor.avatar}
+															alt={contributor.username}
+														/>
+													) : null}
+													<AvatarFallback>
+														{getInitials(contributor.username)}
+													</AvatarFallback>
+												</Avatar>
 
-										<AvatarFallback>
-											CN
-										</AvatarFallback>
-									</Avatar>
+												<span>{contributor.username}</span>
 
-									<span>
-										thefoxost{" "}
-										<span className="text-xs text-muted-foreground">
-											(thefoxcost)
-										</span>
-									</span>
-								</DropdownMenuItem>
+												{assignees.some(
+													(assignee) => assignee.id === contributor.id,
+												) && <Check size={14} className="ml-auto" />}
+											</span>
+										</DropdownMenuItem>
+									))
+								)}
 							</DropdownMenuGroup>
 						</DropdownMenuContent>
 					</DropdownMenu>
 
 					{/* Selected assignees */}
 					<div className="mt-1">
-						<Button
-							variant="ghost"
-							className="w-full justify-start text-xs"
-						>
-							<Avatar size="sm">
-								<AvatarImage
-									src="https://github.com/shadcn.png"
-									alt="@thefoxcost"
-								/>
-								<AvatarFallback>TF</AvatarFallback>
-							</Avatar>
+						{assignees.length === 0 ? (
+							<span className="px-2 text-xs text-muted-foreground">
+								No one assigned
+							</span>
+						) : (
+							assignees.map((assignee) => (
+								<Button
+									key={assignee.id}
+									variant="ghost"
+									className="w-full justify-between text-xs"
+									title="Remove assignee"
+									onClick={() => toggleAssignee(assignee)}
+								>
+									<span className="flex items-center gap-2">
+										<Avatar size="sm">
+											{assignee.avatar ? (
+												<AvatarImage
+													src={assignee.avatar}
+													alt={assignee.username}
+												/>
+											) : null}
+											<AvatarFallback>
+												{getInitials(assignee.username)}
+											</AvatarFallback>
+										</Avatar>
 
-							<span>thefoxcost</span>
-						</Button>
+										<span>{assignee.username}</span>
+									</span>
 
-						<Button
-							variant="ghost"
-							className="w-full justify-start text-xs"
-						>
-							<Avatar size="sm">
-								<AvatarImage
-									src="https://raw.githubusercontent.com/cedev-1/jellyfin-avatars/main/dp/dp-101.png"
-									alt="@james"
-								/>
-								<AvatarFallback>JK</AvatarFallback>
-							</Avatar>
-
-							<span>James Karl</span>
-						</Button>
+									<X className="size-3 opacity-60 transition-opacity hover:opacity-100" />
+								</Button>
+							))
+						)}
 					</div>
 
 					<Separator className="my-2" />
@@ -341,9 +431,7 @@ function NewIssue() {
 									variant="ghost"
 									className="flex w-full items-center justify-between px-2 text-muted-foreground"
 								>
-									<span className="text-xs font-bold">
-										Labels
-									</span>
+									<span className="text-xs font-bold">Labels</span>
 
 									<Settings className="size-4" />
 								</Button>
@@ -358,49 +446,41 @@ function NewIssue() {
 									<Input
 										placeholder="Filter labels"
 										className="h-8"
+										value={labelQuery}
+										onChange={(e) => setLabelQuery(e.target.value)}
 									/>
 								</DropdownMenuGroup>
 
 								<DropdownMenuSeparator className="my-1" />
 
 								<DropdownMenuGroup>
-									{labelOptions.map(
-										(label, index) => (
-											<div key={label.name}>
-												<DropdownMenuItem
-													className="cursor-pointer flex-col items-start gap-0.5 px-2 py-1.5"
-													onClick={() =>
-														addLabel(
-															label.name,
-														)
-													}
-												>
-													<div className="flex items-center gap-2">
-														<Circle
-															className={`size-3 ${label.dot}`}
-														/>
+									{filteredLabels.map((label, index) => (
+										<div key={label.name}>
+											<DropdownMenuItem
+												className="cursor-pointer flex-col items-start gap-0.5 px-2 py-1.5"
+												onClick={() => addLabel(label.name)}
+											>
+												<div className="flex items-center gap-2">
+													<Circle className={`size-3 ${label.dot}`} />
 
-														<span className="text-xs">
-															{
-																label.name
-															}
-														</span>
-													</div>
+													<span className="text-xs">{label.name}</span>
+												</div>
 
-													<span className="pl-5 text-[11px] leading-tight text-muted-foreground">
-														{
-															label.description
-														}
-													</span>
-												</DropdownMenuItem>
+												<span className="pl-5 text-[11px] leading-tight text-muted-foreground">
+													{label.description}
+												</span>
+											</DropdownMenuItem>
 
-												{index <
-													labelOptions.length -
-														1 && (
-													<DropdownMenuSeparator className="my-0.5" />
-												)}
-											</div>
-										),
+											{index < filteredLabels.length - 1 && (
+												<DropdownMenuSeparator className="my-0.5" />
+											)}
+										</div>
+									))}
+
+									{filteredLabels.length === 0 && (
+										<DropdownMenuItem disabled>
+											No labels found
+										</DropdownMenuItem>
 									)}
 								</DropdownMenuGroup>
 							</DropdownMenuContent>
@@ -418,9 +498,7 @@ function NewIssue() {
 										key={label.id}
 										variant="outline"
 										className={`gap-1 px-2 py-0.5 text-xs ${
-											labelStyles[
-												label.text
-											] ??
+											labelStyles[label.text] ??
 											"border-border bg-muted/30 text-foreground"
 										}`}
 									>
@@ -429,11 +507,7 @@ function NewIssue() {
 										<button
 											type="button"
 											className="ml-0.5 rounded-sm opacity-60 transition-opacity hover:opacity-100"
-											onClick={() =>
-												removeLabel(
-													label.id,
-												)
-											}
+											onClick={() => removeLabel(label.id)}
 										>
 											<X className="size-3" />
 										</button>

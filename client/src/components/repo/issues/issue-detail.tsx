@@ -1,14 +1,31 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { Check, ChevronDown, Pencil, Trash2, X } from "lucide-react";
+import {
+	Check,
+	ChevronDown,
+	CircleCheck,
+	CircleDot,
+	Pencil,
+	Trash2,
+	X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
+import type { Contributor } from "#/components/repo/contributor-avatars";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "#/components/ui/dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -18,6 +35,7 @@ import {
 	DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
 import { Input } from "#/components/ui/input";
+import { Separator } from "#/components/ui/separator";
 import { Spinner } from "#/components/ui/spinner";
 import { Textarea } from "#/components/ui/textarea";
 import { useRepoData } from "#/hooks/useRepoData";
@@ -28,6 +46,24 @@ import type { Issue, IssueComment, IssueUser } from "#/types/issues";
 function getInitials(name: string): string {
 	return name.slice(0, 2).toUpperCase();
 }
+
+const closeReasons = [
+	{
+		value: "completed",
+		label: "Close as completed",
+		description: "This issue has been completed and resolved.",
+	},
+	{
+		value: "not_planned",
+		label: "Close as not planned",
+		description: "This issue will not be worked on or completed.",
+	},
+	{
+		value: "duplicated",
+		label: "Close as duplicated",
+		description: "This issue is a duplicate of another issue.",
+	},
+];
 
 function Markdown({ content }: { content: string }) {
 	return (
@@ -76,6 +112,9 @@ function IssueDetail() {
 	const [editBody, setEditBody] = useState("");
 	const [busyCommentId, setBusyCommentId] = useState<number | null>(null);
 
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [deleting, setDeleting] = useState(false);
+
 	const {
 		data: issue,
 		isLoading,
@@ -108,21 +147,112 @@ function IssueDetail() {
 		});
 	}
 
-	async function handleToggleState() {
+	async function handleClose(reason: string) {
 		if (!issue || !currentUserID) return;
-
-		const next = issue.state === "open" ? "closed" : "open";
 
 		try {
 			const res = await fetch(
 				`http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/state`,
 				{
 					method: "POST",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ state: "closed", reason }),
+				},
+			);
+
+			const result = await res.json();
+
+			if (!res.ok) {
+				throw new Error(
+					result.error || result.message || "Failed to close issue",
+				);
+			}
+
+			toast.success("Issue closed");
+			await refresh();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Something went wrong");
+		}
+	}
+
+	async function handleReopen() {
+		if (!issue || !currentUserID) return;
+
+		try {
+			const res = await fetch(
+				`http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/state`,
+				{
+					method: "POST",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ state: "open" }),
+				},
+			);
+
+			const result = await res.json();
+
+			if (!res.ok) {
+				throw new Error(
+					result.error || result.message || "Failed to reopen issue",
+				);
+			}
+
+			toast.success("Issue reopened");
+			await refresh();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Something went wrong");
+		}
+	}
+
+	async function handleDelete() {
+		if (!issue) return;
+		setDeleting(true);
+
+		try {
+			const res = await fetch(
+				`http://localhost:3200/api/repos/${username}/${repo}/issues/${number}`,
+				{
+					method: "DELETE",
+					credentials: "include",
+				},
+			);
+
+			const result = await res.json();
+
+			if (!res.ok) {
+				throw new Error(
+					result.error || result.message || "Failed to delete issue",
+				);
+			}
+
+			toast.success("Issue deleted");
+			setDeleteOpen(false);
+			queryClient.removeQueries({
+				queryKey: ["issue", username, repo, number],
+			});
+			await queryClient.invalidateQueries({
+				queryKey: ["issues", username, repo],
+			});
+			navigate({ to: `/${username}/${repo}/issues` });
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			setDeleting(false);
+		}
+	}
+
+	async function handleSetAssignees(assignees: IssueUser[]) {
+		if (!issue) return;
+
+		try {
+			const res = await fetch(
+				`http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/assignee`,
+				{
+					method: "POST",
+					credentials: "include",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
-						state: next,
-						userId: currentUserID,
-						username: session?.user.name ?? "",
+						assignees: assignees.map((assignee) => assignee.id),
 					}),
 				},
 			);
@@ -131,40 +261,35 @@ function IssueDetail() {
 
 			if (!res.ok) {
 				throw new Error(
-					result.error || result.message || "Failed to update issue",
+					result.error || result.message || "Failed to update assignees",
 				);
 			}
 
-			toast.success(`Issue ${next === "open" ? "reopened" : "closed"}`);
 			await refresh();
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Something went wrong");
 		}
 	}
 
-	async function handleAssign(assigneeId: string | null) {
-		try {
-			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/assignee`,
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ assigneeId }),
-				},
-			);
+	function handleToggleAssignee(contributor: Contributor) {
+		if (!issue) return;
 
-			const result = await res.json();
+		const isAssigned = issue.assignees.some(
+			(assignee) => assignee.id === contributor.id,
+		);
 
-			if (!res.ok) {
-				throw new Error(
-					result.error || result.message || "Failed to update assignee",
-				);
-			}
+		const next = isAssigned
+			? issue.assignees.filter((assignee) => assignee.id !== contributor.id)
+			: [
+					...issue.assignees,
+					{
+						id: contributor.id,
+						username: contributor.username,
+						avatar: contributor.avatar,
+					},
+				];
 
-			await refresh();
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
-		}
+		handleSetAssignees(next);
 	}
 
 	async function handleSaveEdit() {
@@ -216,12 +341,9 @@ function IssueDetail() {
 				`http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/comments`,
 				{
 					method: "POST",
+					credentials: "include",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						userId: currentUserID,
-						username: session?.user.name ?? "",
-						body,
-					}),
+					body: JSON.stringify({ body }),
 				},
 			);
 
@@ -326,6 +448,7 @@ function IssueDetail() {
 
 	const closed = issue.state === "closed";
 	const isAuthor = currentUserID === issue.author.id;
+	const canDelete = isAuthor || currentUserID === repoData?.ownerId;
 
 	return (
 		<div className="mx-40">
@@ -340,11 +463,26 @@ function IssueDetail() {
 				</Button>
 
 				<div className="flex items-center gap-3">
-					<h1 className="min-w-0 truncate text-2xl font-semibold">
-						{issue.title}
-					</h1>
-					<Badge variant={closed ? "secondary" : "default"}>
-						{closed ? "Closed" : "Open"}
+					<h1 className="min-w-0 truncate text-3xl font-bold">{issue.title}</h1>
+					<Badge
+						className={
+							closed
+								? "h-7 gap-1.5  bg-purple-600 text-sm"
+								: "h-7 gap-1.5  bg-green-600  text-sm"
+						}
+						variant="outline"
+					>
+						{closed ? (
+							<span className="inline-flex items-center gap-1.5">
+								<CircleCheck className="size-4 shrink-0" />
+								Closed
+							</span>
+						) : (
+							<span className="inline-flex items-center gap-1.5">
+								<CircleDot className="size-4 shrink-0" />
+								Open
+							</span>
+						)}
 					</Badge>
 				</div>
 
@@ -563,20 +701,69 @@ function IssueDetail() {
 							</p>
 						)}
 					</div>
+
+					{currentUserID && (
+						<div className="flex flex-wrap items-center gap-2">
+							{closed ? (
+								<Button variant="outline" onClick={handleReopen}>
+									<X size={14} />
+									Reopen issue
+								</Button>
+							) : (
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="secondary">
+											<Check size={14} />
+											Close issue
+											<ChevronDown />
+										</Button>
+									</DropdownMenuTrigger>
+
+									<DropdownMenuContent align="start" className="w-64">
+										{closeReasons.map((reason) => (
+											<DropdownMenuItem
+												key={reason.value}
+												onClick={() => handleClose(reason.value)}
+											>
+												<span className="flex flex-col gap-0.5">
+													<span>{reason.label}</span>
+													<span className="text-xs text-muted-foreground">
+														{reason.description}
+													</span>
+												</span>
+											</DropdownMenuItem>
+										))}
+									</DropdownMenuContent>
+								</DropdownMenu>
+							)}
+
+							{canDelete && (
+								<Button
+									variant="destructive"
+									onClick={() => setDeleteOpen(true)}
+								>
+									<Trash2 size={14} />
+									Delete issue
+								</Button>
+							)}
+						</div>
+					)}
 				</div>
 
-				<div className="w-64 shrink-0 space-y-5">
+				<div className="w-64 shrink-0 space-y-2">
 					<div>
-						<h3 className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+						<h3 className="mb-1.5 text-xs font-medium tracking-wider text-muted-foreground">
 							Assignees
 						</h3>
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
 								<Button variant="outline" className="w-full justify-between">
-									{issue.assignee ? (
+									{issue.assignees.length > 0 ? (
 										<span className="flex items-center gap-2">
-											<UserAvatar user={issue.assignee} />
-											{issue.assignee.username}
+											<UserAvatar user={issue.assignees[0]} />
+											{issue.assignees.length === 1
+												? issue.assignees[0].username
+												: `${issue.assignees[0].username} +${issue.assignees.length - 1}`}
 										</span>
 									) : (
 										<span className="text-muted-foreground">No one</span>
@@ -587,10 +774,10 @@ function IssueDetail() {
 
 							<DropdownMenuContent align="start" className="w-56">
 								<DropdownMenuItem
-									onClick={() => handleAssign(null)}
-									className={issue.assignee ? "" : "font-medium"}
+									onClick={() => handleSetAssignees([])}
+									disabled={issue.assignees.length === 0}
 								>
-									{!issue.assignee && <Check size={14} />}
+									{issue.assignees.length === 0 && <Check size={14} />}
 									Unassigned
 								</DropdownMenuItem>
 
@@ -600,37 +787,43 @@ function IssueDetail() {
 								{contributors.length === 0 ? (
 									<DropdownMenuItem disabled>No contributors</DropdownMenuItem>
 								) : (
-									contributors.map((contributor) => (
-										<DropdownMenuItem
-											key={contributor.id || contributor.username}
-											onClick={() => handleAssign(contributor.id || null)}
-										>
-											<span className="flex items-center gap-2">
-												<Avatar size="sm">
-													{contributor.avatar ? (
-														<AvatarImage
-															src={contributor.avatar}
-															alt={contributor.username}
-														/>
-													) : null}
-													<AvatarFallback>
-														{getInitials(contributor.username)}
-													</AvatarFallback>
-												</Avatar>
-												{contributor.username}
-												{issue.assignee?.id === contributor.id && (
-													<Check size={14} className="ml-auto" />
-												)}
-											</span>
-										</DropdownMenuItem>
-									))
+									contributors.map((contributor) => {
+										const isAssigned = issue.assignees.some(
+											(assignee) => assignee.id === contributor.id,
+										);
+
+										return (
+											<DropdownMenuItem
+												key={contributor.id || contributor.username}
+												onClick={() => handleToggleAssignee(contributor)}
+											>
+												<span className="flex items-center gap-2">
+													<Avatar size="sm">
+														{contributor.avatar ? (
+															<AvatarImage
+																src={contributor.avatar}
+																alt={contributor.username}
+															/>
+														) : null}
+														<AvatarFallback>
+															{getInitials(contributor.username)}
+														</AvatarFallback>
+													</Avatar>
+													{contributor.username}
+													{isAssigned && (
+														<Check size={14} className="ml-auto" />
+													)}
+												</span>
+											</DropdownMenuItem>
+										);
+									})
 								)}
 							</DropdownMenuContent>
 						</DropdownMenu>
 					</div>
-
+					<Separator />
 					<div>
-						<h3 className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+						<h3 className="mb-1.5 text-xs font-medium tracking-wider text-muted-foreground">
 							Labels
 						</h3>
 						<div className="flex flex-wrap gap-1.5">
@@ -648,6 +841,7 @@ function IssueDetail() {
 							)}
 						</div>
 					</div>
+					<Separator />
 
 					<div>
 						<h3 className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -668,19 +862,37 @@ function IssueDetail() {
 								: issue.author.username}
 						</p>
 					</div>
-
-					{currentUserID && (
-						<Button
-							variant={closed ? "outline" : "secondary"}
-							className="w-full"
-							onClick={handleToggleState}
-						>
-							{closed ? <X size={14} /> : <Check size={14} />}
-							{closed ? "Reopen issue" : "Close issue"}
-						</Button>
-					)}
 				</div>
 			</div>
+
+			<Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Delete issue #{issue.number}?</DialogTitle>
+						<DialogDescription>
+							This action cannot be undone. This will permanently delete issue #
+							{issue.number} and all of its comments.
+						</DialogDescription>
+					</DialogHeader>
+
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setDeleteOpen(false)}
+							disabled={deleting}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							disabled={deleting}
+							onClick={handleDelete}
+						>
+							{deleting ? <Spinner /> : "Delete issue"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

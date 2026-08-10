@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -27,7 +28,7 @@ type IssueComment struct {
 	UpdatedAt string    `json:"updatedAt"`
 }
 
-// Issue is the JSON shape returned to the frontend. Author, assignee and
+// Issue is the JSON shape returned to the frontend. Author, assignees and
 // closedBy are resolved against the "user" table so the frontend never has to
 // reconstruct relationships itself.
 type Issue struct {
@@ -37,12 +38,13 @@ type Issue struct {
 	Description  string         `json:"description"`
 	State        string         `json:"state"`
 	Author       IssueUser      `json:"author"`
-	Assignee     *IssueUser     `json:"assignee"`
+	Assignees    []IssueUser    `json:"assignees"`
 	Labels       []string       `json:"labels"`
 	CreatedAt    string         `json:"createdAt"`
 	UpdatedAt    string         `json:"updatedAt"`
 	ClosedAt     *string        `json:"closedAt"`
 	ClosedBy     *IssueUser     `json:"closedBy"`
+	CloseReason  *string        `json:"closeReason"`
 	DueDate      *string        `json:"dueDate"`
 	CommentCount int            `json:"commentCount"`
 	Comments     []IssueComment `json:"comments,omitempty"`
@@ -75,13 +77,21 @@ const issueSelectColumns = `
 	i.author_id,
 	COALESCE(au.name, ''),
 	au.image,
-	i.assignee_id,
-	asu.name,
-	asu.image,
+	COALESCE((
+		SELECT json_agg(json_build_object(
+			'id', u.id,
+			'username', COALESCE(u.name, ''),
+			'avatar', u.image
+		) ORDER BY u.name)
+		FROM issue_assignees ia
+		JOIN "user" u ON u.id = ia.user_id
+		WHERE ia.issue_id = i.id
+	), '[]'::json),
 	i.closed_at,
 	i.closed_by,
 	cbu.name,
 	cbu.image,
+	i.close_reason,
 	i.created_at,
 	i.updated_at,
 	i.due_date,
@@ -100,7 +110,6 @@ const issueSelectColumns = `
 const issueFromClause = `
 	FROM issues i
 	LEFT JOIN "user" au ON au.id = i.author_id
-	LEFT JOIN "user" asu ON asu.id = i.assignee_id
 	LEFT JOIN "user" cbu ON cbu.id = i.closed_by`
 
 // rowScanner is satisfied by both *pgx.Row and pgx.Rows.
@@ -113,16 +122,15 @@ func scanIssue(row rowScanner) (Issue, error) {
 	var issue Issue
 
 	var (
-		assigneeID     *string
-		assigneeName   *string
-		assigneeAvatar *string
 		closedAt       *time.Time
 		closedByID     *string
 		closedByName   *string
 		closedByAvatar *string
+		closeReason    *string
 		createdAt      time.Time
 		updatedAt      time.Time
 		dueDate        *time.Time
+		assigneesJSON  []byte
 	)
 
 	err := row.Scan(
@@ -134,13 +142,12 @@ func scanIssue(row rowScanner) (Issue, error) {
 		&issue.Author.ID,
 		&issue.Author.Username,
 		&issue.Author.Avatar,
-		&assigneeID,
-		&assigneeName,
-		&assigneeAvatar,
+		&assigneesJSON,
 		&closedAt,
 		&closedByID,
 		&closedByName,
 		&closedByAvatar,
+		&closeReason,
 		&createdAt,
 		&updatedAt,
 		&dueDate,
@@ -149,6 +156,14 @@ func scanIssue(row rowScanner) (Issue, error) {
 	)
 	if err != nil {
 		return Issue{}, err
+	}
+
+	if err := json.Unmarshal(assigneesJSON, &issue.Assignees); err != nil {
+		return Issue{}, err
+	}
+
+	if issue.Assignees == nil {
+		issue.Assignees = []IssueUser{}
 	}
 
 	issue.CreatedAt = createdAt.Format(time.RFC3339)
@@ -164,14 +179,6 @@ func scanIssue(row rowScanner) (Issue, error) {
 		issue.DueDate = &formatted
 	}
 
-	if assigneeID != nil {
-		issue.Assignee = &IssueUser{
-			ID:       *assigneeID,
-			Username: coalesceString(assigneeName),
-			Avatar:   assigneeAvatar,
-		}
-	}
-
 	if closedByID != nil {
 		issue.ClosedBy = &IssueUser{
 			ID:       *closedByID,
@@ -179,6 +186,8 @@ func scanIssue(row rowScanner) (Issue, error) {
 			Avatar:   closedByAvatar,
 		}
 	}
+
+	issue.CloseReason = closeReason
 
 	return issue, nil
 }
@@ -226,10 +235,10 @@ func issueWhere(repoID int64, filter IssueFilter) (string, []any, int) {
 
 	switch filter.Assignee {
 	case "none":
-		query += " AND i.assignee_id IS NULL"
+		query += " AND NOT EXISTS (SELECT 1 FROM issue_assignees ia WHERE ia.issue_id = i.id)"
 	case "":
 	default:
-		query += fmt.Sprintf(" AND i.assignee_id = $%d", param)
+		query += fmt.Sprintf(" AND EXISTS (SELECT 1 FROM issue_assignees ia WHERE ia.issue_id = i.id AND ia.user_id = $%d)", param)
 		args = append(args, filter.Assignee)
 		param++
 	}
@@ -326,9 +335,10 @@ func CountIssues(repoID int64, filter IssueFilter) (open, closed int, err error)
 }
 
 // CreateIssue inserts a new open issue, allocating the next repository-scoped
-// number atomically under a row lock on the repository. Labels are created on
-// demand and linked to the issue.
-func CreateIssue(repoID int64, authorID, title, description string, labels []string, dueDate *time.Time) (Issue, error) {
+// number atomically under a row lock on the repository. Labels are reused from
+// the repository when they already exist and created otherwise; assignees are
+// linked through the issue_assignees join table.
+func CreateIssue(repoID int64, authorID, title, description string, labels, assignees []string, dueDate *time.Time) (Issue, error) {
 	ctx := context.Background()
 
 	tx, err := DB.Begin(ctx)
@@ -378,6 +388,10 @@ func CreateIssue(repoID int64, authorID, title, description string, labels []str
 		return Issue{}, err
 	}
 
+	if err := linkIssueAssignees(ctx, tx, issueID, assignees); err != nil {
+		return Issue{}, err
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return Issue{}, err
 	}
@@ -394,8 +408,38 @@ func CreateIssue(repoID int64, authorID, title, description string, labels []str
 	return *created, nil
 }
 
+// linkIssueAssignees links the given users to an issue. Each user id must
+// already be validated as a member of the issue's repository by the caller.
+func linkIssueAssignees(ctx context.Context, tx pgx.Tx, issueID int64, userIDs []string) error {
+	for _, userID := range userIDs {
+		userID = strings.TrimSpace(userID)
+
+		if userID == "" {
+			continue
+		}
+
+		_, err := tx.Exec(
+			ctx,
+			`
+			INSERT INTO issue_assignees (issue_id, user_id)
+			VALUES ($1, $2)
+			ON CONFLICT DO NOTHING
+			`,
+			issueID,
+			userID,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // linkIssueLabels ensures every given label exists for the repository and
 // links it to the given issue, without touching labels not in the list.
+// Existing labels are reused case-insensitively so a repository never ends up
+// with duplicates differing only by case.
 func linkIssueLabels(ctx context.Context, tx pgx.Tx, issueID, repoID int64, labels []string) error {
 	for _, label := range labels {
 		label = strings.TrimSpace(label)
@@ -409,14 +453,27 @@ func linkIssueLabels(ctx context.Context, tx pgx.Tx, issueID, repoID int64, labe
 		err := tx.QueryRow(
 			ctx,
 			`
-			INSERT INTO issue_labels (repo_id, name)
-			VALUES ($1, $2)
-			ON CONFLICT (repo_id, name) DO UPDATE SET name = EXCLUDED.name
-			RETURNING id
+			SELECT id
+			FROM issue_labels
+			WHERE repo_id = $1 AND lower(name) = lower($2)
 			`,
 			repoID,
 			label,
 		).Scan(&labelID)
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = tx.QueryRow(
+				ctx,
+				`
+				INSERT INTO issue_labels (repo_id, name)
+				VALUES ($1, $2)
+				RETURNING id
+				`,
+				repoID,
+				label,
+			).Scan(&labelID)
+		}
+
 		if err != nil {
 			return err
 		}
@@ -463,9 +520,9 @@ func UpdateIssue(repoID int64, number int, title, description string, dueDate *t
 	return err
 }
 
-// UpdateIssueState closes or reopens an issue. Closing records who closed it
-// and when; reopening clears both.
-func UpdateIssueState(repoID int64, number int, state, actorID string) error {
+// UpdateIssueState closes or reopens an issue. Closing records who closed it,
+// when, and why (closeReason); reopening clears all three.
+func UpdateIssueState(repoID int64, number int, state, actorID, closeReason string) error {
 	var err error
 
 	switch state {
@@ -477,12 +534,14 @@ func UpdateIssueState(repoID int64, number int, state, actorID string) error {
 			SET state = 'closed',
 			    closed_at = NOW(),
 			    closed_by = $3,
+			    close_reason = NULLIF($4, ''),
 			    updated_at = NOW()
 			WHERE repo_id = $1 AND number = $2
 			`,
 			repoID,
 			number,
 			actorID,
+			closeReason,
 		)
 	case "open":
 		_, err = DB.Exec(
@@ -492,6 +551,7 @@ func UpdateIssueState(repoID int64, number int, state, actorID string) error {
 			SET state = 'open',
 			    closed_at = NULL,
 			    closed_by = NULL,
+			    close_reason = NULL,
 			    updated_at = NOW()
 			WHERE repo_id = $1 AND number = $2
 			`,
@@ -505,23 +565,88 @@ func UpdateIssueState(repoID int64, number int, state, actorID string) error {
 	return err
 }
 
-// UpdateIssueAssignee assigns an issue to a user or, when assigneeID is nil,
-// unassigns it.
-func UpdateIssueAssignee(repoID int64, number int, assigneeID *string) error {
+// DeleteIssue permanently removes an issue. Related comments, assignee links
+// and label links are removed by ON DELETE CASCADE.
+func DeleteIssue(repoID int64, number int) error {
 	_, err := DB.Exec(
 		context.Background(),
 		`
-		UPDATE issues
-		SET assignee_id = $3,
-		    updated_at = NOW()
+		DELETE FROM issues
 		WHERE repo_id = $1 AND number = $2
 		`,
 		repoID,
 		number,
-		assigneeID,
 	)
 
 	return err
+}
+
+// SetIssueAssignees replaces the assignee set of an issue. Users not in the
+// given list are unlinked, and each user id must already be validated as a
+// member of the issue's repository by the caller.
+func SetIssueAssignees(repoID int64, number int, userIDs []string) error {
+	ctx := context.Background()
+
+	var issueID int64
+
+	err := DB.QueryRow(
+		ctx,
+		`SELECT id FROM issues WHERE repo_id = $1 AND number = $2`,
+		repoID,
+		number,
+	).Scan(&issueID)
+	if err != nil {
+		return err
+	}
+
+	tx, err := DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, `DELETE FROM issue_assignees WHERE issue_id = $1`, issueID)
+	if err != nil {
+		return err
+	}
+
+	if err := linkIssueAssignees(ctx, tx, issueID, userIDs); err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx, `UPDATE issues SET updated_at = NOW() WHERE id = $1`, issueID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+// IsRepoMember reports whether the given user is the repository owner or one
+// of its contributors, i.e. someone allowed to create issues and be assigned
+// to them.
+func IsRepoMember(repoID int64, userID string) (bool, error) {
+	var member bool
+
+	err := DB.QueryRow(
+		context.Background(),
+		`
+		SELECT EXISTS (
+			SELECT 1
+			FROM repositories r
+			WHERE r.id = $1 AND r.owner_id = $2
+			UNION ALL
+			SELECT 1
+			FROM contributors c
+			JOIN "user" u ON lower(u.name) = lower(c.username)
+			WHERE c.repo_id = $1 AND u.id = $2
+		)
+		`,
+		repoID,
+		userID,
+	).Scan(&member)
+
+	return member, err
 }
 
 // SetIssueLabels replaces the label set of an issue. Labels not in the given

@@ -3,6 +3,7 @@ package handlers
 import (
 	"backend/internal/database"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -76,7 +77,7 @@ func parseDueDate(raw json.RawMessage) (*time.Time, error) {
 //	GET  /api/repos/{owner}/{repo}/issues  ?state=open&author=&assignee=&search=&sort=&label=
 //	POST /api/repos/{owner}/{repo}/issues
 func IssuesHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "GET, POST")
+	setCORS(w, r, "GET, POST")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
@@ -123,12 +124,30 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 		})
 
 	case http.MethodPost:
+		// The authenticated user is the author; user ids sent by the client
+		// are never trusted.
+		author, err := authenticate(r)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "you must be signed in to create an issue")
+			return
+		}
+
+		member, err := database.IsRepoMember(info.ID, author.ID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if !member {
+			writeError(w, http.StatusForbidden, "you must be a contributor of this repository to create an issue")
+			return
+		}
+
 		var req struct {
-			UserID      string   `json:"userId"`
-			Username    string   `json:"username"`
 			Title       string   `json:"title"`
 			Description string   `json:"description"`
 			Labels      []string `json:"labels"`
+			Assignees   []string `json:"assignees"`
 			DueDate     *string  `json:"dueDate"`
 		}
 
@@ -139,13 +158,13 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 
 		req.Title = strings.TrimSpace(req.Title)
 
-		if req.UserID == "" {
-			writeError(w, http.StatusBadRequest, "userId is required")
+		if req.Title == "" {
+			writeError(w, http.StatusBadRequest, "title is required")
 			return
 		}
 
-		if req.Title == "" {
-			writeError(w, http.StatusBadRequest, "title is required")
+		if len([]rune(req.Title)) > 200 {
+			writeError(w, http.StatusBadRequest, "title must be 200 characters or fewer")
 			return
 		}
 
@@ -160,12 +179,19 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 			dueDate = &parsed
 		}
 
+		assignees, err := validateRepoMembers(info.ID, req.Assignees)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
 		issue, err := database.CreateIssue(
 			info.ID,
-			req.UserID,
+			author.ID,
 			req.Title,
 			req.Description,
-			req.Labels,
+			cleanLabels(req.Labels),
+			assignees,
 			dueDate,
 		)
 		if err != nil {
@@ -180,12 +206,13 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// IssueHandler fetches and updates a single issue.
+// IssueHandler fetches, updates and deletes a single issue.
 //
-//	GET   /api/repos/{owner}/{repo}/issues/{number}
-//	PATCH /api/repos/{owner}/{repo}/issues/{number}
+//	GET    /api/repos/{owner}/{repo}/issues/{number}
+//	PATCH  /api/repos/{owner}/{repo}/issues/{number}
+//	DELETE /api/repos/{owner}/{repo}/issues/{number}
 func IssueHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "GET, PATCH")
+	setCORS(w, r, "GET, PATCH, DELETE")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
@@ -285,6 +312,33 @@ func IssueHandler(w http.ResponseWriter, r *http.Request) {
 
 		writeJSON(w, http.StatusOK, updated)
 
+	case http.MethodDelete:
+		// The authenticated user is the actor; user ids sent by the client are
+		// never trusted.
+		author, err := authenticate(r)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "you must be signed in to delete an issue")
+			return
+		}
+
+		issue, ok := getIssueOr404(w, info.ID, number)
+		if !ok {
+			return
+		}
+
+		// Only the issue author or the repository owner may delete an issue.
+		if author.ID != issue.Author.ID && author.ID != info.OwnerID {
+			writeError(w, http.StatusForbidden, "only the issue author or repository owner can delete an issue")
+			return
+		}
+
+		if err := database.DeleteIssue(info.ID, number); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		writeSuccess(w, map[string]any{"success": true})
+
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 	}
@@ -294,7 +348,7 @@ func IssueHandler(w http.ResponseWriter, r *http.Request) {
 //
 //	POST /api/repos/{owner}/{repo}/issues/{number}/state
 func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "POST")
+	setCORS(w, r, "POST")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
@@ -316,10 +370,17 @@ func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The authenticated user is the actor; user ids sent by the client are
+	// never trusted.
+	author, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "you must be signed in to change issue state")
+		return
+	}
+
 	var req struct {
-		State    string `json:"state"`
-		UserID   string `json:"userId"`
-		Username string `json:"username"`
+		State  string `json:"state"`
+		Reason string `json:"reason"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -332,16 +393,20 @@ func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.State == "closed" && req.UserID == "" {
-		writeError(w, http.StatusBadRequest, "userId is required to close an issue")
-		return
+	if req.State == "closed" {
+		switch req.Reason {
+		case "completed", "not_planned", "duplicated":
+		default:
+			writeError(w, http.StatusBadRequest, "invalid close reason")
+			return
+		}
 	}
 
 	if _, ok := getIssueOr404(w, info.ID, number); !ok {
 		return
 	}
 
-	if err := database.UpdateIssueState(info.ID, number, req.State, req.UserID); err != nil {
+	if err := database.UpdateIssueState(info.ID, number, req.State, author.ID, req.Reason); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -359,7 +424,7 @@ func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
 //
 //	POST /api/repos/{owner}/{repo}/issues/{number}/assignee
 func IssueAssigneeHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "POST")
+	setCORS(w, r, "POST")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
@@ -381,8 +446,25 @@ func IssueAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	author, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "you must be signed in to update assignees")
+		return
+	}
+
+	member, err := database.IsRepoMember(info.ID, author.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if !member {
+		writeError(w, http.StatusForbidden, "you must be a contributor of this repository to update assignees")
+		return
+	}
+
 	var req struct {
-		AssigneeID *string `json:"assigneeId"`
+		Assignees []string `json:"assignees"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -390,18 +472,17 @@ func IssueAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var assigneeID *string
-
-	if req.AssigneeID != nil && strings.TrimSpace(*req.AssigneeID) != "" {
-		value := strings.TrimSpace(*req.AssigneeID)
-		assigneeID = &value
+	assignees, err := validateRepoMembers(info.ID, req.Assignees)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	if _, ok := getIssueOr404(w, info.ID, number); !ok {
 		return
 	}
 
-	if err := database.UpdateIssueAssignee(info.ID, number, assigneeID); err != nil {
+	if err := database.SetIssueAssignees(info.ID, number, assignees); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -420,7 +501,7 @@ func IssueAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 //	GET  /api/repos/{owner}/{repo}/issues/{number}/comments
 //	POST /api/repos/{owner}/{repo}/issues/{number}/comments
 func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "GET, POST")
+	setCORS(w, r, "GET, POST")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
@@ -452,19 +533,20 @@ func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
 		writeSuccess(w, map[string]any{"comments": comments})
 
 	case http.MethodPost:
+		// The authenticated user is the author; user ids sent by the client
+		// are never trusted.
+		author, err := authenticate(r)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "you must be signed in to comment")
+			return
+		}
+
 		var req struct {
-			UserID   string `json:"userId"`
-			Username string `json:"username"`
-			Body     string `json:"body"`
+			Body string `json:"body"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid request body")
-			return
-		}
-
-		if req.UserID == "" {
-			writeError(w, http.StatusBadRequest, "userId is required")
 			return
 		}
 
@@ -475,7 +557,7 @@ func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		comment, err := database.AddIssueComment(info.ID, number, req.UserID, req.Body)
+		comment, err := database.AddIssueComment(info.ID, number, author.ID, req.Body)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -498,7 +580,7 @@ func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
 //	PATCH  /api/repos/{owner}/{repo}/issues/{number}/comments/{commentId}
 //	DELETE /api/repos/{owner}/{repo}/issues/{number}/comments/{commentId}
 func IssueCommentHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "PATCH, DELETE")
+	setCORS(w, r, "PATCH, DELETE")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
@@ -570,7 +652,7 @@ func IssueCommentHandler(w http.ResponseWriter, r *http.Request) {
 //	GET  /api/repos/{owner}/{repo}/labels
 //	POST /api/repos/{owner}/{repo}/labels
 func IssueLabelsHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "GET, POST")
+	setCORS(w, r, "GET, POST")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
@@ -631,7 +713,7 @@ func IssueLabelsHandler(w http.ResponseWriter, r *http.Request) {
 //
 //	DELETE /api/repos/{owner}/{repo}/labels/{labelId}
 func IssueLabelHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "DELETE")
+	setCORS(w, r, "DELETE")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
@@ -666,4 +748,63 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(payload)
+}
+
+// cleanLabels trims and dedupes label names, dropping empty values.
+func cleanLabels(labels []string) []string {
+	seen := make(map[string]struct{}, len(labels))
+	cleaned := make([]string, 0, len(labels))
+
+	for _, label := range labels {
+		label = strings.TrimSpace(label)
+
+		if label == "" {
+			continue
+		}
+
+		key := strings.ToLower(label)
+
+		if _, ok := seen[key]; ok {
+			continue
+		}
+
+		seen[key] = struct{}{}
+		cleaned = append(cleaned, label)
+	}
+
+	return cleaned
+}
+
+// validateRepoMembers trims and dedupes the given user ids, ensuring every one
+// of them is the repository owner or a contributor.
+func validateRepoMembers(repoID int64, userIDs []string) ([]string, error) {
+	seen := make(map[string]struct{}, len(userIDs))
+	validated := make([]string, 0, len(userIDs))
+
+	for _, userID := range userIDs {
+		userID = strings.TrimSpace(userID)
+
+		if userID == "" {
+			continue
+		}
+
+		if _, ok := seen[userID]; ok {
+			continue
+		}
+
+		seen[userID] = struct{}{}
+
+		member, err := database.IsRepoMember(repoID, userID)
+		if err != nil {
+			return nil, err
+		}
+
+		if !member {
+			return nil, fmt.Errorf("assignee %q is not a member of this repository", userID)
+		}
+
+		validated = append(validated, userID)
+	}
+
+	return validated, nil
 }
