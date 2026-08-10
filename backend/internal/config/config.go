@@ -13,6 +13,7 @@ type Config struct {
 	Port        string
 	ReposPath   string
 	DatabaseURL string
+	ClientURL   string
 }
 
 var App Config
@@ -39,10 +40,15 @@ func Load() error {
 		Port:        os.Getenv("PORT"),
 		ReposPath:   os.Getenv("REPOS_PATH"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
+		ClientURL:   os.Getenv("CLIENT_URL"),
 	}
 
 	if App.Port == "" {
 		App.Port = "3200"
+	}
+
+	if App.ClientURL == "" {
+		App.ClientURL = "http://localhost:3000"
 	}
 
 	return nil
