@@ -12,11 +12,9 @@ import {
 	Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import rehypeSanitize from "rehype-sanitize";
-import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import type { Contributor } from "#/components/repo/contributor-avatars";
+import { Markdown } from "#/components/repo/issues/markdown";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -70,19 +68,6 @@ const closeReasons = [
 		icon: CircleSlash,
 	},
 ];
-
-function Markdown({ content }: { content: string }) {
-	return (
-		<div className="prose prose-neutral dark:prose-invert max-w-none text-[15px] prose-headings:scroll-mt-20 prose-pre:rounded-lg prose-pre:border prose-pre:bg-accent prose-code:before:content-none prose-code:after:content-none">
-			<ReactMarkdown
-				remarkPlugins={[remarkGfm]}
-				rehypePlugins={[rehypeSanitize]}
-			>
-				{content}
-			</ReactMarkdown>
-		</div>
-	);
-}
 
 function UserAvatar({ user }: { user: IssueUser }) {
 	return (

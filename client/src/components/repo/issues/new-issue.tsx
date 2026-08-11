@@ -4,6 +4,7 @@ import { Check, Circle, Settings, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Contributor } from "#/components/repo/contributor-avatars";
+import { MarkdownEditor } from "#/components/repo/issues/markdown-editor";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -20,7 +21,6 @@ import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { Separator } from "#/components/ui/separator";
 import { Spinner } from "#/components/ui/spinner";
-import { Textarea } from "#/components/ui/textarea";
 import { useRepoData } from "#/hooks/useRepoData";
 import { authClient } from "#/lib/auth-client";
 
@@ -277,13 +277,12 @@ function NewIssue() {
 					<div className="space-y-2">
 						<Label htmlFor="issue-description">Add a description</Label>
 
-						<Textarea
+						<MarkdownEditor
 							id="issue-description"
-							rows={8}
-							className="h-[420px]"
-							placeholder="Type your description here..."
+							uploadUrl={`http://localhost:3200/api/repos/${username}/${repo}/issues/images`}
+							placeholder="Type your description here... Supports Markdown and image uploads."
 							value={description}
-							onChange={(e) => setDescription(e.target.value)}
+							onChange={setDescription}
 							disabled={submitting}
 						/>
 					</div>
