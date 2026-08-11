@@ -5,9 +5,11 @@ import {
 	ChevronDown,
 	CircleCheck,
 	CircleDot,
+	CircleSlash,
+	Copy,
 	Pencil,
+	RotateCcwClock,
 	Trash2,
-	X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -38,6 +40,7 @@ import { Input } from "#/components/ui/input";
 import { Separator } from "#/components/ui/separator";
 import { Spinner } from "#/components/ui/spinner";
 import { Textarea } from "#/components/ui/textarea";
+import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
 import { useRepoData } from "#/hooks/useRepoData";
 import { authClient } from "#/lib/auth-client";
 import { timeAgo } from "#/lib/time-ago";
@@ -52,16 +55,19 @@ const closeReasons = [
 		value: "completed",
 		label: "Close as completed",
 		description: "This issue has been completed and resolved.",
+		icon: CircleCheck,
 	},
 	{
 		value: "not_planned",
 		label: "Close as not planned",
 		description: "This issue will not be worked on or completed.",
+		icon: CircleSlash,
 	},
 	{
 		value: "duplicated",
 		label: "Close as duplicated",
 		description: "This issue is a duplicate of another issue.",
+		icon: CircleSlash,
 	},
 ];
 
@@ -95,6 +101,7 @@ function IssueDetail() {
 	const queryClient = useQueryClient();
 	const { data: session } = authClient.useSession();
 	const { data: repoData } = useRepoData(username, repo);
+	const { copyToClipboard } = useCopyToClipboard();
 
 	const number = Number(issueParam);
 	const contributors = repoData?.contributors ?? [];
@@ -203,6 +210,13 @@ function IssueDetail() {
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Something went wrong");
 		}
+	}
+
+	async function handleCopyTitle() {
+		if (!issue) return;
+
+		const copied = await copyToClipboard(issue.title);
+		if (copied) toast.success("Title copied");
 	}
 
 	async function handleDelete() {
@@ -451,39 +465,66 @@ function IssueDetail() {
 	const canDelete = isAuthor || currentUserID === repoData?.ownerId;
 
 	return (
-		<div className="mx-40">
+		<div className="mx-40 mb-10">
 			<div className="pt-4">
-				<Button
-					variant="ghost"
-					size="sm"
-					className="mb-2 -ml-2 text-muted-foreground"
-					onClick={() => navigate({ to: `/${username}/${repo}/issues` })}
-				>
-					← Back to issues
-				</Button>
+				<div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="-ml-2 text-muted-foreground"
+						onClick={() => navigate({ to: `/${username}/${repo}/issues` })}
+					>
+						← Back to issues
+					</Button>
+
+					<div className="flex items-center gap-2">
+						<Button
+							variant="default"
+							onClick={() =>
+								navigate({ to: `/${username}/${repo}/issues/new` })
+							}
+						>
+							New issue
+						</Button>
+						<Button variant="ghost" onClick={handleCopyTitle}>
+							<Copy className="size-4" />
+						</Button>
+					</div>
+				</div>
 
 				<div className="flex items-center gap-3">
 					<h1 className="min-w-0 truncate text-3xl font-bold">{issue.title}</h1>
-					<Badge
-						className={
-							closed
-								? "h-7 gap-1.5  bg-purple-600 text-sm"
-								: "h-7 gap-1.5  bg-green-600  text-sm"
-						}
-						variant="outline"
-					>
-						{closed ? (
-							<span className="inline-flex items-center gap-1.5">
+
+					{closed ? (
+						issue.closeReason === "not_planned" ||
+						issue.closeReason === "duplicated" ? (
+							<Badge
+								variant="secondary"
+								className="h-7 gap-1.5 bg-neutral-500 text-sm"
+							>
+								<CircleSlash className="size-4 shrink-0" />
+								{issue.closeReason === "not_planned"
+									? "Closed as not planned"
+									: "Closed as duplicate"}
+							</Badge>
+						) : (
+							<Badge
+								className="h-7 gap-1.5 bg-purple-600 text-sm"
+								variant="outline"
+							>
 								<CircleCheck className="size-4 shrink-0" />
 								Closed
-							</span>
-						) : (
-							<span className="inline-flex items-center gap-1.5">
-								<CircleDot className="size-4 shrink-0" />
-								Open
-							</span>
-						)}
-					</Badge>
+							</Badge>
+						)
+					) : (
+						<Badge
+							className="h-7 gap-1.5 bg-green-600 text-sm"
+							variant="outline"
+						>
+							<CircleDot className="size-4 shrink-0" />
+							Open
+						</Badge>
+					)}
 				</div>
 
 				<p className="mt-1 text-sm text-muted-foreground">
@@ -703,36 +744,53 @@ function IssueDetail() {
 					</div>
 
 					{currentUserID && (
-						<div className="flex flex-wrap items-center gap-2">
+						<div className="flex justify-end gap-2">
 							{closed ? (
 								<Button variant="outline" onClick={handleReopen}>
-									<X size={14} />
+									<RotateCcwClock size={14} />
 									Reopen issue
 								</Button>
 							) : (
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Button variant="secondary">
+										<Button variant="outline">
 											<Check size={14} />
 											Close issue
 											<ChevronDown />
 										</Button>
 									</DropdownMenuTrigger>
 
-									<DropdownMenuContent align="start" className="w-64">
-										{closeReasons.map((reason) => (
-											<DropdownMenuItem
-												key={reason.value}
-												onClick={() => handleClose(reason.value)}
-											>
-												<span className="flex flex-col gap-0.5">
-													<span>{reason.label}</span>
-													<span className="text-xs text-muted-foreground">
-														{reason.description}
+									<DropdownMenuContent align="start" className="w-80">
+										{closeReasons.map((reason) => {
+											const ReasonIcon = reason.icon;
+
+											return (
+												<DropdownMenuItem
+													key={reason.value}
+													onClick={() => handleClose(reason.value)}
+												>
+													<ReasonIcon
+														className={
+															reason.value === "completed"
+																? "mt-0.5 self-start size-4 shrink-0 text-purple-600"
+																: "mt-0.5 self-start size-4 shrink-0"
+														}
+													/>
+													<span className="flex flex-col gap-0.5">
+														<span
+															className={
+																reason.value === "completed" ? "" : undefined
+															}
+														>
+															{reason.label}
+														</span>
+														<span className="whitespace-nowrap text-xs text-muted-foreground">
+															{reason.description}
+														</span>
 													</span>
-												</span>
-											</DropdownMenuItem>
-										))}
+												</DropdownMenuItem>
+											);
+										})}
 									</DropdownMenuContent>
 								</DropdownMenu>
 							)}
@@ -803,6 +861,7 @@ function IssueDetail() {
 															<AvatarImage
 																src={contributor.avatar}
 																alt={contributor.username}
+																sizes="sm"
 															/>
 														) : null}
 														<AvatarFallback>
@@ -840,27 +899,6 @@ function IssueDetail() {
 								<span className="text-sm text-muted-foreground">None</span>
 							)}
 						</div>
-					</div>
-					<Separator />
-
-					<div>
-						<h3 className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-							Due date
-						</h3>
-						<p className="text-sm text-muted-foreground">
-							{issue.dueDate ? timeAgo(issue.dueDate) : "No due date"}
-						</p>
-					</div>
-
-					<div>
-						<h3 className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-							{closed ? "Closed" : "Open"} by
-						</h3>
-						<p className="text-sm text-muted-foreground">
-							{closed && issue.closedBy
-								? `${issue.closedBy.username} ${timeAgo(issue.closedAt ?? issue.updatedAt)}`
-								: issue.author.username}
-						</p>
 					</div>
 				</div>
 			</div>
