@@ -10,7 +10,7 @@ interface IssueItemProps {
 	description: string;
 	state: "open" | "closed";
 	author: IssueUser;
-	assignee: IssueUser | null;
+	assignees: IssueUser[];
 	labels: string[];
 	createdAt: string;
 	updatedAt: string;
@@ -31,7 +31,7 @@ function IssueItem({
 	number,
 	state,
 	author,
-	assignee,
+	assignees,
 	labels,
 	createdAt,
 	closedAt,
@@ -95,8 +95,9 @@ function IssueItem({
 					</span>
 				)}
 
-				{assignee && (
+				{assignees.slice(0, 2).map((assignee) => (
 					<Avatar
+						key={assignee.id}
 						size="sm"
 						className="transition-transform group-hover:scale-105"
 						title={assignee.username}
@@ -106,7 +107,7 @@ function IssueItem({
 						) : null}
 						<AvatarFallback>{getInitials(assignee.username)}</AvatarFallback>
 					</Avatar>
-				)}
+				))}
 			</div>
 		</div>
 	);

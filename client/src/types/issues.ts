@@ -19,12 +19,13 @@ export interface Issue {
 	description: string;
 	state: "open" | "closed";
 	author: IssueUser;
-	assignee: IssueUser | null;
+	assignees: IssueUser[];
 	labels: string[];
 	createdAt: string;
 	updatedAt: string;
 	closedAt: string | null;
 	closedBy: IssueUser | null;
+	closeReason: "completed" | "not_planned" | "duplicated" | null;
 	dueDate: string | null;
 	commentCount: number;
 	comments?: IssueComment[];

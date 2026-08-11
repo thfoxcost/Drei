@@ -21,10 +21,20 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	})
 }
 
-func setCORS(w http.ResponseWriter, methods string) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+func setCORS(w http.ResponseWriter, r *http.Request, methods string) {
+	// Echo the request origin instead of using "*" so credentialed requests
+	// (the better-auth session cookie) are allowed by the browser.
+	origin := r.Header.Get("Origin")
+
+	if origin == "" {
+		origin = "*"
+	}
+
+	w.Header().Set("Access-Control-Allow-Origin", origin)
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", methods+", OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Vary", "Origin")
 }
 
 func handleOptions(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +42,7 @@ func handleOptions(w http.ResponseWriter, r *http.Request) {
 }
 
 func ArchiveHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "POST")
+	setCORS(w, r, "POST")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
@@ -74,7 +84,7 @@ func ArchiveHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func VisibilityHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "POST")
+	setCORS(w, r, "POST")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
