@@ -154,6 +154,74 @@ func Migrate() error {
 		return err
 	}
 
+	// Issues can be closed with a reason explaining why (completed, not
+	// planned, duplicated). The value is only meaningful while the issue is
+	// closed; reopening clears it.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE issues
+		ADD COLUMN IF NOT EXISTS close_reason TEXT;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Issues can have multiple assignees. The join table is the source of
+	// truth; user_id references the better-auth "user" table by id.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS issue_assignees (
+			issue_id BIGINT NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
+			user_id TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			PRIMARY KEY (issue_id, user_id)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS issue_assignees_issue_id_idx
+		ON issue_assignees (issue_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Backwards compatibility: move the old single issues.assignee_id value
+	// into the join table, then drop the column. The backfill is guarded so it
+	// only runs on databases that still have the old column (the migration is
+	// re-run on every startup).
+	_, err = DB.Exec(context.Background(), `
+		DO $$
+		BEGIN
+			IF EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_schema = 'public'
+				  AND table_name = 'issues'
+				  AND column_name = 'assignee_id'
+			) THEN
+				INSERT INTO issue_assignees (issue_id, user_id)
+				SELECT i.id, i.assignee_id
+				FROM issues i
+				WHERE i.assignee_id IS NOT NULL
+				ON CONFLICT DO NOTHING;
+			END IF;
+		END $$;
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE issues
+		DROP COLUMN IF EXISTS assignee_id;
+	`)
+	if err != nil {
+		return err
+	}
+
 	// Issue labels are scoped to a repository so the same label name can exist
 	// independently on different repositories.
 	_, err = DB.Exec(context.Background(), `

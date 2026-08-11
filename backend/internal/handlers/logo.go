@@ -17,7 +17,7 @@ const maxLogoSize = 2 * 1024 * 1024
 // under <REPOS_PATH>/logos/<owner>/<repo>.<ext> and persists the relative path
 // on the repositories row. It returns the public URL for the stored logo.
 func LogoHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "POST")
+	setCORS(w, r, "POST")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)

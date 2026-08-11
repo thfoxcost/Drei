@@ -13,7 +13,7 @@ import (
 //	POST   /api/repos/{owner}/{repo}/collaborators -> add a collaborator
 //	DELETE /api/repos/{owner}/{repo}/collaborators -> remove a collaborator
 func CollaboratorsHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "GET, POST, DELETE")
+	setCORS(w, r, "GET, POST, DELETE")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
