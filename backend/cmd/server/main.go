@@ -35,6 +35,7 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/logo", handlers.LogoHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/collaborators", handlers.CollaboratorsHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/issues", handlers.IssuesHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/issues/images", handlers.IssueImageHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}", handlers.IssueHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}/state", handlers.IssueStateHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}/assignee", handlers.IssueAssigneeHandler)
@@ -47,6 +48,12 @@ func main() {
 	// Serve uploaded repo logos from <REPOS_PATH>/logos under /uploads/.
 	logosDir := filepath.Join(config.App.ReposPath, "logos")
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(logosDir))))
+
+	// Serve uploaded issue images from <REPOS_PATH>/issue-images under
+	// /uploads/issue-images/. This pattern is more specific than /uploads/ so it
+	// takes precedence over the logo file server.
+	issueImagesDir := filepath.Join(config.App.ReposPath, "issue-images")
+	http.Handle("/uploads/issue-images/", http.StripPrefix("/uploads/issue-images/", http.FileServer(http.Dir(issueImagesDir))))
 
 	fmt.Printf("[OK] Server listening on :%s\n", config.App.Port)
 
