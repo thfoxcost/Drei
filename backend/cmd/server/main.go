@@ -31,6 +31,7 @@ func main() {
 	http.HandleFunc("/api/repos", handlers.CreateRepo)
 	http.HandleFunc("/api/repos/{owner}/{repo}", handlers.RepoHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/archive", handlers.ArchiveHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/download", handlers.DownloadHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/visibility", handlers.VisibilityHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/logo", handlers.LogoHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/collaborators", handlers.CollaboratorsHandler)
