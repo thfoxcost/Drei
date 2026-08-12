@@ -14,6 +14,17 @@ interface RepoProps {
 	branch?: string;
 }
 
+function decodeDocContent(content: string): string {
+	if (!content) return "";
+	try {
+		const binary = atob(content);
+		const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+		return new TextDecoder("utf-8").decode(bytes);
+	} catch {
+		return "";
+	}
+}
+
 function Repo({ owner, repo, branch }: RepoProps) {
 	const { data: repoData, error } = useRepoData(owner, repo, branch);
 
@@ -89,6 +100,9 @@ function Repo({ owner, repo, branch }: RepoProps) {
 		})
 		.filter((doc): doc is { name: string; content: string } => doc !== null);
 
+	const readmeDoc = docs.find((doc) => doc.name === "README");
+	const readmeMarkdown = readmeDoc ? decodeDocContent(readmeDoc.content) : "";
+
 	return (
 		<>
 			<ArchivedBanner owner={owner} repo={repo} />
@@ -106,6 +120,7 @@ function Repo({ owner, repo, branch }: RepoProps) {
 							tags={repoData.tags}
 							nTags={repoData.tags?.length ?? 0}
 							cloneUrl={repoData.cloneUrl}
+							readme={readmeMarkdown}
 						/>
 
 						<Mainheader
