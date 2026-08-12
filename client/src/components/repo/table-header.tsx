@@ -11,6 +11,7 @@ import {
 	Tag,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
 import {
 	DropdownMenu,
@@ -113,6 +114,37 @@ function Tableheader({
 				to: "/$username/$repo/tree/$branch",
 				params: { branch },
 			});
+		}
+	};
+
+	const handleDownload = async (format: "zip" | "tar.gz") => {
+		const url = `${import.meta.env.VITE_BACKEND_URL}/api/repos/${owner}/${repo}/download?format=${format}&branch=${encodeURIComponent(currentBranch)}`;
+
+		try {
+			const res = await fetch(url);
+
+			if (!res.ok) {
+				let message = "Failed to download archive";
+				try {
+					const data = (await res.json()) as { error?: string };
+					if (data.error) message = data.error;
+				} catch {
+					// non-JSON error body
+				}
+				throw new Error(message);
+			}
+
+			const blob = await res.blob();
+			const objectUrl = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = objectUrl;
+			link.download = `${repo}.${format}`;
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			URL.revokeObjectURL(objectUrl);
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Something went wrong");
 		}
 	};
 
@@ -319,24 +351,18 @@ function Tableheader({
 
 							<Separator className="my-1" />
 
-							<DropdownMenuItem disabled>
+							<DropdownMenuItem onClick={() => handleDownload("zip")}>
 								<FileArchive className="size-4" />
-								<a
-									href="https://code.visualstudio.com/"
-									className=" hover:underline text-sm text-foreground"
-								>
+								<span className=" hover:underline text-sm text-foreground">
 									Download ZIP
-								</a>
+								</span>
 							</DropdownMenuItem>
 
-							<DropdownMenuItem disabled>
+							<DropdownMenuItem onClick={() => handleDownload("tar.gz")}>
 								<FileArchive className="size-4" />
-								<a
-									href="https://code.visualstudio.com/"
-									className=" hover:underline text-sm text-foreground"
-								>
+								<span className=" hover:underline text-sm text-foreground">
 									Download TAR.GZ
-								</a>
+								</span>
 							</DropdownMenuItem>
 
 							<DropdownMenuItem disabled>
