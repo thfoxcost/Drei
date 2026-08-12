@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
 	DropdownMenu,
@@ -41,6 +42,7 @@ interface TableheaderProps {
 	tags: string[] | null;
 	nTags: number;
 	cloneUrl: string;
+	readme?: string;
 }
 
 function CloneUrlField({ url }: { url?: string }) {
@@ -93,6 +95,7 @@ function Tableheader({
 	tags,
 	nTags,
 	cloneUrl,
+	readme,
 }: TableheaderProps) {
 	const navigate = useNavigate();
 	const [branchFilter, setBranchFilter] = useState("");
@@ -148,6 +151,51 @@ function Tableheader({
 		}
 	};
 
+	const handleDownloadReadme = () => {
+		if (!readme) {
+			toast.error("No README found in this repository");
+			return;
+		}
+
+		const blob = new Blob([readme], { type: "text/markdown;charset=utf-8" });
+		const objectUrl = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = objectUrl;
+		link.download = "README.md";
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		URL.revokeObjectURL(objectUrl);
+	};
+
+	const handleOpenInVSCode = () => {
+		const uri = `vscode://vscode.git/clone?url=${encodeURIComponent(cloneUrl)}`;
+
+		let opened = false;
+		const onBlur = () => {
+			opened = true;
+			window.removeEventListener("blur", onBlur);
+		};
+
+		window.addEventListener("blur", onBlur);
+
+		try {
+			window.location.href = uri;
+		} catch {
+			window.removeEventListener("blur", onBlur);
+		}
+
+		window.setTimeout(() => {
+			window.removeEventListener("blur", onBlur);
+
+			if (!opened) {
+				toast.error(
+					"VS Code doesn't appear to be installed, or the vscode:// link could not be opened",
+				);
+			}
+		}, 2000);
+	};
+
 	return (
 		<div className="flex flex-row items-center gap-2 justify-between">
 			<div className="flex flex-row gap-3">
@@ -191,9 +239,13 @@ function Tableheader({
 										<GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
 										{branch}
 									</span>
-									{branch === currentBranch && (
+									{branch === defaultBranch ? (
+										<Badge variant="outline" className="h-4 px-1.5 text-[10px]">
+											Default
+										</Badge>
+									) : branch === currentBranch ? (
 										<Check className="h-3.5 w-3.5 text-green-600" />
-									)}
+									) : null}
 								</DropdownMenuItem>
 							))
 						)}
@@ -322,18 +374,15 @@ function Tableheader({
 							</TabsContent>
 						</Tabs>
 						<DropdownMenuGroup className="mt-2">
-							<DropdownMenuItem disabled>
+							<DropdownMenuItem onClick={handleOpenInVSCode}>
 								<img
 									src="/icons/vscode.svg"
 									alt="vscode icon"
 									className="h-4 w-4 grayscale"
 								/>
-								<a
-									href="https://code.visualstudio.com/"
-									className=" hover:underline text-sm text-foreground"
-								>
+								<span className=" hover:underline text-sm text-foreground">
 									Open with VS Code
-								</a>
+								</span>
 							</DropdownMenuItem>
 							<DropdownMenuItem disabled>
 								<img
@@ -365,18 +414,15 @@ function Tableheader({
 								</span>
 							</DropdownMenuItem>
 
-							<DropdownMenuItem disabled>
+							<DropdownMenuItem onClick={handleDownloadReadme}>
 								<img
 									src="/icons/readme.svg"
 									alt="drei icon"
 									className="h-4.5 w-4.5 grayscale"
 								/>
-								<a
-									href="https://code.visualstudio.com/"
-									className=" hover:underline text-sm text-foreground"
-								>
+								<span className=" hover:underline text-sm text-foreground">
 									Download README
-								</a>
+								</span>
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 					</DropdownMenuContent>
