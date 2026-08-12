@@ -53,9 +53,12 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 	const repoPrefix = "/$username/$repo";
 
 	// The stars header stays in its original spot in the layout but only
-	// renders on the repository root, not on nested routes like /issues.
+	// renders on the repository code root (the default branch and any
+	// selected branch tree), not on nested routes like /issues.
 	const isRepoRoot = matches.some(
-		(match) => match.routeId === `${repoPrefix}/`,
+		(match) =>
+			match.routeId === `${repoPrefix}/` ||
+			match.routeId === `${repoPrefix}/tree/$branch`,
 	);
 
 	const currentTab = useMemo(() => {
