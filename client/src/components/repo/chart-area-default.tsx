@@ -29,9 +29,9 @@ const chartConfig = {
 export function ContributionChart({ data = [] }: ContributionChartProps) {
   const totalCommits = data.reduce((sum, day) => sum + day.count, 0);
 
-  // For long date ranges only the first and last date are labeled to avoid
-  // clutter; the line still plots every day's data point.
-  const xAxisInterval = data.length > 14 ? data.length - 2 : 0;
+  // With 6 or more days the date labels crowd and overlap, so the X-axis
+  // date labels are hidden entirely; the line still plots every day's data.
+  const hideDateLabels = data.length >= 6;
 
   return (
     <div className="w-full">
@@ -58,7 +58,8 @@ export function ContributionChart({ data = [] }: ContributionChartProps) {
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            interval={xAxisInterval}
+            interval={0}
+            tick={!hideDateLabels}
             tickFormatter={(value: string) => format(parseISO(value), "MMM d")}
           />
 
