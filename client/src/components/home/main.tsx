@@ -1,103 +1,44 @@
-import { useEffect, useState } from "react"
+import type { Repo } from "#/hooks/useUserRepos";
+import { authClient } from "#/lib/auth-client";
+import Clock from "@/components/clock-06";
+import Dash from "./dash";
+import SystemHealth from "./health";
+import Profile from "./profile";
+import Repos from "./repos";
+import Weather from "./weather-07";
 
-import Clock from "@/components/clock-06"
-import Dash from "./dash"
-import Profile from "./profile"
-import Weather from "./weather-07"
-import SystemHealth from "./health"
-import Repos from "./repos"
-
-import { authClient } from "#/lib/auth-client"
-
-interface Repo {
-  name: string
-  description: string
-  tags: string[]
-  language: string
-  lastUpdated: string
-
-  // dummy from backend for now
-  stars: number
-  forks: number
-  license: string
+interface MainProps {
+	repos: Repo[];
 }
 
+function Main({ repos }: MainProps) {
+	const { data: session } = authClient.useSession();
 
-function Main() {
+	const username = session?.user.name;
 
-  const { data: session } = authClient.useSession()
+	return (
+		<div className="flex flex-1 min-h-0 gap-6 p-6 overflow-hidden">
+			<div className="flex flex-col gap-4">
+				<Profile />
+				<div className="flex h-26 w-auto items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
+					@{username ?? "username"}
+				</div>
+			</div>
 
-  const [repos, setRepos] = useState<Repo[]>([])
+			<div className="flex flex-1 gap-6 min-w-0">
+				<div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+					<Dash />
+					<Repos repos={repos} />
+				</div>
 
-  const username = session?.user.name
-
-
-
-  useEffect(() => {
-
-    if (!username) return
-
-
-    async function getRepos() {
-
-      try {
-
-        const res = await fetch(
-          `http://localhost:3200/api/users/${username}/repos`
-        )
-
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch repos")
-        }
-
-
-        const data: Repo[] = await res.json()
-
-
-        setRepos(data)
-
-
-      } catch (err) {
-
-        console.error(err)
-
-      }
-
-    }
-
-
-    getRepos()
-
-
-  }, [username])
-
-
-
-return (
-  <div className="flex flex-1 min-h-0 gap-6 p-6 overflow-hidden">
-    <div className="flex flex-col gap-4">
-      <Profile />
-      <div className="flex h-26 w-auto items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
-        @{username ?? "username"}
-      </div>
-    </div>
-
-    <div className="flex flex-1 gap-6 min-w-0">
-      <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
-        <Dash />
-        <Repos repos={repos} />
-      </div>
-
-      <div className="flex flex-col gap-5 shrink-0">
-        <Clock />
-        <Weather />
-        <SystemHealth />
-      </div>
-    </div>
-  </div>
-);2
+				<div className="flex flex-col gap-5 shrink-0">
+					<Clock />
+					<Weather />
+					<SystemHealth />
+				</div>
+			</div>
+		</div>
+	);
 }
 
-
-export default Main
+export default Main;
