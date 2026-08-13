@@ -167,14 +167,9 @@ func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
 		CloneURL:       cloneURL,
 		Commits:        commits,
 		CommitActivity: commitActivity,
-		LastCommit: CommitInfo{
-			Hash:    lastCommit.Hash.String(),
-			Message: lastCommit.Message,
-			Author:  lastCommit.Author.Name,
-			Date:    lastCommit.Author.When.Format(time.RFC3339),
-		},
-		Files:        files,
-		Size:         repoSize,
-		Contributors: contributors,
+		LastCommit:     lastCommit,
+		Files:          files,
+		Size:           repoSize,
+		Contributors:   contributors,
 	}, nil
 }
