@@ -1,98 +1,102 @@
 "use client";
 
 import {
-  CircleDot,
-  GitCommit,
-  GitPullRequest,
-  type LucideIcon,
+	CircleDot,
+	GitCommit,
+	GitPullRequest,
+	type LucideIcon,
 } from "lucide-react";
 import {
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
+	PolarAngleAxis,
+	PolarGrid,
+	PolarRadiusAxis,
+	Radar,
+	RadarChart,
+	ResponsiveContainer,
 } from "recharts";
 
 import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
+	type ChartConfig,
+	ChartContainer,
+	ChartTooltip,
+	ChartTooltipContent,
 } from "@/components/ui/chart";
 
 interface ActivityDatum {
-  activity: string;
-  value: number;
-  icon: LucideIcon;
+	activity: string;
+	value: number;
+	icon: LucideIcon;
 }
 
 interface ActivityRadarChartProps {
-  commitCount?: number;
+	commitCount?: number;
+	issueCount?: number;
 }
 
-// TODO: PR and issue counts are static placeholders. Replace them with real
-// counts once PRs and issues are implemented.
+// TODO: The PR count is a static placeholder. Replace it with a real count
+// once pull requests are implemented.
 const DUMMY_PR_COUNT = 123;
-const DUMMY_ISSUE_COUNT = 100;
 
 const chartConfig = {
-  value: {
-    label: "Activity",
-    color: "#22c55e",
-  },
+	value: {
+		label: "Activity",
+		color: "#22c55e",
+	},
 } satisfies ChartConfig;
 
 export function ActivityRadarChart({
-  commitCount = 0,
+	commitCount = 0,
+	issueCount = 0,
 }: ActivityRadarChartProps) {
-  const chartData: ActivityDatum[] = [
-    { activity: "Commits", value: commitCount, icon: GitCommit },
-    { activity: "PRs", value: DUMMY_PR_COUNT, icon: GitPullRequest },
-    { activity: "Issues", value: DUMMY_ISSUE_COUNT, icon: CircleDot },
-  ];
-  return (
-    <div className="w-full">
-      <ChartContainer config={chartConfig} className="mx-auto h-56 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={chartData} outerRadius="75%">
-            <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+	const chartData: ActivityDatum[] = [
+		{ activity: "Commits", value: commitCount, icon: GitCommit },
+		{ activity: "PRs", value: DUMMY_PR_COUNT, icon: GitPullRequest },
+		{ activity: "Issues", value: issueCount, icon: CircleDot },
+	];
+	return (
+		<div className="w-full">
+			<ChartContainer config={chartConfig} className="mx-auto h-56 w-full">
+				<ResponsiveContainer width="100%" height="100%">
+					<RadarChart data={chartData} outerRadius="75%">
+						<ChartTooltip
+							cursor={false}
+							content={<ChartTooltipContent hideLabel />}
+						/>
 
-            <PolarGrid />
+						<PolarGrid />
 
-            <PolarAngleAxis
-              dataKey="activity"
-              tick={({ x, y, payload }) => (
-                <text
-                  x={x}
-                  y={y}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  className="fill-muted-foreground text-xs"
-                >
-                  {payload.value}
-                </text>
-              )}
-            />
+						<PolarAngleAxis
+							dataKey="activity"
+							tick={({ x, y, payload }) => (
+								<text
+									x={x}
+									y={y}
+									textAnchor="middle"
+									dominantBaseline="central"
+									className="fill-muted-foreground text-xs"
+								>
+									{payload.value}
+								</text>
+							)}
+						/>
 
-            <PolarRadiusAxis tick={false} axisLine={false} />
+						<PolarRadiusAxis tick={false} axisLine={false} />
 
-            <Radar
-              dataKey="value"
-              stroke="#22c55e"
-              fill="#22c55e"
-              fillOpacity={0.25}
-              strokeWidth={2}
-              dot={{
-                r: 4,
-                fill: "#22c55e",
-                stroke: "#22c55e",
-              }}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
-      </ChartContainer>
-    </div>
-  );
+						<Radar
+							dataKey="value"
+							stroke="#22c55e"
+							fill="#22c55e"
+							fillOpacity={0.25}
+							strokeWidth={2}
+							dot={{
+								r: 4,
+								fill: "#22c55e",
+								stroke: "#22c55e",
+							}}
+						/>
+					</RadarChart>
+				</ResponsiveContainer>
+			</ChartContainer>
+		</div>
+	);
 }
