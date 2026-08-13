@@ -16,7 +16,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsernameIndexRouteImport } from './routes/$username/index'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/_auth/signin'
+import { Route as AppReposRouteImport } from './routes/_app/repos'
+import { Route as AppPullsRouteImport } from './routes/_app/pulls'
 import { Route as AppNewRouteImport } from './routes/_app/new'
+import { Route as AppIssuesRouteImport } from './routes/_app/issues'
 import { Route as UsernameRepoRouteRouteImport } from './routes/$username/$repo/route'
 import { Route as UsernameRepoIndexRouteImport } from './routes/$username/$repo/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -62,9 +65,24 @@ const AuthSigninRoute = AuthSigninRouteImport.update({
   path: '/signin',
   getParentRoute: () => AuthRoute,
 } as any)
+const AppReposRoute = AppReposRouteImport.update({
+  id: '/repos',
+  path: '/repos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPullsRoute = AppPullsRouteImport.update({
+  id: '/pulls',
+  path: '/pulls',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppNewRoute = AppNewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIssuesRoute = AppIssuesRouteImport.update({
+  id: '/issues',
+  path: '/issues',
   getParentRoute: () => AppRoute,
 } as any)
 const UsernameRepoRouteRoute = UsernameRepoRouteRouteImport.update({
@@ -128,7 +146,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/$username/$repo': typeof UsernameRepoRouteRouteWithChildren
+  '/issues': typeof AppIssuesRoute
   '/new': typeof AppNewRoute
+  '/pulls': typeof AppPullsRoute
+  '/repos': typeof AppReposRoute
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
   '/$username/': typeof UsernameIndexRoute
@@ -146,7 +167,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/issues': typeof AppIssuesRoute
   '/new': typeof AppNewRoute
+  '/pulls': typeof AppPullsRoute
+  '/repos': typeof AppReposRoute
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
   '/$username': typeof UsernameIndexRoute
@@ -167,7 +191,10 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/$username/$repo': typeof UsernameRepoRouteRouteWithChildren
+  '/_app/issues': typeof AppIssuesRoute
   '/_app/new': typeof AppNewRoute
+  '/_app/pulls': typeof AppPullsRoute
+  '/_app/repos': typeof AppReposRoute
   '/_auth/signin': typeof AuthSigninRoute
   '/_auth/signup': typeof AuthSignupRoute
   '/$username/': typeof UsernameIndexRoute
@@ -188,7 +215,10 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/$username/$repo'
+    | '/issues'
     | '/new'
+    | '/pulls'
+    | '/repos'
     | '/signin'
     | '/signup'
     | '/$username/'
@@ -206,7 +236,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
+    | '/issues'
     | '/new'
+    | '/pulls'
+    | '/repos'
     | '/signin'
     | '/signup'
     | '/$username'
@@ -226,7 +259,10 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/$username/$repo'
+    | '/_app/issues'
     | '/_app/new'
+    | '/_app/pulls'
+    | '/_app/repos'
     | '/_auth/signin'
     | '/_auth/signup'
     | '/$username/'
@@ -303,11 +339,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSigninRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_app/repos': {
+      id: '/_app/repos'
+      path: '/repos'
+      fullPath: '/repos'
+      preLoaderRoute: typeof AppReposRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pulls': {
+      id: '/_app/pulls'
+      path: '/pulls'
+      fullPath: '/pulls'
+      preLoaderRoute: typeof AppPullsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/new': {
       id: '/_app/new'
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof AppNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/issues': {
+      id: '/_app/issues'
+      path: '/issues'
+      fullPath: '/issues'
+      preLoaderRoute: typeof AppIssuesRouteImport
       parentRoute: typeof AppRoute
     }
     '/$username/$repo': {
@@ -391,11 +448,17 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppIssuesRoute: typeof AppIssuesRoute
   AppNewRoute: typeof AppNewRoute
+  AppPullsRoute: typeof AppPullsRoute
+  AppReposRoute: typeof AppReposRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppIssuesRoute: AppIssuesRoute,
   AppNewRoute: AppNewRoute,
+  AppPullsRoute: AppPullsRoute,
+  AppReposRoute: AppReposRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
