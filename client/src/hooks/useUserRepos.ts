@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { authClient } from "#/lib/auth-client";
 
-interface Repo {
+export interface Repo {
 	name: string;
 	description: string;
 	tags: string[];
@@ -19,6 +19,7 @@ function useUserRepos() {
 	const { data: session } = authClient.useSession();
 
 	const [repos, setRepos] = useState<Repo[]>([]);
+	const [loaded, setLoaded] = useState(false);
 
 	const username = session?.user.name;
 
@@ -44,6 +45,10 @@ function useUserRepos() {
 				}
 			} catch (err) {
 				console.error(err);
+			} finally {
+				if (!cancelled) {
+					setLoaded(true);
+				}
 			}
 		}
 
@@ -54,7 +59,7 @@ function useUserRepos() {
 		};
 	}, [username]);
 
-	return repos;
+	return { repos, loaded };
 }
 
 export default useUserRepos;

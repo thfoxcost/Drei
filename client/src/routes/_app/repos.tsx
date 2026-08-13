@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_app/repos")({
 });
 
 function ReposPage() {
-	const repos = useUserRepos();
+	const { repos } = useUserRepos();
 
 	return (
 		<DashboardLayout>

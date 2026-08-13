@@ -1,0 +1,64 @@
+/* Dot-matrix loader — faithful recreation of the "Neon Drift" loader from
+   https://dotmatrix.zzzzshawn.cloud/ (dotm-square-1). CSS-only, no JS loop. */
+
+.dmx-root {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	vertical-align: middle;
+	--dmx-cycle: 1500ms;
+	--dmx-opacity-base: 0.16;
+	--dmx-opacity-mid: 0.32;
+	--dmx-opacity-peak: 1;
+}
+
+.dmx-grid {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	grid-template-rows: repeat(5, minmax(0, 1fr));
+}
+
+.dmx-dot {
+	border-radius: 999px;
+	clip-path: none;
+	display: block;
+	background: var(--dmx-dot-fill, currentColor);
+	opacity: calc(0.5 * (var(--dmx-opacity-base) + var(--dmx-opacity-mid)));
+	transform-origin: center;
+	transform: none;
+	will-change: opacity;
+}
+
+.dmx-diagonal-alt-sweep {
+	animation: dmx-diagonal-alt-sweep calc(var(--dmx-cycle) * var(--dmx-speed, 1))
+		linear infinite;
+	animation-delay: calc(
+		(var(--dmx-path, 0) * 0.2 + var(--dmx-diagonal-parity, 0) * 0.5) *
+		var(--dmx-cycle) *
+		var(--dmx-speed, 1)
+	);
+	will-change: opacity;
+}
+
+@keyframes dmx-diagonal-alt-sweep {
+	0%,
+	100% {
+		opacity: calc(0.5 * var(--dmx-opacity-base));
+	}
+
+	14% {
+		opacity: var(--dmx-opacity-peak);
+	}
+
+	30% {
+		opacity: calc(0.75 * var(--dmx-opacity-base));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dmx-dot,
+	.dmx-diagonal-alt-sweep {
+		animation: none;
+		transition: none;
+	}
+}
