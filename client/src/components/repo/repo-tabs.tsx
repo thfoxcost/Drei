@@ -10,7 +10,9 @@ import {
 	Shield,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIssues } from "@/hooks/useIssues";
 import { useRepoData } from "@/hooks/useRepoData";
 import RepoStarsheader from "./repo-stars-header";
 
@@ -45,6 +47,7 @@ interface RepoProps {
 
 export default function RepoTabs({ owner, repo }: RepoProps) {
 	const { data: repoData } = useRepoData(owner, repo);
+	const { data: issuesData } = useIssues(owner, repo, { state: "open" });
 	const [loadingTab, setLoadingTab] = useState<string | null>(null);
 
 	// Derive the active tab from the matched routes so nested pages such as
@@ -123,6 +126,11 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 										<Icon className="size-4" />
 									)}
 									<span className="text-sm">{tab.name}</span>
+									{tab.value === "issues" && (issuesData?.open ?? 0) > 0 && (
+										<Badge variant="secondary" className="ml-1">
+											{issuesData?.open ?? 0}
+										</Badge>
+									)}
 								</>
 							);
 

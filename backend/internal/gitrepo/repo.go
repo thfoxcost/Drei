@@ -29,6 +29,7 @@ type RepoResponse struct {
 	Files          []FileInfo             `json:"files"`
 	Size           int64                  `json:"size"`
 	Contributors   []database.Contributor `json:"contributors"`
+	IssueCount     int                    `json:"issueCount"`
 }
 
 // logoURL builds the public URL for a stored logo path. The stored value is
@@ -57,6 +58,13 @@ func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	openIssues, closedIssues, err := database.CountIssues(info.ID, database.IssueFilter{})
+	if err != nil {
+		return nil, err
+	}
+
+	issueCount := openIssues + closedIssues
 
 	hasCommits, err := CheckPush(owner, repo)
 	if err != nil {
@@ -93,6 +101,7 @@ func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
 			Files:          []FileInfo{},
 			Size:           0,
 			Contributors:   contributors,
+			IssueCount:     issueCount,
 		}, nil
 	}
 
@@ -171,5 +180,6 @@ func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
 		Files:          files,
 		Size:           repoSize,
 		Contributors:   contributors,
+		IssueCount:     issueCount,
 	}, nil
 }
