@@ -1,7 +1,9 @@
+import { Button } from "#/components/ui/button"
 import { UserAvatar } from "#/components/UserAvatar"
 import { authClient } from "#/lib/auth-client"
 import { absoluteDate, timeAgo } from "#/lib/time-ago"
-import { ClockFading } from "lucide-react"
+import { useParams } from "@tanstack/react-router"
+import { ClockFading, RotateCcwClock } from "lucide-react"
 
 interface MainheaderProps {
     owner: string
@@ -18,9 +20,10 @@ function Mainheader({
     commitDate,
     commitNum,
 }: MainheaderProps) {
+    const { username, repo } = useParams({ strict: false });
     const { data: session } = authClient.useSession()
     return (
-        <div className="mt-4 flex items-center justify-between gap-4 rounded-t-sm border bg-muted/40 px-3 py-3">
+        <div className="mt-4 flex items-center justify-between gap-4 rounded-t-sm border bg-muted/40 px-2 py-2">
             <div className="flex min-w-0 flex-1 items-center gap-2">
                 <UserAvatar
                     src={session?.user.image}
@@ -49,14 +52,17 @@ function Mainheader({
                 </span>
 
                 <div className="flex items-center gap-1">
-                    <ClockFading
-                        size={16}
-                        className="text-muted-foreground"
-                    />
-
-                    <span className="whitespace-nowrap text-xs">
-                        {commitNum} Commits
-                    </span>
+                    <a href={`/${username}/${repo}/commits`}>
+                        <Button variant="ghost" >
+                            <RotateCcwClock
+                                size={15}
+                                className="text-muted-foreground"
+                            />
+                            <span className="whitespace-nowrap text-xs">
+                                {commitNum} Commits
+                            </span>
+                        </Button>
+                    </a>
                 </div>
             </div>
         </div>

@@ -72,9 +72,9 @@ function RepoStarsheader({
 
         <Badge variant="secondary">
           {visibility ? (
-            <Earth className="h-4 w-4" />
+            <Earth className="h-3 w-3" />
           ) : (
-            <Lock className="h-4 w-4" />
+            <Lock className="h-3 w-3" />
           )}
           {status}
         </Badge>
