@@ -21,6 +21,8 @@ export interface Issue {
 	author: IssueUser;
 	assignees: IssueUser[];
 	labels: string[];
+	owner: string;
+	repo: string;
 	createdAt: string;
 	updatedAt: string;
 	closedAt: string | null;

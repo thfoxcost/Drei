@@ -21,7 +21,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 				</div>
 			</div>
 
-			<div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0 overflow-y-auto">
+			<div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0 overflow-y-auto mx-10">
 				{children}
 			</div>
 		</div>

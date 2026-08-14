@@ -26,7 +26,9 @@ func main() {
 	}
 
 	http.HandleFunc("/api/contribution", handlers.Contribution)
+	http.HandleFunc("/api/users", handlers.UsersHandler)
 	http.HandleFunc("/api/users/{owner}/repos", handlers.GetRepos)
+	http.HandleFunc("/api/issues", handlers.AllIssuesHandler)
 	http.HandleFunc("/api/status", handlers.Status)
 	http.HandleFunc("/api/repos", handlers.CreateRepo)
 	http.HandleFunc("/api/repos/{owner}/{repo}", handlers.RepoHandler)
