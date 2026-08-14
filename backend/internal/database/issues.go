@@ -40,6 +40,8 @@ type Issue struct {
 	Author       IssueUser      `json:"author"`
 	Assignees    []IssueUser    `json:"assignees"`
 	Labels       []string       `json:"labels"`
+	Owner        string         `json:"owner"`
+	Repo         string         `json:"repo"`
 	CreatedAt    string         `json:"createdAt"`
 	UpdatedAt    string         `json:"updatedAt"`
 	ClosedAt     *string        `json:"closedAt"`
@@ -105,12 +107,15 @@ const issueSelectColumns = `
 		SELECT COUNT(*)
 		FROM issue_comments ic
 		WHERE ic.issue_id = i.id
-	)`
+	),
+	r.owner,
+	r.name`
 
 const issueFromClause = `
 	FROM issues i
 	LEFT JOIN "user" au ON au.id = i.author_id
-	LEFT JOIN "user" cbu ON cbu.id = i.closed_by`
+	LEFT JOIN "user" cbu ON cbu.id = i.closed_by
+	JOIN repositories r ON r.id = i.repo_id`
 
 // rowScanner is satisfied by both *pgx.Row and pgx.Rows.
 type rowScanner interface {
@@ -153,6 +158,8 @@ func scanIssue(row rowScanner) (Issue, error) {
 		&dueDate,
 		&issue.Labels,
 		&issue.CommentCount,
+		&issue.Owner,
+		&issue.Repo,
 	)
 	if err != nil {
 		return Issue{}, err
@@ -221,11 +228,21 @@ func GetIssue(repoID int64, number int) (*Issue, error) {
 
 // issueWhere builds the WHERE clause and arguments for a filter, without the
 // state predicate. Callers apply the state filter themselves so list queries
-// and counts share the same non-state filters.
-func issueWhere(repoID int64, filter IssueFilter) (string, []any, int) {
-	query := " WHERE i.repo_id = $1"
-	args := []any{repoID}
-	param := 2
+// and counts share the same non-state filters. A nil repoID scopes the clause
+// to every repository, which makes it safe to share between per-repo and
+// global queries.
+func issueWhere(repoID *int64, filter IssueFilter) (string, []any, int) {
+	var query string
+	var args []any
+	param := 1
+
+	if repoID != nil {
+		query = " WHERE i.repo_id = $1"
+		args = append(args, *repoID)
+		param = 2
+	} else {
+		query = " WHERE TRUE"
+	}
 
 	if filter.AuthorID != "" {
 		query += fmt.Sprintf(" AND i.author_id = $%d", param)
@@ -265,14 +282,9 @@ func issueWhere(repoID int64, filter IssueFilter) (string, []any, int) {
 	return query, args, param
 }
 
-// ListIssues returns the issues of a repository, filtered and sorted according
-// to the given filter. Search matches title, description and number.
-func ListIssues(repoID int64, filter IssueFilter) ([]Issue, error) {
-	query := `SELECT ` + issueSelectColumns + `
-		` + issueFromClause
-	where, args, param := issueWhere(repoID, filter)
-	query += where
-
+// appendIssueStateAndSort appends the state predicate and ORDER BY clause for
+// an issues list query.
+func appendIssueStateAndSort(query string, param int, args []any, filter IssueFilter) (string, []any) {
 	if filter.State == "open" || filter.State == "closed" {
 		query += fmt.Sprintf(" AND i.state = $%d", param)
 		args = append(args, filter.State)
@@ -298,6 +310,19 @@ func ListIssues(repoID int64, filter IssueFilter) ([]Issue, error) {
 		query += " ORDER BY i.created_at DESC"
 	}
 
+	return query, args
+}
+
+// listIssues runs the shared issues list query scoped to a single repository
+// when repoID is non-nil and across every repository otherwise.
+func listIssues(repoID *int64, filter IssueFilter) ([]Issue, error) {
+	query := `SELECT ` + issueSelectColumns + `
+		` + issueFromClause
+	where, args, param := issueWhere(repoID, filter)
+	query += where
+
+	query, args = appendIssueStateAndSort(query, param, args, filter)
+
 	rows, err := DB.Query(context.Background(), query, args...)
 	if err != nil {
 		return nil, err
@@ -318,9 +343,21 @@ func ListIssues(repoID int64, filter IssueFilter) ([]Issue, error) {
 	return issues, rows.Err()
 }
 
-// CountIssues returns the open and closed issue counts for a repository after
-// applying every non-state filter, so the counts always match the tabbed list.
-func CountIssues(repoID int64, filter IssueFilter) (open, closed int, err error) {
+// ListIssues returns the issues of a repository, filtered and sorted according
+// to the given filter. Search matches title, description and number.
+func ListIssues(repoID int64, filter IssueFilter) ([]Issue, error) {
+	return listIssues(&repoID, filter)
+}
+
+// ListAllIssues returns issues across every repository, filtered and sorted
+// according to the given filter. Search matches title, description and number.
+func ListAllIssues(filter IssueFilter) ([]Issue, error) {
+	return listIssues(nil, filter)
+}
+
+// countIssues runs the shared issues count query scoped to a single repository
+// when repoID is non-nil and across every repository otherwise.
+func countIssues(repoID *int64, filter IssueFilter) (open, closed int, err error) {
 	where, args, _ := issueWhere(repoID, filter)
 
 	err = DB.QueryRow(
@@ -332,6 +369,18 @@ func CountIssues(repoID int64, filter IssueFilter) (open, closed int, err error)
 	).Scan(&open, &closed)
 
 	return open, closed, err
+}
+
+// CountIssues returns the open and closed issue counts for a repository after
+// applying every non-state filter, so the counts always match the tabbed list.
+func CountIssues(repoID int64, filter IssueFilter) (open, closed int, err error) {
+	return countIssues(&repoID, filter)
+}
+
+// CountAllIssues returns the open and closed issue counts across every
+// repository after applying every non-state filter.
+func CountAllIssues(filter IssueFilter) (open, closed int, err error) {
+	return countIssues(nil, filter)
 }
 
 // CreateIssue inserts a new open issue, allocating the next repository-scoped

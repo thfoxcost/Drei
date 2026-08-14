@@ -8,6 +8,12 @@ export interface Repo {
 	tags: string[];
 	language: string;
 	lastUpdated: string;
+	lastUpdatedAt?: string;
+
+	visibility: boolean;
+	archived: boolean;
+	forked: boolean;
+	mirrored: boolean;
 
 	// dummy from backend for now
 	stars: number;
