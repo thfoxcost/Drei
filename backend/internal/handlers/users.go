@@ -9,16 +9,25 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v6"
 )
 
 type RepoInfo struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Tags        []string `json:"tags"`
-	Language    string   `json:"language"`
-	LastUpdated string   `json:"lastUpdated"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	Tags          []string `json:"tags"`
+	Language      string   `json:"language"`
+	LastUpdated   string   `json:"lastUpdated"`
+	LastUpdatedAt string   `json:"lastUpdatedAt"`
+
+	Visibility bool `json:"visibility"`
+	Archived   bool `json:"archived"`
+
+	// Fork and mirror support are not implemented yet.
+	Forked   bool `json:"forked"`
+	Mirrored bool `json:"mirrored"`
 
 	// dummy for now
 	Stars   int    `json:"stars"`
@@ -138,6 +147,8 @@ func GetRepos(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 
 			info.Description = meta.Description
+			info.Visibility = meta.Visibility
+			info.Archived = meta.Archived
 
 		}
 
@@ -160,6 +171,11 @@ func GetRepos(w http.ResponseWriter, r *http.Request) {
 			info.LastUpdated =
 				commit.Author.When.Format(
 					"06-01-02 15:04",
+				)
+
+			info.LastUpdatedAt =
+				commit.Author.When.Format(
+					time.RFC3339,
 				)
 
 		}

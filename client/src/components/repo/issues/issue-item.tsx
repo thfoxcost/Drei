@@ -19,6 +19,8 @@ interface IssueItemProps {
 	dueDate: string | null;
 	commentCount: number;
 	comments?: IssueComment[];
+	repoLabel?: string;
+	showAuthorAvatar?: boolean;
 	onNavigate?: (number: number) => void;
 }
 
@@ -37,6 +39,8 @@ function IssueItem({
 	closedAt,
 	closedBy,
 	commentCount,
+	repoLabel,
+	showAuthorAvatar,
 	onNavigate,
 }: IssueItemProps) {
 	const closed = state === "closed";
@@ -77,6 +81,9 @@ function IssueItem({
 				</div>
 
 				<div className="mt-1 text-xs text-muted-foreground">
+					{repoLabel ? (
+						<span className="font-medium">{repoLabel} · </span>
+					) : null}
 					#{number} ·{" "}
 					{closed && closedAt
 						? `${closedBy?.username ?? "someone"} closed ${timeAgo(closedAt)}`
@@ -108,6 +115,15 @@ function IssueItem({
 						<AvatarFallback>{getInitials(assignee.username)}</AvatarFallback>
 					</Avatar>
 				))}
+
+				{showAuthorAvatar && (
+					<Avatar size="sm" title={author.username}>
+						{author.avatar ? (
+							<AvatarImage src={author.avatar} alt={author.username} />
+						) : null}
+						<AvatarFallback>{getInitials(author.username)}</AvatarFallback>
+					</Avatar>
+				)}
 			</div>
 		</div>
 	);

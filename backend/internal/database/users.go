@@ -5,6 +5,37 @@ import (
 	"strings"
 )
 
+// GetAllUsers returns every registered user ordered by username, used to
+// populate global filters such as the author and assignee dropdowns.
+func GetAllUsers() ([]Contributor, error) {
+	rows, err := DB.Query(
+		context.Background(),
+		`
+		SELECT id, COALESCE(name, ''), image
+		FROM "user"
+		ORDER BY name
+		`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := []Contributor{}
+
+	for rows.Next() {
+		var user Contributor
+
+		if err := rows.Scan(&user.ID, &user.Username, &user.Avatar); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, rows.Err()
+}
+
 // ResolveUsernamesByEmails returns a map from lowercased email address to the
 // registered username for every user whose email matches one of the given
 // addresses (case-insensitively). Addresses without a matching user are absent

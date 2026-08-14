@@ -1,5 +1,6 @@
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
+import { Link, useNavigate } from "@tanstack/react-router"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Pattern } from "@/components/mode-toggle"
 import { authClient } from "#/lib/auth-client"
+import type { LucideIcon } from "lucide-react"
 import {
     ArrowLeftRight,
     Bell,
@@ -28,15 +30,21 @@ import {
 import { Cmd } from "./cmd"
 import { UserAvatar } from "@/components/UserAvatar"
 
-const NAV_ITEMS = [
-    { label: "Issues", icon: Bug },
-    { label: "PRs", icon: GitPullRequest },
-    { label: "Notifications", icon: Bell },
-    { label: "Repositories", icon: BookMarked },
+const NAV_ITEMS: {
+    label: string
+    icon: LucideIcon
+    to?: "/repos" | "/issues"
+    disabled?: boolean
+}[] = [
+    { label: "Repositories", icon: BookMarked, to: "/repos" },
+    { label: "Issues", icon: Bug, to: "/issues" },
+    { label: "PRs", icon: GitPullRequest, disabled: true },
+    { label: "Notifications", icon: Bell, disabled: true },
 ]
 
 export default function Header() {
     const { data: session } = authClient.useSession()
+    const navigate = useNavigate()
 
     return (
         <header className="flex items-center justify-between gap-2 bg-muted/10 border-b px-3 py-2 sm:px-2 sm:py-1">
@@ -56,12 +64,21 @@ export default function Header() {
                 />
 
                 <nav className="hidden items-center gap-1 pb-1 md:flex">
-                    {NAV_ITEMS.map(({ label, icon: Icon }) => (
-                        <Button key={label} variant="link" disabled>
-                            <Icon />
-                            {label}
-                        </Button>
-                    ))}
+                    {NAV_ITEMS.map(({ label, icon: Icon, to, disabled }) =>
+                        to ? (
+                            <Button key={label} variant="ghost" asChild>
+                                <Link to={to}>
+                                    <Icon />
+                                    {label}
+                                </Link>
+                            </Button>
+                        ) : (
+                            <Button key={label} variant="ghost" disabled={disabled}>
+                                <Icon />
+                                {label}
+                            </Button>
+                        ),
+                    )}
                 </nav>
 
                 <div className="md:hidden">
@@ -73,8 +90,12 @@ export default function Header() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                            {NAV_ITEMS.map(({ label, icon: Icon }) => (
-                                <DropdownMenuItem key={label} disabled>
+                            {NAV_ITEMS.map(({ label, icon: Icon, to, disabled }) => (
+                                <DropdownMenuItem
+                                    key={label}
+                                    disabled={disabled}
+                                    onClick={() => to && navigate({ to })}
+                                >
                                     <Icon className="mr-2 h-4 w-4" />
                                     {label}
                                 </DropdownMenuItem>
