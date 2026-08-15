@@ -1,6 +1,6 @@
 "use client";
 
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import * as linguistLanguages from "linguist-languages";
 import { BookMarked, ChevronDown, FolderSearch, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -52,7 +52,11 @@ interface RepoCardProps {
 
 function RepoCard({ repo }: RepoCardProps) {
 	return (
-		<div className="group cursor-pointer rounded-lg border border-border bg-card p-3 transition-colors hover:border-muted-foreground/30 hover:bg-muted/40">
+		<Link
+			to="/$username/$repo"
+			params={{ username: repo.owner, repo: repo.name }}
+			className="group block cursor-pointer rounded-lg border border-border bg-card p-3 transition-colors hover:border-muted-foreground/30 hover:bg-muted/40"
+		>
 			<div className="space-y-1.5">
 				<div className="flex items-center gap-2">
 					<BookMarked size={18} className="shrink-0 text-muted-foreground" />
@@ -93,7 +97,7 @@ function RepoCard({ repo }: RepoCardProps) {
 					<LastUpdate updated={repo.lastUpdated} />
 				</div>
 			</div>
-		</div>
+		</Link>
 	);
 }
 
