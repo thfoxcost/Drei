@@ -1,5 +1,6 @@
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
+import { Link } from "@tanstack/react-router"
 
 import { Pattern } from "@/components/mode-toggle"
 import { authClient } from "#/lib/auth-client"
@@ -23,19 +24,21 @@ export default function ReposMainHeader({
   return (
     <header className="flex items-center justify-between gap-2 bg-muted/10 py-2 sm:px-2 sm:py-1 mr-3">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <img
-          draggable={false}
-          src="/logo-light.svg"
-          alt="Logo"
-          className="block h-6 w-6 shrink-0 dark:hidden sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
-        />
+        <Link to="/" aria-label="Home">
+          <img
+            draggable={false}
+            src="/logo-light.svg"
+            alt="Logo"
+            className="block h-6 w-6 shrink-0 dark:hidden sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
+          />
 
-        <img
-          draggable={false}
-          src="/logo-dark.svg"
-          alt="Logo"
-          className="hidden h-6 w-6 shrink-0 dark:block sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
-        />
+          <img
+            draggable={false}
+            src="/logo-dark.svg"
+            alt="Logo"
+            className="hidden h-6 w-6 shrink-0 dark:block sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
+          />
+        </Link>
 
         <p className="hidden text-sm font-semibold sm:block">
           {username} / {repo}

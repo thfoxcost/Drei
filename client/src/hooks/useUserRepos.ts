@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { authClient } from "#/lib/auth-client";
 
 export interface Repo {
+	owner: string;
 	name: string;
 	description: string;
 	tags: string[];
