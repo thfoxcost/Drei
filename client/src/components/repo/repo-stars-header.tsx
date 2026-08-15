@@ -34,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface RepoStarsheaderProps {
   reponame: string;
@@ -41,6 +42,7 @@ interface RepoStarsheaderProps {
   link: string;
   website?: string;
   logo?: string;
+  isLoading?: boolean;
 }
 
 function RepoStarsheader({
@@ -49,9 +51,43 @@ function RepoStarsheader({
   link,
   website,
   logo,
+  isLoading,
 }: RepoStarsheaderProps) {
   const status = visibility ? "Public" : "Private";
   const [qrOpen, setQrOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-between bg-muted/10 px-5 py-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-8 rounded-sm" />
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <Skeleton className="h-8 w-28 rounded-lg" />
+            <Skeleton className="h-8 w-24 rounded-lg" />
+            <Skeleton className="size-8 rounded-lg" />
+            <Skeleton className="size-8 rounded-lg" />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <Skeleton className="h-8 w-32 rounded-lg" />
+            <Skeleton className="size-8 rounded-lg" />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <Skeleton className="size-8 rounded-lg" />
+            <Skeleton className="size-8 rounded-lg" />
+            <Skeleton className="size-8 rounded-lg" />
+            <Skeleton className="size-8 rounded-lg" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-between bg-muted/10 px-5 py-2">
