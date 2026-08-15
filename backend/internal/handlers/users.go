@@ -15,6 +15,7 @@ import (
 )
 
 type RepoInfo struct {
+	Owner         string   `json:"owner"`
 	Name          string   `json:"name"`
 	Description   string   `json:"description"`
 	Tags          []string `json:"tags"`
@@ -122,7 +123,8 @@ func GetRepos(w http.ResponseWriter, r *http.Request) {
 		info := RepoInfo{
 
 			// always real repo name
-			Name: repoName,
+			Owner: owner,
+			Name:  repoName,
 
 			Description: "",
 
