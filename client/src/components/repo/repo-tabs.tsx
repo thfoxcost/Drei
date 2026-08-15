@@ -46,7 +46,7 @@ interface RepoProps {
 }
 
 export default function RepoTabs({ owner, repo }: RepoProps) {
-	const { data: repoData } = useRepoData(owner, repo);
+	const { data: repoData, isPending } = useRepoData(owner, repo);
 	const { data: issuesData } = useIssues(owner, repo, { state: "open" });
 	const [loadingTab, setLoadingTab] = useState<string | null>(null);
 
@@ -109,6 +109,7 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 					link="https://thefoxcost.vercel.app/"
 					website={repoData?.website}
 					logo={repoData?.logo}
+					isLoading={isPending}
 				/>
 			)}
 			<Tabs value={currentTab} className="gap-4 ">

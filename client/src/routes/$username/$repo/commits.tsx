@@ -437,11 +437,11 @@ function RouteComponent() {
 					</p>
 				) : (
 					<div className="space-y-[-4px]">
-						{groupedCommits.map((group) => (
+						{groupedCommits.map((group, index) => (
 							<section key={group.dateKey} className="relative pl-7">
 								<span
 									aria-hidden="true"
-									className="absolute top-1 bottom-0 left-2.5 w-px bg-muted-foreground/40"
+									className={`absolute bottom-0 left-2.5 w-px bg-muted-foreground/40 ${index === 0 ? "top-8" : "top-1"}`}
 								/>
 
 								<GitCommitHorizontal
