@@ -41,12 +41,12 @@ function Codeblock() {
         defaultValue="typescript"
         className="w-full rounded-none border-0"
       >
-        <CodeBlockHeader className="flex h-10 items-center border-b px-2 bg-muted-foreground/10">
+        <CodeBlockHeader className="flex h-10 items-center border-b bg-muted-foreground/10 px-2">
           <Tabs defaultValue="code" className="h-7">
             <TabsList className="h-7 rounded-md bg-transparent p-0">
               <TabsTrigger
                 value="code"
-                className="h-7 rounded-md px-3 text-xs"
+                className="h-7 rounded-md px-3 text-sm"
               >
                 Code
               </TabsTrigger>
@@ -54,7 +54,7 @@ function Codeblock() {
               <TabsTrigger
                 value="blame"
                 disabled
-                className="h-7 rounded-md px-3 text-xs"
+                className="h-7 rounded-md px-3 text-sm"
               >
                 Blame
               </TabsTrigger>
@@ -62,7 +62,7 @@ function Codeblock() {
           </Tabs>
 
           <div className="ml-auto flex items-center gap-3 pr-1">
-            <span className="whitespace-nowrap text-xs text-muted-foreground">
+            <span className="whitespace-nowrap text-sm text-muted-foreground">
               16 lines (13 loc) · 156 Bytes
             </span>
 
