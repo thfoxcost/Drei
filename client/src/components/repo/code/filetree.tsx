@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { Button } from "#/components/ui/button"
 import {
@@ -16,6 +16,7 @@ import {
 } from "#/components/ui/input-group"
 import { Badge } from "#/components/ui/badge"
 import { TreeView, type TreeDataItem } from "#/components/tree-view"
+import type { RepoFile } from "#/types/repo"
 import {
   Check,
   ChevronDown,
@@ -27,28 +28,77 @@ import {
   SearchIcon,
 } from "lucide-react"
 
-function Filetree() {
-  const branches = ["main", "develop", "feature/ui", "fix/header"]
-  const defaultBranch = "main"
+interface FiletreeProps {
+  branches?: string[]
+  defaultBranch?: string
+  files?: RepoFile[]
+  currentBranch?: string
+  currentFilePath?: string
+}
 
+function buildFileTree(files: RepoFile[]): TreeDataItem[] {
+  const root: TreeDataItem[] = []
+
+  const fileEntries = files.filter((f) => f.type)
+
+  const sorted = [...fileEntries].sort((a, b) => a.path.localeCompare(b.path))
+
+  for (const file of sorted) {
+    const parts = file.path.split("/")
+    let current = root
+
+    for (let i = 0; i < parts.length - 1; i++) {
+      const dirName = parts[i]
+      let existing = current.find((n) => n.name === dirName && !!n.children)
+
+      if (!existing) {
+        existing = {
+          id: parts.slice(0, i + 1).join("/"),
+          name: dirName,
+          icon: Folder,
+          children: [],
+        }
+        current.push(existing)
+      }
+
+      current = existing.children!
+    }
+
+    const fileName = parts[parts.length - 1]
+    current.push({
+      id: file.path,
+      name: fileName,
+      icon: File,
+    })
+  }
+
+  return root
+}
+
+function Filetree({
+  branches = [],
+  defaultBranch = "main",
+  files = [],
+  currentBranch = "main",
+  currentFilePath,
+}: FiletreeProps) {
   const navigate = useNavigate()
-  const { username, repo, branch: currentBranchParam } = useParams({ strict: false })
+  const { username, repo } = useParams({ strict: false })
   const owner = username as string
   const repoName = repo as string
 
-  const [currentBranch, setCurrentBranch] = useState("main")
   const [branchFilter, setBranchFilter] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
 
   const filteredBranches = branches.filter((branch) =>
     branch.toLowerCase().includes(branchFilter.toLowerCase()),
   )
 
   const handleBranchClick = (branch: string) => {
-    setCurrentBranch(branch)
     setBranchFilter("")
 
     const currentUrl = window.location.pathname
-    const branchSegment = currentBranchParam as string
+    const branchSegment = currentBranch
     const branchPrefix = `/tree/${branchSegment}`
     const blobPrefix = `/blob/${branchSegment}`
 
@@ -83,10 +133,6 @@ function Filetree() {
         ...item,
         id: fullPath,
         ...(hasChildren ? {
-          onClick: () => navigate({
-            to: "/$username/$repo/tree/$branch/$" as any,
-            params: { username: owner, repo: repoName, branch: currentBranch, _splat: fullPath },
-          }),
           children: makeTreeItems(item.children ?? [], fullPath),
         } : {
           onClick: () => navigate({
@@ -98,95 +144,44 @@ function Filetree() {
     })
   }
 
-  const fileTree: TreeDataItem[] = makeTreeItems([
-    {
-      id: "src",
-      name: "src",
-      icon: Folder,
-      children: [
-        {
-          id: "components",
-          name: "components",
-          icon: Folder,
-          children: [
-            {
-              id: "button",
-              name: "button.tsx",
-              icon: File,
-            },
-            {
-              id: "header",
-              name: "header.tsx",
-              icon: File,
-            },
-          ],
-        },
-        {
-          id: "routes",
-          name: "routes",
-          icon: Folder,
-          children: [
-            {
-              id: "home",
-              name: "home.tsx",
-              icon: File,
-            },
-            {
-              id: "settings",
-              name: "settings.tsx",
-              icon: File,
-            },
-          ],
-        },
-        {
-          id: "app",
-          name: "App.tsx",
-          icon: File,
-        },
-        {
-          id: "main",
-          name: "main.tsx",
-          icon: File,
-        },
-      ],
-    },
-    {
-      id: "public",
-      name: "public",
-      icon: Folder,
-      children: [
-        {
-          id: "favicon",
-          name: "favicon.ico",
-          icon: File,
-        },
-        {
-          id: "logo",
-          name: "logo.svg",
-          icon: File,
-        },
-      ],
-    },
-    {
-      id: "package",
-      name: "package.json",
-      icon: File,
-    },
-    {
-      id: "readme",
-      name: "README.md",
-      icon: File,
-    },
-    {
-      id: "gitignore",
-      name: ".gitignore",
-      icon: File,
-    },
-  ], "")
+  const rawTree = buildFileTree(files)
+  const fileTree = makeTreeItems(rawTree, "")
+
+  const filteredTree = useMemo(() => {
+    if (!searchQuery) return fileTree
+
+    const query = searchQuery.toLowerCase()
+    const filter = (items: TreeDataItem[]): TreeDataItem[] => {
+      return items
+        .map((item) => {
+          if (item.children) {
+            const filteredChildren = filter(item.children)
+            if (
+              filteredChildren.length > 0 ||
+              item.name.toLowerCase().includes(query) ||
+              item.id.toLowerCase().includes(query)
+            ) {
+              return { ...item, children: filteredChildren }
+            }
+            return null
+          }
+          if (
+            item.name.toLowerCase().includes(query) ||
+            item.id.toLowerCase().includes(query)
+          ) {
+            return item
+          }
+          return null
+        })
+        .filter(Boolean) as TreeDataItem[]
+    }
+
+    return filter(fileTree)
+  }, [fileTree, searchQuery])
 
   return (
-    <div className="flex h-screen w-xs flex-col border-r px-4">
-      <div className="flex flex-col gap-2">
+    <div className="flex h-screen w-xs flex-col border-r">
+      <div className="shrink-0 flex flex-col gap-2 px-4 pt-4">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon">
             <PanelRightOpen />
@@ -269,12 +264,19 @@ function Filetree() {
           <InputGroupAddon>
             <SearchIcon />
           </InputGroupAddon>
-          <InputGroupInput placeholder="Go to file" />
+          <InputGroupInput
+            placeholder="Go to file"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </InputGroup>
+      </div>
 
-        <div className="pt-1">
-          <TreeView data={fileTree} expandAll />
-        </div>
+      <div className="flex-1 overflow-y-auto px-2 pb-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+        <TreeView
+          data={filteredTree}
+          initialSelectedItemId={currentFilePath}
+        />
       </div>
     </div>
   )

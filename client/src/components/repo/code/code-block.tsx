@@ -21,24 +21,43 @@ import {
   Trash2,
 } from "lucide-react"
 
-function Codeblock() {
-  const code = [
+interface CodeblockProps {
+  code?: string
+  language?: string
+  filename?: string
+  lineCount?: number
+  locCount?: number
+  byteSize?: number
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 Bytes"
+  if (bytes < 1024) return `${bytes} Bytes`
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1048576).toFixed(1)} MB`
+}
+
+function Codeblock({
+  code = "",
+  language = "plaintext",
+  filename = "",
+  lineCount = 0,
+  locCount = 0,
+  byteSize = 0,
+}: CodeblockProps) {
+  const data = [
     {
-      language: "typescript",
-      filename: "api.ts",
-      code: `export async function fetchUser(id: string) {
-  const response = await fetch(\`/api/users/\${id}\`)
-  if (!response.ok) throw new Error("Failed to fetch user")
-  return response.json()
-}`,
+      language,
+      filename,
+      code,
     },
   ]
 
   return (
     <div className="w-full overflow-hidden rounded-md border">
       <CodeBlock
-        data={code}
-        defaultValue="typescript"
+        data={data}
+        defaultValue={language}
         className="w-full rounded-none border-0"
       >
         <CodeBlockHeader className="flex h-10 items-center border-b bg-muted-foreground/10 px-2">
@@ -63,7 +82,7 @@ function Codeblock() {
 
           <div className="ml-auto flex items-center gap-3 pr-1">
             <span className="whitespace-nowrap text-sm text-muted-foreground">
-              16 lines (13 loc) · 156 Bytes
+              {lineCount} lines ({locCount} loc) {`\u00b7`} {formatBytes(byteSize)}
             </span>
 
             <ButtonGroup>
