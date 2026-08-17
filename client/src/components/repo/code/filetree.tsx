@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate, useParams } from "@tanstack/react-router"
 import { Button } from "#/components/ui/button"
 import {
   DropdownMenu,
@@ -30,6 +31,11 @@ function Filetree() {
   const branches = ["main", "develop", "feature/ui", "fix/header"]
   const defaultBranch = "main"
 
+  const navigate = useNavigate()
+  const { username, repo, branch: currentBranchParam } = useParams({ strict: false })
+  const owner = username as string
+  const repoName = repo as string
+
   const [currentBranch, setCurrentBranch] = useState("main")
   const [branchFilter, setBranchFilter] = useState("")
 
@@ -40,9 +46,59 @@ function Filetree() {
   const handleBranchClick = (branch: string) => {
     setCurrentBranch(branch)
     setBranchFilter("")
+
+    const currentUrl = window.location.pathname
+    const branchSegment = currentBranchParam as string
+    const branchPrefix = `/tree/${branchSegment}`
+    const blobPrefix = `/blob/${branchSegment}`
+
+    let restOfPath = ""
+    if (currentUrl.includes(branchPrefix)) {
+      restOfPath = currentUrl.split(branchPrefix)[1] || ""
+    } else if (currentUrl.includes(blobPrefix)) {
+      restOfPath = currentUrl.split(blobPrefix)[1] || ""
+    }
+
+    const prefix = currentUrl.includes(branchPrefix) ? "tree" : "blob"
+
+    if (restOfPath && restOfPath !== "/") {
+      navigate({
+        to: `/$username/$repo/${prefix}/$branch/${restOfPath.replace(/^\//, "")}` as any,
+        params: { username: owner, repo: repoName, branch },
+      })
+    } else {
+      navigate({
+        to: "/$username/$repo",
+        params: { username: owner, repo: repoName },
+      })
+    }
   }
 
-  const fileTree: TreeDataItem[] = [
+  const makeTreeItems = (items: TreeDataItem[], parentPath: string): TreeDataItem[] => {
+    return items.map((item) => {
+      const fullPath = parentPath ? `${parentPath}/${item.name}` : item.name
+      const hasChildren = !!item.children
+
+      return {
+        ...item,
+        id: fullPath,
+        ...(hasChildren ? {
+          onClick: () => navigate({
+            to: "/$username/$repo/tree/$branch/$" as any,
+            params: { username: owner, repo: repoName, branch: currentBranch, _splat: fullPath },
+          }),
+          children: makeTreeItems(item.children ?? [], fullPath),
+        } : {
+          onClick: () => navigate({
+            to: "/$username/$repo/blob/$branch/$" as any,
+            params: { username: owner, repo: repoName, branch: currentBranch, _splat: fullPath },
+          }),
+        }),
+      }
+    })
+  }
+
+  const fileTree: TreeDataItem[] = makeTreeItems([
     {
       id: "src",
       name: "src",
@@ -126,7 +182,7 @@ function Filetree() {
       name: ".gitignore",
       icon: File,
     },
-  ]
+  ], "")
 
   return (
     <div className="flex h-screen w-xs flex-col border-r px-4">

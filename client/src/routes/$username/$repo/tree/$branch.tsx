@@ -1,33 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { NoRepo } from "#/components/repo/norepo";
-import Repo from "#/components/repo/repo";
-import { Spinner } from "#/components/ui/spinner";
-import { useRepoData } from "#/hooks/useRepoData";
+import { Outlet, createFileRoute } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/$username/$repo/tree/$branch")({
-	component: RouteComponent,
-});
+  component: RouteLayout,
+})
 
-function RouteComponent() {
-	const {
-		username,
-		repo,
-		branch,
-	}: { username: string; repo: string; branch: string } = Route.useParams();
-	const { data, isLoading, isError } = useRepoData(username, repo, branch);
-
-	if (isLoading) {
-		return (
-			<div className="flex h-[60vh] w-full items-center justify-center">
-				<Spinner />
-			</div>
-		);
-	}
-
-	if (!isError && data?.hasCommits) {
-		return <Repo owner={username} repo={repo} branch={branch} />;
-	}
-
-	return <NoRepo />;
+function RouteLayout() {
+  return <Outlet />
 }
