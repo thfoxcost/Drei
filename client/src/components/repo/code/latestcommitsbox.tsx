@@ -1,19 +1,69 @@
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar"
 
-function Latestcommitsbox() {
-    return (
-        <div className="border rounded-md p-2 text-sm flex flex-row items-center justify-between">
-            <div className="flex flex-row gap-2">
-                <Avatar size="sm">
-                    <AvatarImage src="https://github.com/shadcn.png" />
-                    <AvatarFallback>CN</AvatarFallback>
-                </Avatar>
-                <span className="text-semibold hover:underline">thefoxcost</span>
-                <span className="text-muted-foreground hover:underline hover:text-blue-500 cursor-pointer">feat: enhance README and documentation structure with new files</span>
-            </div>
-            <span className="text-muted-foreground text-xs">2518c27 · 2 weeks ago</span>
-        </div> 
-    )
+interface LatestcommitsboxProps {
+  author?: string
+  message?: string
+  hash?: string
+  date?: string
+}
+
+function formatDate(dateStr: string): string {
+  const cleaned = dateStr
+    .replace(/(\+\d{2})(\d{2})\s+\+\d{4}$/, "$1:$2")
+    .replace(" ", "T")
+    .replace(/ (?=\+)/, "")
+  const d = new Date(cleaned)
+  if (Number.isNaN(d.getTime())) return ""
+
+  return formatParsedDate(d)
+}
+
+function formatParsedDate(d: Date): string {
+
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ]
+
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffDays === 0) return "today"
+  if (diffDays === 1) return "yesterday"
+  if (diffDays < 7) return `${diffDays} days ago`
+
+  const month = months[d.getMonth()]
+  const day = d.getDate()
+  const year = d.getFullYear()
+
+  if (year === now.getFullYear()) {
+    return `${month} ${day}`
+  }
+  return `${month} ${day}, ${year}`
+}
+
+function Latestcommitsbox({ author, message, hash, date }: LatestcommitsboxProps) {
+  const shortHash = hash ? hash.slice(0, 7) : ""
+  const displayDate = date ? formatDate(date) : ""
+
+  return (
+    <div className="border rounded-md p-2 text-sm flex flex-row items-center justify-between">
+      <div className="flex flex-row gap-2">
+        <Avatar size="sm">
+          <AvatarImage src="https://github.com/shadcn.png" />
+          <AvatarFallback>{author ? author.slice(0, 2).toUpperCase() : "U"}</AvatarFallback>
+        </Avatar>
+        <span className="text-semibold hover:underline">{author}</span>
+        <span className="text-muted-foreground hover:underline hover:text-blue-500 cursor-pointer">
+          {message}
+        </span>
+      </div>
+      <span className="text-muted-foreground text-xs">
+        {shortHash}{" · "}{displayDate}
+      </span>
+    </div>
+  )
 }
 
 export default Latestcommitsbox

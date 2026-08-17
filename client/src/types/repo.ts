@@ -6,6 +6,15 @@ export interface Commit {
 	date: string;
 }
 
+export interface BlobData {
+	name: string;
+	path: string;
+	size: number;
+	hash: string;
+	content: string;
+	lastCommit: Commit;
+}
+
 export interface RepoFile {
 	name: string;
 	path: string;

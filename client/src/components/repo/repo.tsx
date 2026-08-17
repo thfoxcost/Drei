@@ -131,25 +131,29 @@ function Repo({ owner, repo, branch }: RepoProps) {
 							commitNum={repoData.commits.length.toLocaleString()}
 						/>
 
-						{repoData.files
-							.filter((file) => !file.isNested)
-							.map((file) => (
-								<Cell
-									key={file.path}
-									filename={file.name}
-									commitmessage={
-										file.lastCommit.message.trim() === ""
-											? repoData.lastCommit.message
-											: file.lastCommit.message
-									}
-									date={
-										file.lastCommit.date.trim() === ""
-											? repoData.lastCommit.date
-											: file.lastCommit.date
-									}
-									isFile={file.type}
-								/>
-							))}
+					{repoData.files
+						.filter((file) => !file.isNested)
+						.map((file) => (
+							<Cell
+								key={file.path}
+								filename={file.name}
+								commitmessage={
+									file.lastCommit.message.trim() === ""
+										? repoData.lastCommit.message
+										: file.lastCommit.message
+								}
+								date={
+									file.lastCommit.date.trim() === ""
+										? repoData.lastCommit.date
+										: file.lastCommit.date
+								}
+								isFile={file.type}
+								path={file.path}
+								branch={branch ?? repoData.defaultBranch}
+								owner={owner}
+								repo={repo}
+							/>
+						))}
 
 						{docs.length > 0 && <Readme docs={docs} />}
 					</div>
