@@ -15,6 +15,139 @@ import (
 
 var errStop = errors.New("stop iteration")
 
+// BlobFile is the response for a single file lookup.
+type BlobFile struct {
+	Name       string     `json:"name"`
+	Path       string     `json:"path"`
+	Size       int64      `json:"size"`
+	Hash       string     `json:"hash"`
+	Content    string     `json:"content"`
+	LastCommit CommitInfo `json:"lastCommit"`
+}
+
+// GetFile retrieves a single file's content and metadata from the repository
+// tree at the given branch. The filePath must not be empty.
+func GetFile(owner, repo, branch, filePath string) (*BlobFile, error) {
+	repoPath := filepath.Join(
+		config.App.ReposPath,
+		owner,
+		repo+".git",
+	)
+
+	r, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	commit, err := ResolveBranch(r, branch)
+	if err != nil {
+		return nil, err
+	}
+
+	tree, err := commit.Tree()
+	if err != nil {
+		return nil, err
+	}
+
+	file, err := tree.File(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	contents, err := file.Contents()
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the last commit that touched this file.
+	lastCommit, err := lastCommitForFile(r, commit, filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &BlobFile{
+		Name:       file.Name,
+		Path:       filePath,
+		Size:       file.Size,
+		Hash:       file.Hash.String(),
+		Content:    base64.StdEncoding.EncodeToString([]byte(contents)),
+		LastCommit: lastCommit,
+	}, nil
+}
+
+// lastCommitForFile walks the history from commit backwards and returns the
+// first commit that modified filePath.
+func lastCommitForFile(r *git.Repository, commit *object.Commit, filePath string) (CommitInfo, error) {
+	iter, err := r.Log(&git.LogOptions{
+		From: commit.Hash,
+	})
+	if err != nil {
+		return CommitInfo{}, err
+	}
+	defer iter.Close()
+
+	var result CommitInfo
+
+	err = iter.ForEach(func(c *object.Commit) error {
+		if c.NumParents() == 0 {
+			tree, err := c.Tree()
+			if err != nil {
+				return err
+			}
+			if f, err := tree.File(filePath); err == nil && f != nil {
+				result = CommitInfo{
+					Hash:    c.Hash.String(),
+					Message: c.Message,
+					Author:  c.Author.Name,
+					Date:    c.Author.When.String(),
+				}
+				return errStop
+			}
+			return nil
+		}
+
+		parent, err := c.Parent(0)
+		if err != nil {
+			return err
+		}
+
+		patch, err := parent.Patch(c)
+		if err != nil {
+			return err
+		}
+
+		for _, fp := range patch.FilePatches() {
+			from, to := fp.Files()
+
+			var fromPath, toPath string
+			if from != nil {
+				fromPath = from.Path()
+			}
+			if to != nil {
+				toPath = to.Path()
+			}
+
+			if fromPath == filePath || toPath == filePath {
+				result = CommitInfo{
+					Hash:    c.Hash.String(),
+					Message: c.Message,
+					Author:  c.Author.Name,
+					Date:    c.Author.When.String(),
+				}
+				return errStop
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil && !errors.Is(err, errStop) {
+		return CommitInfo{}, err
+	}
+
+	return result, nil
+}
+
 type FileInfo struct {
 	Name       string     `json:"name"`
 	Path       string     `json:"path"`

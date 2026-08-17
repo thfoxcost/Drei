@@ -59,9 +59,7 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 	// renders on the repository code root (the default branch and any
 	// selected branch tree), not on nested routes like /issues.
 	const isRepoRoot = matches.some(
-		(match) =>
-			match.routeId === `${repoPrefix}/` ||
-			match.routeId === `${repoPrefix}/tree/$branch`,
+		(match) => match.routeId === `${repoPrefix}/`,
 	);
 
 	const currentTab = useMemo(() => {

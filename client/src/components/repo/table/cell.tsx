@@ -1,4 +1,5 @@
 import { getIconUrlForFilePath } from "vscode-material-icons";
+import { useNavigate } from "@tanstack/react-router";
 import { timeAgo, absoluteDate } from "#/lib/time-ago";
 import { getFolderIcon } from "#/lib/folder-icons";
 
@@ -17,6 +18,10 @@ interface CellProps {
   commitmessage: string;
   date: string;
   isFile: boolean;
+  path?: string;
+  branch?: string;
+  owner?: string;
+  repo?: string;
 }
 
 function Cell({
@@ -24,11 +29,39 @@ function Cell({
   commitmessage,
   date,
   isFile,
+  path,
+  branch,
+  owner,
+  repo,
 }: CellProps) {
+  const navigate = useNavigate();
   const message = commitmessage.trim() || "No commit message";
 
+  const handleClick = () => {
+    if (!path || !branch || !owner || !repo) return;
+    if (isFile) {
+      navigate({
+        to: "/$username/$repo/blob/$branch/$" as any,
+        params: { username: owner, repo, branch, _splat: path },
+      });
+    } else {
+      navigate({
+        to: "/$username/$repo/tree/$branch/$" as any,
+        params: { username: owner, repo, branch, _splat: path },
+      });
+    }
+  };
+
   return (
-    <div className="group flex cursor-pointer flex-row items-center gap-4 border border-t-0 px-3 py-2 text-sm transition-colors hover:bg-muted/50">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") handleClick();
+      }}
+      className="group flex cursor-pointer flex-row items-center gap-4 border border-t-0 px-3 py-2 text-sm transition-colors hover:bg-muted/50"
+    >
       <div className="flex w-60 shrink-0 items-center gap-2.5">
         <img
           src={getFileIcon(filename, isFile)}
