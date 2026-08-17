@@ -8,8 +8,17 @@ interface LatestcommitsboxProps {
 }
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
+  const cleaned = dateStr
+    .replace(/(\+\d{2})(\d{2})\s+\+\d{4}$/, "$1:$2")
+    .replace(" ", "T")
+    .replace(/ (?=\+)/, "")
+  const d = new Date(cleaned)
   if (Number.isNaN(d.getTime())) return ""
+
+  return formatParsedDate(d)
+}
+
+function formatParsedDate(d: Date): string {
 
   const months = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -51,8 +60,7 @@ function Latestcommitsbox({ author, message, hash, date }: LatestcommitsboxProps
         </span>
       </div>
       <span className="text-muted-foreground text-xs">
-        {displayDate && `${displayDate} `}
-        {shortHash && `\u00b7 ${shortHash}`}
+        {shortHash}{" · "}{displayDate}
       </span>
     </div>
   )
