@@ -32,6 +32,7 @@ import { Route as UsernameRepoIssuesIndexRouteImport } from './routes/$username/
 import { Route as UsernameRepoTreeBranchRouteImport } from './routes/$username/$repo/tree/$branch'
 import { Route as UsernameRepoIssuesNewRouteImport } from './routes/$username/$repo/issues/new'
 import { Route as UsernameRepoIssuesIssueRouteImport } from './routes/$username/$repo/issues/$issue'
+import { Route as UsernameRepoBranchBranchNameRouteImport } from './routes/$username/$repo/branch/$branchName'
 import { Route as UsernameRepoTreeBranchIndexRouteImport } from './routes/$username/$repo/tree/$branch/index'
 import { Route as UsernameRepoTreeBranchSplatRouteImport } from './routes/$username/$repo/tree/$branch/$'
 import { Route as UsernameRepoBlobBranchSplatRouteImport } from './routes/$username/$repo/blob/$branch/$'
@@ -150,6 +151,12 @@ const UsernameRepoIssuesIssueRoute = UsernameRepoIssuesIssueRouteImport.update({
   path: '/$issue',
   getParentRoute: () => UsernameRepoIssuesRouteRoute,
 } as any)
+const UsernameRepoBranchBranchNameRoute =
+  UsernameRepoBranchBranchNameRouteImport.update({
+    id: '/branch/$branchName',
+    path: '/branch/$branchName',
+    getParentRoute: () => UsernameRepoRouteRoute,
+  } as any)
 const UsernameRepoTreeBranchIndexRoute =
   UsernameRepoTreeBranchIndexRouteImport.update({
     id: '/',
@@ -187,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/$username/$repo/prs': typeof UsernameRepoPrsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo/': typeof UsernameRepoIndexRoute
+  '/$username/$repo/branch/$branchName': typeof UsernameRepoBranchBranchNameRoute
   '/$username/$repo/issues/$issue': typeof UsernameRepoIssuesIssueRoute
   '/$username/$repo/issues/new': typeof UsernameRepoIssuesNewRoute
   '/$username/$repo/tree/$branch': typeof UsernameRepoTreeBranchRouteWithChildren
@@ -211,6 +219,7 @@ export interface FileRoutesByTo {
   '/$username/$repo/prs': typeof UsernameRepoPrsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo': typeof UsernameRepoIndexRoute
+  '/$username/$repo/branch/$branchName': typeof UsernameRepoBranchBranchNameRoute
   '/$username/$repo/issues/$issue': typeof UsernameRepoIssuesIssueRoute
   '/$username/$repo/issues/new': typeof UsernameRepoIssuesNewRoute
   '/$username/$repo/issues': typeof UsernameRepoIssuesIndexRoute
@@ -239,6 +248,7 @@ export interface FileRoutesById {
   '/$username/$repo/prs': typeof UsernameRepoPrsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo/': typeof UsernameRepoIndexRoute
+  '/$username/$repo/branch/$branchName': typeof UsernameRepoBranchBranchNameRoute
   '/$username/$repo/issues/$issue': typeof UsernameRepoIssuesIssueRoute
   '/$username/$repo/issues/new': typeof UsernameRepoIssuesNewRoute
   '/$username/$repo/tree/$branch': typeof UsernameRepoTreeBranchRouteWithChildren
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/$username/$repo/prs'
     | '/api/auth/$'
     | '/$username/$repo/'
+    | '/$username/$repo/branch/$branchName'
     | '/$username/$repo/issues/$issue'
     | '/$username/$repo/issues/new'
     | '/$username/$repo/tree/$branch'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/$username/$repo/prs'
     | '/api/auth/$'
     | '/$username/$repo'
+    | '/$username/$repo/branch/$branchName'
     | '/$username/$repo/issues/$issue'
     | '/$username/$repo/issues/new'
     | '/$username/$repo/issues'
@@ -318,6 +330,7 @@ export interface FileRouteTypes {
     | '/$username/$repo/prs'
     | '/api/auth/$'
     | '/$username/$repo/'
+    | '/$username/$repo/branch/$branchName'
     | '/$username/$repo/issues/$issue'
     | '/$username/$repo/issues/new'
     | '/$username/$repo/tree/$branch'
@@ -500,6 +513,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsernameRepoIssuesIssueRouteImport
       parentRoute: typeof UsernameRepoIssuesRouteRoute
     }
+    '/$username/$repo/branch/$branchName': {
+      id: '/$username/$repo/branch/$branchName'
+      path: '/branch/$branchName'
+      fullPath: '/$username/$repo/branch/$branchName'
+      preLoaderRoute: typeof UsernameRepoBranchBranchNameRouteImport
+      parentRoute: typeof UsernameRepoRouteRoute
+    }
     '/$username/$repo/tree/$branch/': {
       id: '/$username/$repo/tree/$branch/'
       path: '/'
@@ -593,6 +613,7 @@ interface UsernameRepoRouteRouteChildren {
   UsernameRepoCommitsRoute: typeof UsernameRepoCommitsRoute
   UsernameRepoPrsRoute: typeof UsernameRepoPrsRoute
   UsernameRepoIndexRoute: typeof UsernameRepoIndexRoute
+  UsernameRepoBranchBranchNameRoute: typeof UsernameRepoBranchBranchNameRoute
   UsernameRepoTreeBranchRoute: typeof UsernameRepoTreeBranchRouteWithChildren
   UsernameRepoBlobBranchSplatRoute: typeof UsernameRepoBlobBranchSplatRoute
 }
@@ -604,6 +625,7 @@ const UsernameRepoRouteRouteChildren: UsernameRepoRouteRouteChildren = {
   UsernameRepoCommitsRoute: UsernameRepoCommitsRoute,
   UsernameRepoPrsRoute: UsernameRepoPrsRoute,
   UsernameRepoIndexRoute: UsernameRepoIndexRoute,
+  UsernameRepoBranchBranchNameRoute: UsernameRepoBranchBranchNameRoute,
   UsernameRepoTreeBranchRoute: UsernameRepoTreeBranchRouteWithChildren,
   UsernameRepoBlobBranchSplatRoute: UsernameRepoBlobBranchSplatRoute,
 }

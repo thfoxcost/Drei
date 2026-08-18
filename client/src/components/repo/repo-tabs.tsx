@@ -59,7 +59,9 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 	// renders on the repository code root (the default branch and any
 	// selected branch tree), not on nested routes like /issues.
 	const isRepoRoot = matches.some(
-		(match) => match.routeId === `${repoPrefix}/`,
+		(match) =>
+			match.routeId === `${repoPrefix}/` ||
+			match.routeId === `${repoPrefix}/branch/$branchName`,
 	);
 
 	const currentTab = useMemo(() => {
@@ -68,6 +70,7 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 		// Deepest matched route wins.
 		for (const routeId of [...routeIds].reverse()) {
 			if (routeId === `${repoPrefix}/tree/$branch`) return "files";
+			if (routeId === `${repoPrefix}/branch/$branchName`) return "files";
 			if (routeId.startsWith(`${repoPrefix}/issues`)) return "issues";
 			if (routeId === `${repoPrefix}/settings`) return "settings";
 			if (routeId === `${repoPrefix}/prs`) return "pulls";
