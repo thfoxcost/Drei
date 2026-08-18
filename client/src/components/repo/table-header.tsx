@@ -114,8 +114,8 @@ function Tableheader({
 			});
 		} else {
 			navigate({
-				to: "/$username/$repo/tree/$branch",
-				params: { branch },
+				to: "/$username/$repo/branch/$branchName",
+				params: { username: owner, repo, branchName: branch },
 			});
 		}
 	};
