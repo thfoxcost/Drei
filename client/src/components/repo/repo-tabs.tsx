@@ -106,10 +106,13 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 			{isRepoRoot && (
 				<RepoStarsheader
 					reponame={repo}
+					owner={owner}
 					visibility={repoData?.visibility ?? true}
 					link="https://thefoxcost.vercel.app/"
 					website={repoData?.website}
 					logo={repoData?.logo}
+					commits={repoData?.commits ?? []}
+					defaultBranch={repoData?.defaultBranch ?? "main"}
 					isLoading={isPending}
 				/>
 			)}
