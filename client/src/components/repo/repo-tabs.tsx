@@ -114,6 +114,9 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 					commits={repoData?.commits ?? []}
 					defaultBranch={repoData?.defaultBranch ?? "main"}
 					isLoading={isPending}
+					description={repoData?.description}
+					files={repoData?.files}
+					langs={repoData?.langs}
 				/>
 			)}
 			<Tabs value={currentTab} className="gap-4 ">
