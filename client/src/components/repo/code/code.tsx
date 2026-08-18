@@ -80,6 +80,7 @@ function detectLanguage(filename: string): string {
 		txt: "plaintext",
 		log: "plaintext",
 	};
+
 	return map[ext] ?? "plaintext";
 }
 
@@ -89,40 +90,87 @@ function decodeContent(content: string): string {
 	return new TextDecoder("utf-8").decode(bytes);
 }
 
-function Code({ owner, repo, branch, filePath, mode = "code" }: CodeProps) {
+function Code({
+	owner,
+	repo,
+	branch,
+	filePath,
+	mode = "code",
+}: CodeProps) {
 	const [sidebarOpen, setSidebarOpen] = useState(true);
-	const isBlob = mode === "blob" && owner && repo && branch && filePath;
+
+	const isBlob =
+		mode === "blob" && owner && repo && branch && filePath;
+
 	const {
 		data: blobData,
 		isLoading: blobLoading,
 		isError: blobError,
-	} = useBlob(owner ?? "", repo ?? "", branch ?? "", filePath ?? "");
-	const { data: repoData } = useRepoData(owner ?? "", repo ?? "", branch);
+	} = useBlob(
+		owner ?? "",
+		repo ?? "",
+		branch ?? "",
+		filePath ?? "",
+	);
+
+	const {
+		data: repoData,
+		isLoading: repoLoading,
+	} = useRepoData(
+		owner ?? "",
+		repo ?? "",
+		branch,
+	);
 
 	const fileName = blobData?.name ?? "";
-	const decoded = blobData?.content ? decodeContent(blobData.content) : "";
-	const language = fileName ? detectLanguage(fileName) : "plaintext";
-	const lineCount = decoded ? decoded.split("\n").length : 0;
-	const locCount = decoded
-		? decoded.split("\n").filter((l) => l.trim().length > 0).length
+	const decoded = blobData?.content
+		? decodeContent(blobData.content)
+		: "";
+
+	const language = fileName
+		? detectLanguage(fileName)
+		: "plaintext";
+
+	const lineCount = decoded
+		? decoded.split("\n").length
 		: 0;
+
+	const locCount = decoded
+		? decoded
+				.split("\n")
+				.filter((l) => l.trim().length > 0).length
+		: 0;
+
 	const byteSize = blobData?.size ?? 0;
+
+	const renderSidebar = () => {
+		if (repoLoading) {
+			return (
+				<aside className="sticky top-0 flex h-screen w-64 shrink-0 items-center justify-center border-r">
+					<Spinner />
+				</aside>
+			);
+		}
+
+		return (
+			<aside className="sticky top-0 h-screen shrink-0">
+				<Filetree
+					branches={repoData?.branches}
+					defaultBranch={repoData?.defaultBranch}
+					files={repoData?.files}
+					currentBranch={branch}
+					currentFilePath={filePath}
+					onToggleSidebar={() => setSidebarOpen(false)}
+				/>
+			</aside>
+		);
+	};
 
 	if (isBlob && blobLoading) {
 		return (
 			<div className="flex items-start">
-				{sidebarOpen && (
-					<aside className="sticky top-0 h-screen shrink-0">
-						<Filetree
-							branches={repoData?.branches}
-							defaultBranch={repoData?.defaultBranch}
-							files={repoData?.files}
-							currentBranch={branch}
-							currentFilePath={filePath}
-							onToggleSidebar={() => setSidebarOpen(false)}
-						/>
-					</aside>
-				)}
+				{sidebarOpen && renderSidebar()}
+
 				{!sidebarOpen && (
 					<Button
 						variant="outline"
@@ -133,7 +181,8 @@ function Code({ owner, repo, branch, filePath, mode = "code" }: CodeProps) {
 						<PanelLeftOpen className="h-4 w-4" />
 					</Button>
 				)}
-				<main className="min-w-0 flex-2 mx-5 flex h-[60vh] items-center justify-center">
+
+				<main className="mx-5 flex h-[60vh] min-w-0 flex-2 items-center justify-center">
 					<Spinner />
 				</main>
 			</div>
@@ -143,18 +192,8 @@ function Code({ owner, repo, branch, filePath, mode = "code" }: CodeProps) {
 	if (isBlob && blobError) {
 		return (
 			<div className="flex items-start">
-				{sidebarOpen && (
-					<aside className="sticky top-0 h-screen shrink-0">
-						<Filetree
-							branches={repoData?.branches}
-							defaultBranch={repoData?.defaultBranch}
-							files={repoData?.files}
-							currentBranch={branch}
-							currentFilePath={filePath}
-							onToggleSidebar={() => setSidebarOpen(false)}
-						/>
-					</aside>
-				)}
+				{sidebarOpen && renderSidebar()}
+
 				{!sidebarOpen && (
 					<Button
 						variant="outline"
@@ -165,7 +204,8 @@ function Code({ owner, repo, branch, filePath, mode = "code" }: CodeProps) {
 						<PanelLeftOpen className="h-4 w-4" />
 					</Button>
 				)}
-				<main className="min-w-0 flex-2 mx-5 flex h-[60vh] items-center justify-center text-muted-foreground">
+
+				<main className="mx-5 flex h-[60vh] min-w-0 flex-2 items-center justify-center text-muted-foreground">
 					Failed to load file
 				</main>
 			</div>
@@ -173,6 +213,7 @@ function Code({ owner, repo, branch, filePath, mode = "code" }: CodeProps) {
 	}
 
 	const pathParts = filePath?.split("/") ?? [];
+
 	const breadcrumbs = pathParts.map((part, i) => ({
 		label: part,
 		isLast: i === pathParts.length - 1,
@@ -180,18 +221,8 @@ function Code({ owner, repo, branch, filePath, mode = "code" }: CodeProps) {
 
 	return (
 		<div className="flex items-start">
-			{sidebarOpen && (
-				<aside className="sticky top-0 h-screen shrink-0">
-					<Filetree
-						branches={repoData?.branches}
-						defaultBranch={repoData?.defaultBranch}
-						files={repoData?.files}
-						currentBranch={branch}
-						currentFilePath={filePath}
-						onToggleSidebar={() => setSidebarOpen(false)}
-					/>
-				</aside>
-			)}
+			{sidebarOpen && renderSidebar()}
+
 			{!sidebarOpen && (
 				<Button
 					variant="outline"
@@ -203,18 +234,24 @@ function Code({ owner, repo, branch, filePath, mode = "code" }: CodeProps) {
 				</Button>
 			)}
 
-			<main className="min-w-0 flex-2 mx-5 flex flex-col gap-3">
+			<main className="mx-5 flex min-w-0 flex-2 flex-col gap-3">
 				<span className="font-semibold">
-					<span className="text-blue-400 hover:underline cursor-pointer">
+					<span className="cursor-pointer text-blue-400 hover:underline">
 						{repo}
 					</span>{" "}
+
 					{breadcrumbs.map((bc, i) => (
 						<span key={`${bc.label}-${i}`}>
-							<span className="text-muted-foreground">/</span>{" "}
+							<span className="text-muted-foreground">
+								/
+							</span>{" "}
+
 							{bc.isLast ? (
-								<span className="font-medium">{bc.label}</span>
+								<span className="font-medium">
+									{bc.label}
+								</span>
 							) : (
-								<span className="text-blue-400 hover:underline cursor-pointer">
+								<span className="cursor-pointer text-blue-400 hover:underline">
 									{bc.label}
 								</span>
 							)}
