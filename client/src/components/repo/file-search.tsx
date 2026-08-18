@@ -56,7 +56,7 @@ export function FileSearch({ files, owner, repo, branch }: FileSearchProps) {
 			<Button
 				onClick={() => setOpen(true)}
 				variant="outline"
-				className="max-w-xs"
+				className="max-w-[328px]"
 			>
 				<SearchIcon className="size-4" />
 				<span className="truncate">Search files...</span>
@@ -66,7 +66,7 @@ export function FileSearch({ files, owner, repo, branch }: FileSearchProps) {
 				<Command className="**:data-[selected=true]:bg-muted **:data-selected:bg-transparent">
 					<CommandInput
 						placeholder="Search files..."
-						className="placeholder:text-muted-foreground"
+						className="placeholder:text-muted-foreground/80"
 					/>
 					<CommandList>
 						<CommandEmpty>No files found</CommandEmpty>
