@@ -3,7 +3,7 @@ import { UserAvatar } from "#/components/UserAvatar"
 import { authClient } from "#/lib/auth-client"
 import { absoluteDate, timeAgo } from "#/lib/time-ago"
 import { useParams } from "@tanstack/react-router"
-import { ClockFading, RotateCcwClock } from "lucide-react"
+import { RotateCcwClock } from "lucide-react"
 
 interface MainheaderProps {
     owner: string

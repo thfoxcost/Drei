@@ -32,6 +32,9 @@ import {
 import { Separator } from "../ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
+import { FileSearch } from "./file-search";
+import type { RepoFile } from "#/types/repo";
+
 interface TableheaderProps {
 	defaultBranch: string;
 	activeBranch?: string;
@@ -43,6 +46,7 @@ interface TableheaderProps {
 	nTags: number;
 	cloneUrl: string;
 	readme?: string;
+	files?: RepoFile[];
 }
 
 function CloneUrlField({ url }: { url?: string }) {
@@ -96,6 +100,7 @@ function Tableheader({
 	nTags,
 	cloneUrl,
 	readme,
+	files = [],
 }: TableheaderProps) {
 	const navigate = useNavigate();
 	const [branchFilter, setBranchFilter] = useState("");
@@ -114,8 +119,8 @@ function Tableheader({
 			});
 		} else {
 			navigate({
-				to: "/$username/$repo/tree/$branch",
-				params: { branch },
+				to: "/$username/$repo/branch/$branchName",
+				params: { username: owner, repo, branchName: branch },
 			});
 		}
 	};
@@ -313,14 +318,12 @@ function Tableheader({
 			</div>
 
 			<div className="flex flex-row gap-2 items-center">
-				<Field className="max-w-xs">
-					<InputGroup>
-						<InputGroupAddon>
-							<SearchIcon />
-						</InputGroupAddon>
-						<InputGroupInput placeholder="Search..." />
-					</InputGroup>
-				</Field>
+				<FileSearch
+					files={files}
+					owner={owner}
+					repo={repo}
+					branch={currentBranch}
+				/>
 
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
