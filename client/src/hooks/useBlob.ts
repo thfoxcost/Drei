@@ -6,7 +6,7 @@ export function useBlob(owner: string, repo: string, branch: string, path: strin
 		queryKey: ["blob", owner, repo, branch, path],
 		queryFn: async (): Promise<BlobData> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/blob/${branch}/${path}`,
+				`http://localhost:3200/api/repos/${owner}/${repo}/blob/${encodeURIComponent(branch)}/${path}`,
 			);
 			if (!res.ok) throw new Error("Failed to fetch file");
 			return res.json();
