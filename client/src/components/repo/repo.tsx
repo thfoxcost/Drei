@@ -121,6 +121,7 @@ function Repo({ owner, repo, branch }: RepoProps) {
 							nTags={repoData.tags?.length ?? 0}
 							cloneUrl={repoData.cloneUrl}
 							readme={readmeMarkdown}
+							files={repoData.files}
 						/>
 
 						<Mainheader

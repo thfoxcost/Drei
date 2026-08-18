@@ -1,7 +1,14 @@
-import { PanelLeftOpen } from "lucide-react";
+import { Folder, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "#/components/ui/empty";
 import { useBlob } from "#/hooks/useBlob";
 import { useRepoData } from "#/hooks/useRepoData";
 import Codeblock from "./code-block";
@@ -99,6 +106,9 @@ function Code({
 }: CodeProps) {
 	const [sidebarOpen, setSidebarOpen] = useState(true);
 
+	const isTree =
+		mode === "tree" && owner && repo && branch && filePath;
+
 	const isBlob =
 		mode === "blob" && owner && repo && branch && filePath;
 
@@ -110,7 +120,7 @@ function Code({
 		owner ?? "",
 		repo ?? "",
 		branch ?? "",
-		filePath ?? "",
+		isBlob ? (filePath ?? "") : "",
 	);
 
 	const {
@@ -259,6 +269,22 @@ function Code({
 					))}
 				</span>
 
+				{isTree && !blobData && !blobLoading && (
+					<Empty className="border">
+						<EmptyHeader>
+							<EmptyMedia variant="icon">
+								<Folder />
+							</EmptyMedia>
+							<EmptyTitle>
+								Please browse the files from the sidebar
+							</EmptyTitle>
+							<EmptyDescription>
+								Select a file from the sidebar to view its contents.
+							</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
+				)}
+
 				{blobData && (
 					<Latestcommitsbox
 						author={blobData.lastCommit.author}
@@ -268,18 +294,20 @@ function Code({
 					/>
 				)}
 
-				<Codeblock
-					code={decoded}
-					language={language}
-					filename={fileName}
-					lineCount={lineCount}
-					locCount={locCount}
-					byteSize={byteSize}
-					owner={owner}
-					repo={repo}
-					branch={branch}
-					filePath={filePath}
-				/>
+				{isBlob && (
+					<Codeblock
+						code={decoded}
+						language={language}
+						filename={fileName}
+						lineCount={lineCount}
+						locCount={locCount}
+						byteSize={byteSize}
+						owner={owner}
+						repo={repo}
+						branch={branch}
+						filePath={filePath}
+					/>
+				)}
 			</main>
 		</div>
 	);
