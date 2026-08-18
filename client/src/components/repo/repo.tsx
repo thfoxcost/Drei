@@ -160,7 +160,12 @@ function Repo({ owner, repo, branch }: RepoProps) {
 					</div>
 
 					<div className="w-full max-w-xs shrink-0">
-						<Rightpanel data={repoData} />
+						<Rightpanel
+							data={repoData}
+							owner={owner}
+							repo={repo}
+							branch={branch ?? repoData.defaultBranch}
+						/>
 					</div>
 				</div>
 			</div>

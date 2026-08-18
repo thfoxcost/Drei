@@ -1,7 +1,9 @@
 "use client";
 
 import * as linguistLanguages from "linguist-languages";
+import { useNavigate } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
+import type { RepoFile } from "#/types/repo";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { ContributionChart } from "./chart-area-default";
@@ -9,7 +11,7 @@ import { ActivityRadarChart } from "./chart-radar";
 import { type Contributor, ContributorAvatars } from "./contributor-avatars";
 import { RepoVisibilitySettings } from "./hooks/repo-visibility-settings";
 import { useRepoItemsVisibility } from "./hooks/use-repo-items-visibility";
-import { repoItems } from "./repo-items";
+import { getAvailableItems } from "./repo-items";
 
 export type { Contributor };
 
@@ -76,14 +78,21 @@ export interface RepoData {
 
 interface RightPanelProps {
 	data: RepoData;
+	owner: string;
+	repo: string;
+	branch: string;
 }
 
-export default function RightPanel({ data }: RightPanelProps) {
+export default function RightPanel({ data, owner, repo, branch }: RightPanelProps) {
+	const navigate = useNavigate();
 	const sortedLangs = [...(data.langs ?? [])].sort(
 		(a, b) => b.percent - a.percent,
 	);
 	const { visibility, setItemVisible } = useRepoItemsVisibility();
-	const visibleItems = repoItems.filter((item) => visibility[item.id] ?? true);
+	const availableItems = getAvailableItems(data.files as RepoFile[]);
+	const visibleItems = availableItems.filter(
+		(item) => visibility[item.id] ?? true,
+	);
 	const contributors = data.contributors ?? [];
 
 	return (
@@ -95,6 +104,7 @@ export default function RightPanel({ data }: RightPanelProps) {
 					<RepoVisibilitySettings
 						visibility={visibility}
 						onToggle={setItemVisible}
+						availableItems={availableItems}
 					/>
 				</div>
 				<p
@@ -119,17 +129,46 @@ export default function RightPanel({ data }: RightPanelProps) {
 							case "size":
 								value = formatBytes(data.size);
 								break;
-							case "branches":
-								value = data.branches.length;
-								break;
-							case "tags":
-								value = data.tags?.length ?? 0;
-								break;
-							case "commits":
-								value = data.commits.length;
-								break;
 							default:
 								value = null;
+						}
+
+						const handleClick = () => {
+							if (item.filePath) {
+								navigate({
+									to: "/$username/$repo/blob/$branch/$" as any,
+									params: {
+										username: owner,
+										repo,
+										branch,
+										_splat: item.filePath,
+									},
+								});
+							}
+						};
+
+						const content = (
+							<div className="flex items-center justify-between text-sm text-muted-foreground transition-colors hover:text-white">
+								<div className="flex items-center gap-2">
+									<Icon size={16} />
+									<span>{item.name}</span>
+								</div>
+
+								{value && <span className="text-foreground">{value}</span>}
+							</div>
+						);
+
+						if (item.filePath) {
+							return (
+								<button
+									key={item.id}
+									type="button"
+									onClick={handleClick}
+									className="cursor-pointer bg-transparent border-none p-0 w-full text-left"
+								>
+									{content}
+								</button>
+							);
 						}
 
 						return (

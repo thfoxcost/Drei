@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { REPO_ITEMS_STORAGE_KEY, getDefaultVisibility } from "../repo-items";
+import { REPO_ITEMS_STORAGE_KEY } from "../repo-items";
 
 export function useRepoItemsVisibility() {
-  // Start from "everything visible" so server-render and first client
-  // paint match — reading localStorage before mount causes hydration
-  // mismatches in Next.js.
+  // Start from empty so server-render and first client paint match.
+  // Individual items default to visible via `?? true` in the consumer.
   const [visibility, setVisibilityState] = useState<Record<string, boolean>>(
-    getDefaultVisibility
+    () => ({})
   );
 
   useEffect(() => {
