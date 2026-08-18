@@ -36,6 +36,10 @@ interface CodeblockProps {
 	lineCount?: number;
 	locCount?: number;
 	byteSize?: number;
+	owner?: string;
+	repo?: string;
+	branch?: string;
+	filePath?: string;
 }
 
 type ActiveTab = "preview" | "code" | "blame";
@@ -54,6 +58,10 @@ function Codeblock({
 	lineCount = 0,
 	locCount = 0,
 	byteSize = 0,
+	owner,
+	repo,
+	branch,
+	filePath,
 }: CodeblockProps) {
 	const [copied, setCopied] = useState(false);
 	const isReadme = filename === "README.md";
@@ -82,6 +90,12 @@ function Codeblock({
 		a.click();
 
 		URL.revokeObjectURL(url);
+	};
+
+	const handleRaw = () => {
+		if (!owner || !repo || !branch || !filePath) return;
+		const base = import.meta.env.VITE_BACKEND_URL;
+		window.location.href = `${base}/api/repos/${owner}/${repo}/raw/${encodeURIComponent(branch)}/${filePath}`;
 	};
 
 	// Don't render the code block/header for empty files.
@@ -186,18 +200,19 @@ function Codeblock({
 					</ButtonGroup>
 
 					<ButtonGroup>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="sm"
-									variant="outline"
-									aria-label="View raw file"
-								>
-									<FileCode className="h-3.5 w-3.5" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>View raw file</TooltipContent>
-						</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								size="sm"
+								variant="outline"
+								aria-label="View raw file"
+								onClick={handleRaw}
+							>
+								<FileCode className="h-3.5 w-3.5" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>View raw file</TooltipContent>
+					</Tooltip>
 
 						<Tooltip>
 							<TooltipTrigger asChild>
