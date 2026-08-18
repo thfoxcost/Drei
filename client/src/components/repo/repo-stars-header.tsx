@@ -10,6 +10,7 @@ import {
   Globe,
   Link2,
   Lock,
+  Loader2,
   Pin,
   QrCode,
   RefreshCw,
@@ -35,26 +36,92 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Commit } from "#/types/repo";
 
 interface RepoStarsheaderProps {
   reponame: string;
+  owner: string;
   visibility: boolean;
   link: string;
   website?: string;
   logo?: string;
+  commits?: Commit[];
+  defaultBranch?: string;
   isLoading?: boolean;
 }
 
 function RepoStarsheader({
   reponame,
+  owner,
   visibility,
   link,
   website,
   logo,
+  commits = [],
+  defaultBranch = "main",
   isLoading,
 }: RepoStarsheaderProps) {
   const status = visibility ? "Public" : "Private";
   const [qrOpen, setQrOpen] = useState(false);
+  const [rssLoading, setRssLoading] = useState(false);
+
+  const handleRssDownload = async () => {
+    setRssLoading(true);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      const siteUrl = window.location.origin;
+      const repoUrl = `${siteUrl}/${owner}/${reponame}`;
+      const selfUrl = `${repoUrl}/branch/${defaultBranch}`;
+
+      const escapeXml = (str: string) =>
+        str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&apos;");
+
+      const commitItems = commits
+        .map((commit) => {
+          const pubDate = new Date(commit.date).toUTCString();
+          return `    <item>
+      <title>${escapeXml(commit.message.split("\n")[0])}</title>
+      <link>${repoUrl}/commit/${commit.hash}</link>
+      <guid isPermaLink="true">${repoUrl}/commit/${commit.hash}</guid>
+      <pubDate>${pubDate}</pubDate>
+      <author>${escapeXml(commit.author)}</author>
+    </item>`;
+        })
+        .join("\n");
+
+      const rss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>${escapeXml(reponame)} - Commits</title>
+    <link>${repoUrl}</link>
+    <description>Recent commits to ${escapeXml(reponame)}</description>
+    <language>en</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    <atom:link href="${selfUrl}" rel="self" type="application/rss+xml" />
+${commitItems}
+  </channel>
+</rss>`;
+
+      const blob = new Blob([rss], { type: "application/rss+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${reponame}-commits.xml`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Silently fail — button returns to normal state
+    } finally {
+      setRssLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -206,8 +273,17 @@ function RepoStarsheader({
         <ForksBtn />
 
         <ButtonGroup>
-          <Button variant="outline" size="icon" disabled>
-            <Rss className="h-4 w-4" />
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={rssLoading}
+            onClick={handleRssDownload}
+          >
+            {rssLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Rss className="h-4 w-4" />
+            )}
           </Button>
 
           <Button variant="outline" size="icon" disabled>
