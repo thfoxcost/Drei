@@ -275,6 +275,10 @@ function Code({
 					lineCount={lineCount}
 					locCount={locCount}
 					byteSize={byteSize}
+					owner={owner}
+					repo={repo}
+					branch={branch}
+					filePath={filePath}
 				/>
 			</main>
 		</div>
