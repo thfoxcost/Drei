@@ -44,6 +44,39 @@ interface CodeblockProps {
 
 type ActiveTab = "preview" | "code" | "blame";
 
+const MARKDOWN_EXTENSIONS = new Set([".md", ".mdx"]);
+
+const KNOWN_DOC_FILES = new Set([
+	"readme",
+	"license",
+	"copying",
+	"code_of_conduct",
+	"contributing",
+	"security",
+	"changelog",
+	"changes",
+	"authors",
+	"contributors",
+	"faq",
+	"roadmap",
+	"install",
+	"development",
+	"developing",
+	"support",
+	"governance",
+	"todo",
+	"notice",
+]);
+
+function canPreviewFile(filename: string): boolean {
+	if (!filename) return false;
+	const lower = filename.toLowerCase();
+	const ext = lower.slice(lower.lastIndexOf("."));
+	if (MARKDOWN_EXTENSIONS.has(ext)) return true;
+	const basename = lower.replace(/\.[^.]+$/, "");
+	return KNOWN_DOC_FILES.has(basename);
+}
+
 function formatBytes(bytes: number): string {
 	if (bytes === 0) return "0 Bytes";
 	if (bytes < 1024) return `${bytes} Bytes`;
@@ -64,15 +97,15 @@ function Codeblock({
 	filePath,
 }: CodeblockProps) {
 	const [copied, setCopied] = useState(false);
-	const isReadme = filename === "README.md";
+	const canPreview = canPreviewFile(filename);
 
 	const [activeTab, setActiveTab] = useState<ActiveTab>(
-		isReadme ? "preview" : "code",
+		canPreview ? "preview" : "code",
 	);
 
 	useEffect(() => {
-		setActiveTab(isReadme ? "preview" : "code");
-	}, [isReadme]);
+		setActiveTab(canPreview ? "preview" : "code");
+	}, [canPreview]);
 
 	const handleCopy = () => {
 		navigator.clipboard.writeText(code);
@@ -138,7 +171,7 @@ function Codeblock({
 					className="h-7"
 				>
 					<TabsList className="h-7 rounded-md bg-transparent p-0">
-						{isReadme && (
+						{canPreview && (
 							<TabsTrigger
 								value="preview"
 								className="h-7 rounded-md px-3 text-sm"
@@ -251,7 +284,7 @@ function Codeblock({
 				</div>
 			</CodeBlockHeader>
 
-			{activeTab === "preview" && isReadme ? (
+			{activeTab === "preview" && canPreview ? (
 				<div className="p-6">
 					<Markdown content={code} />
 				</div>
