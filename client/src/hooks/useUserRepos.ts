@@ -14,6 +14,8 @@ export interface Repo {
 	visibility: boolean;
 	archived: boolean;
 	forked: boolean;
+	forkedFromOwner: string;
+	forkedFromName: string;
 	mirrored: boolean;
 
 	// dummy from backend for now

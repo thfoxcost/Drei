@@ -1,7 +1,7 @@
 "use client";
 
 import { useNavigate } from "@tanstack/react-router";
-import { FolderGit2Icon, SearchIcon } from "lucide-react";
+import { FolderGit2Icon, GitFork, SearchIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { authClient } from "#/lib/auth-client";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ interface Repo {
 	tags: string[];
 	language: string;
 	lastUpdated: string;
+	forked: boolean;
 	stars: number;
 	forks: number;
 	license: string;
@@ -143,11 +144,15 @@ export function Cmd() {
 									className="gap-2.5 flex items-center justify-between"
 									onSelect={() => handleSelect(repo)}
 								>
-                  <div className="flex flex-row gap-2">
-									<FolderGit2Icon className="size-4 shrink-0" />
-									<span className="truncate font-medium">{repo.name}</span>
-								</div>
-                	<span data-slot="command-shortcut">
+									<div className="flex flex-row gap-2">
+										{repo.forked ? (
+											<GitFork className="size-4 shrink-0" />
+										) : (
+											<FolderGit2Icon className="size-4 shrink-0" />
+										)}
+										<span className="truncate font-medium">{repo.name}</span>
+									</div>
+									<span data-slot="command-shortcut">
 										<Badge variant="outline">{repo.language}</Badge>
 									</span>
 								</CommandItem>
