@@ -1,3 +1,5 @@
+import { ArrowLeftRight, BookMarked, BookOpen, Building2, ChevronDown, CircleDot, CircleQuestionMark, FilePlus2, FolderGit2, FolderPlus, GitBranchPlus, GitPullRequest, Inbox, LogOut, PackagePlus, Plus, Settings, Tag, User } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Link } from "@tanstack/react-router"
@@ -7,26 +9,9 @@ import { UserAvatar } from "@/components/UserAvatar"
 import { Cmd } from "../cmd"
 
 import {
-  ArrowLeftRight,
-  BookMarked,
-  Building2,
-  CircleQuestionMark,
-  LogOut,
-  Plus,
-  Settings,
-  User,
-} from "lucide-react"
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 
 type ReposMainHeaderProps = {
@@ -84,7 +69,33 @@ export default function ReposMainHeader({
 
       <div className="flex items-center gap-2 sm:gap-3">
         <Cmd />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default">
+              <Plus className=" h-4 w-4" />
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
 
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Create</DropdownMenuLabel>
+
+            <DropdownMenuItem>
+              <a href="/new" className="flex items-center gap-1">
+                <FolderPlus className="mr-1.5 h-4 w-4" />
+                New repository
+              </a>
+
+            </DropdownMenuItem>
+
+            <DropdownMenuItem>
+              <CircleDot className="mr-1.5 h-4 w-4" />
+              <a href="/issues" className="flex items-center gap-1">
+                New issue
+              </a>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Pattern />
 
         <Separator
