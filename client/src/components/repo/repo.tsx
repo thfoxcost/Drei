@@ -124,13 +124,7 @@ function Repo({ owner, repo, branch }: RepoProps) {
 							files={repoData.files}
 						/>
 
-						<Mainheader
-							owner={repoData.owner}
-							lastcommit={repoData.lastCommit.message}
-							commithash={repoData.lastCommit.hash.slice(0, 7)}
-							commitDate={repoData.lastCommit.date}
-							commitNum={repoData.commits.length.toLocaleString()}
-						/>
+						<Mainheader />
 
 					{repoData.files
 						.filter((file) => !file.isNested)
