@@ -339,7 +339,11 @@ function Issues() {
 										}
 									>
 										<span className="flex w-full items-center gap-2">
-											<BookMarked className="size-4 shrink-0 text-muted-foreground" />
+											{repo.forked ? (
+												<GitFork className="size-4 shrink-0 text-muted-foreground" />
+											) : (
+												<BookMarked className="size-4 shrink-0 text-muted-foreground" />
+											)}
 											<span className="min-w-0 flex-1 truncate">
 												{repo.name}
 											</span>
@@ -347,8 +351,6 @@ function Issues() {
 												<MirrorRectangular className="shrink-0 text-muted-foreground" />
 											) : repo.archived ? (
 												<Archive className="shrink-0 text-muted-foreground" />
-											) : repo.forked ? (
-												<GitFork className="shrink-0 text-muted-foreground" />
 											) : null}
 										</span>
 									</DropdownMenuItem>

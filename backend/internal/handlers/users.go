@@ -26,9 +26,11 @@ type RepoInfo struct {
 	Visibility bool `json:"visibility"`
 	Archived   bool `json:"archived"`
 
-	// Fork and mirror support are not implemented yet.
-	Forked   bool `json:"forked"`
-	Mirrored bool `json:"mirrored"`
+	// Fork and mirror support
+	Forked           bool   `json:"forked"`
+	ForkedFromOwner  string `json:"forkedFromOwner"`
+	ForkedFromName   string `json:"forkedFromName"`
+	Mirrored         bool   `json:"mirrored"`
 
 	// dummy for now
 	Stars   int    `json:"stars"`
@@ -151,6 +153,9 @@ func GetRepos(w http.ResponseWriter, r *http.Request) {
 			info.Description = meta.Description
 			info.Visibility = meta.Visibility
 			info.Archived = meta.Archived
+			info.Forked = meta.ForkedFromID != nil
+			info.ForkedFromOwner = meta.ForkedFromOwner
+			info.ForkedFromName = meta.ForkedFromName
 
 		}
 

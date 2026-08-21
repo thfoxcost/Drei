@@ -117,6 +117,9 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 					description={repoData?.description}
 					files={repoData?.files}
 					langs={repoData?.langs}
+					isFork={repoData?.isFork}
+					forkedFromOwner={repoData?.forkedFromOwner}
+					forkedFromName={repoData?.forkedFromName}
 				/>
 			)}
 			<Tabs value={currentTab} className="gap-4 ">

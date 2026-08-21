@@ -115,3 +115,32 @@ func RenameLogo(owner, oldName, newName, logo string) error {
 
 	return os.Rename(oldPath, newPath)
 }
+
+// ForkBareRepo creates a bare clone of the source repository at the
+// destination path. This is a real Git fork — all objects, refs, and history
+// are copied. After cloning, the http.receivepack config is enabled so the
+// fork can receive pushes.
+func ForkBareRepo(sourcePath, destPath string) error {
+	cmd := exec.Command(
+		"git",
+		"clone",
+		"--bare",
+		sourcePath,
+		destPath,
+	)
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git clone --bare failed: %w", err)
+	}
+
+	// Enable http.receivepack on the fork so it can receive pushes.
+	cmd = exec.Command(
+		"git",
+		"--git-dir="+destPath,
+		"config",
+		"http.receivepack",
+		"true",
+	)
+
+	return cmd.Run()
+}

@@ -57,4 +57,7 @@ export interface RepoData {
 	size: number;
 	contributors: Contributor[];
 	issueCount: number;
+	isFork: boolean;
+	forkedFromOwner: string;
+	forkedFromName: string;
 }

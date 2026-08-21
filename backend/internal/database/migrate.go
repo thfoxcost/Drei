@@ -120,6 +120,15 @@ func Migrate() error {
 		return err
 	}
 
+	// Fork relationship: stores which repository this repo was forked from.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE repositories
+		ADD COLUMN IF NOT EXISTS forked_from_id BIGINT REFERENCES repositories(id) ON DELETE SET NULL;
+	`)
+	if err != nil {
+		return err
+	}
+
 	// Repository issues. Issue numbers are unique per repository, never
 	// globally. author_id / assignee_id / closed_by reference the better-auth
 	// "user" table by id.
