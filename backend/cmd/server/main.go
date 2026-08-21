@@ -32,6 +32,8 @@ func main() {
 	http.HandleFunc("/api/status", handlers.Status)
 	http.HandleFunc("/api/repos", handlers.CreateRepo)
 	http.HandleFunc("/api/repos/{owner}/{repo}", handlers.RepoHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/forks", handlers.ForksHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/fork", handlers.ForkHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/blob/{branch}/{path...}", handlers.BlobHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/raw/{branch}/{path...}", handlers.RawHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/archive", handlers.ArchiveHandler)

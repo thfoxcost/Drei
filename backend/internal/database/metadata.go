@@ -6,19 +6,22 @@ import (
 )
 
 type RepoInfo struct {
-	ID            int64
-	OwnerID       string
-	Owner         string
-	Name          string
-	Description   string
-	Visibility    bool
-	Logo          string
-	Website       string
-	Archived      bool
-	ArchivedAt    *time.Time
-	DefaultBranch string
-	Path          string
-	CreatedAt     time.Time
+	ID              int64
+	OwnerID         string
+	Owner           string
+	Name            string
+	Description     string
+	Visibility      bool
+	Logo            string
+	Website         string
+	Archived        bool
+	ArchivedAt      *time.Time
+	DefaultBranch   string
+	Path            string
+	CreatedAt       time.Time
+	ForkedFromID    *int64
+	ForkedFromOwner string
+	ForkedFromName  string
 }
 
 func GetRepository(owner, name string) (*RepoInfo, error) {
@@ -28,21 +31,25 @@ func GetRepository(owner, name string) (*RepoInfo, error) {
 		context.Background(),
 		`
 		SELECT
-			id,
-			owner_id,
-			owner,
-			name,
-			description,
-			visibility,
-			COALESCE(logo, ''),
-			COALESCE(website, ''),
-			archived,
-			archived_at,
-			default_branch,
-			path,
-			created_at
-		FROM repositories
-		WHERE owner = $1 AND name = $2
+			r.id,
+			r.owner_id,
+			r.owner,
+			r.name,
+			r.description,
+			r.visibility,
+			COALESCE(r.logo, ''),
+			COALESCE(r.website, ''),
+			r.archived,
+			r.archived_at,
+			r.default_branch,
+			r.path,
+			r.created_at,
+			r.forked_from_id,
+			COALESCE(src.owner, ''),
+			COALESCE(src.name, '')
+		FROM repositories r
+		LEFT JOIN repositories src ON r.forked_from_id = src.id
+		WHERE r.owner = $1 AND r.name = $2
 		`,
 		owner,
 		name,
@@ -60,6 +67,9 @@ func GetRepository(owner, name string) (*RepoInfo, error) {
 		&repo.DefaultBranch,
 		&repo.Path,
 		&repo.CreatedAt,
+		&repo.ForkedFromID,
+		&repo.ForkedFromOwner,
+		&repo.ForkedFromName,
 	)
 
 	if err != nil {

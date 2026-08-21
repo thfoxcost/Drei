@@ -2,7 +2,13 @@
 
 import { Link, useNavigate } from "@tanstack/react-router";
 import * as linguistLanguages from "linguist-languages";
-import { BookMarked, ChevronDown, FolderSearch, Search } from "lucide-react";
+import {
+	BookMarked,
+	ChevronDown,
+	FolderSearch,
+	GitFork,
+	Search,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import {
 	Forks,
@@ -59,7 +65,11 @@ function RepoCard({ repo }: RepoCardProps) {
 		>
 			<div className="space-y-1.5">
 				<div className="flex items-center gap-2">
-					<BookMarked size={18} className="shrink-0 text-muted-foreground" />
+					{repo.forked ? (
+						<GitFork size={18} className="shrink-0 text-muted-foreground" />
+					) : (
+						<BookMarked size={18} className="shrink-0 text-muted-foreground" />
+					)}
 
 					<span className="truncate text-lg font-semibold group-hover:underline">
 						{repo.name}
@@ -69,6 +79,23 @@ function RepoCard({ repo }: RepoCardProps) {
 						{repo.visibility ? "Public" : "Private"}
 					</Badge>
 				</div>
+
+				{repo.forked && repo.forkedFromOwner && repo.forkedFromName && (
+					<p className="text-xs text-muted-foreground">
+						Forked from{" "}
+						<Link
+							to="/$username/$repo"
+							params={{
+								username: repo.forkedFromOwner,
+								repo: repo.forkedFromName,
+							}}
+							className="hover:underline"
+							onClick={(e) => e.stopPropagation()}
+						>
+							{repo.forkedFromOwner}/{repo.forkedFromName}
+						</Link>
+					</p>
+				)}
 
 				<p className="text-sm text-muted-foreground">
 					{repo.description || "No description"}
@@ -133,7 +160,7 @@ const TYPE_OPTIONS: { value: TypeOption; label: string; disabled?: boolean }[] =
 	[
 		{ value: "all", label: "All" },
 		{ value: "source", label: "Source" },
-		{ value: "forked", label: "Forked", disabled: true },
+		{ value: "forked", label: "Forked" },
 		{ value: "public", label: "Public" },
 		{ value: "private", label: "Private" },
 		{ value: "mirrored", label: "Mirrored" },
@@ -228,8 +255,8 @@ function Repos({ repos }: ReposProps) {
 
 	return (
 		<div className="space-y-3 p-2">
-      			<h1 className="text-2xl">Repositories</h1>
-			<Separator className='my-2 mb-4' />
+			<h1 className="text-2xl">Repositories</h1>
+			<Separator className="my-2 mb-4" />
 			<div className="flex flex-wrap items-center gap-2 mb-5">
 				<InputGroup className="min-w-52 flex-1">
 					<InputGroupInput

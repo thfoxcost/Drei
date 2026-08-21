@@ -1,9 +1,10 @@
 "use client";
 
-import * as linguistLanguages from "linguist-languages";
 import { useNavigate } from "@tanstack/react-router";
-import { Separator } from "@/components/ui/separator";
+import * as linguistLanguages from "linguist-languages";
+import { GitFork } from "lucide-react";
 import type { RepoFile } from "#/types/repo";
+import { Separator } from "@/components/ui/separator";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { ContributionChart } from "./chart-area-default";
@@ -74,6 +75,9 @@ export interface RepoData {
 	size: number;
 	contributors: Contributor[];
 	issueCount: number;
+	isFork: boolean;
+	forkedFromOwner: string;
+	forkedFromName: string;
 }
 
 interface RightPanelProps {
@@ -83,7 +87,12 @@ interface RightPanelProps {
 	branch: string;
 }
 
-export default function RightPanel({ data, owner, repo, branch }: RightPanelProps) {
+export default function RightPanel({
+	data,
+	owner,
+	repo,
+	branch,
+}: RightPanelProps) {
 	const navigate = useNavigate();
 	const sortedLangs = [...(data.langs ?? [])].sort(
 		(a, b) => b.percent - a.percent,
@@ -116,6 +125,27 @@ export default function RightPanel({ data, owner, repo, branch }: RightPanelProp
 				>
 					{data.description || "No description"}
 				</p>
+				{data.isFork && data.forkedFromOwner && data.forkedFromName && (
+					<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+						<GitFork className="h-3 w-3" />
+						Forked from{" "}
+						<button
+							type="button"
+							className="cursor-pointer bg-transparent border-none p-0 hover:underline text-xs text-muted-foreground"
+							onClick={() =>
+								navigate({
+									to: "/$username/$repo",
+									params: {
+										username: data.forkedFromOwner,
+										repo: data.forkedFromName,
+									},
+								})
+							}
+						>
+							{data.forkedFromOwner}/{data.forkedFromName}
+						</button>
+					</p>
+				)}
 			</div>
 
 			{visibleItems.length > 0 && (

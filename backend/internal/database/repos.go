@@ -147,3 +147,143 @@ func DeleteRepository(owner, name string) error {
 
 	return err
 }
+
+// GetRepositoryByID returns the repository row by its primary key.
+func GetRepositoryByID(id int64) (*RepoInfo, error) {
+	var repo RepoInfo
+
+	err := DB.QueryRow(
+		context.Background(),
+		`
+		SELECT
+			r.id, r.owner_id, r.owner, r.name, r.description, r.visibility,
+			COALESCE(r.logo, ''), COALESCE(r.website, ''),
+			r.archived, r.archived_at, r.default_branch, r.path, r.created_at,
+			r.forked_from_id,
+			COALESCE(src.owner, ''),
+			COALESCE(src.name, '')
+		FROM repositories r
+		LEFT JOIN repositories src ON r.forked_from_id = src.id
+		WHERE r.id = $1
+		`,
+		id,
+	).Scan(
+		&repo.ID,
+		&repo.OwnerID,
+		&repo.Owner,
+		&repo.Name,
+		&repo.Description,
+		&repo.Visibility,
+		&repo.Logo,
+		&repo.Website,
+		&repo.Archived,
+		&repo.ArchivedAt,
+		&repo.DefaultBranch,
+		&repo.Path,
+		&repo.CreatedAt,
+		&repo.ForkedFromID,
+		&repo.ForkedFromOwner,
+		&repo.ForkedFromName,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &repo, nil
+}
+
+// HasUserFork checks whether the given user already has a fork of the source
+// repository. It matches on the user's ID stored in the repositories table.
+func HasUserFork(userID string, sourceRepoID int64) (bool, error) {
+	var exists bool
+
+	err := DB.QueryRow(
+		context.Background(),
+		`SELECT EXISTS (
+			SELECT 1 FROM repositories
+			WHERE owner_id = $1 AND forked_from_id = $2
+		)`,
+		userID,
+		sourceRepoID,
+	).Scan(&exists)
+
+	return exists, err
+}
+
+// ForkOwner represents a user who has forked a repository.
+type ForkOwner struct {
+	Username string `json:"username"`
+	Avatar   string `json:"avatar"`
+}
+
+// GetForks returns the fork count and the list of users who forked a repository.
+// Avatars are resolved from the "user" table so every returned owner is a real
+// registered user record.
+func GetForks(sourceRepoID int64) (int64, []ForkOwner, error) {
+	var count int64
+
+	err := DB.QueryRow(
+		context.Background(),
+		`SELECT COUNT(*) FROM repositories WHERE forked_from_id = $1`,
+		sourceRepoID,
+	).Scan(&count)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	rows, err := DB.Query(
+		context.Background(),
+		`
+		SELECT DISTINCT ON (lower(r.owner))
+		       r.owner AS username,
+		       COALESCE(u.image, '') AS avatar
+		FROM repositories r
+		LEFT JOIN "user" u ON lower(u.name) = lower(r.owner)
+		WHERE r.forked_from_id = $1
+		ORDER BY lower(r.owner), r.created_at ASC
+		`,
+		sourceRepoID,
+	)
+	if err != nil {
+		return count, nil, err
+	}
+	defer rows.Close()
+
+	var owners []ForkOwner
+
+	for rows.Next() {
+		var fo ForkOwner
+		if err := rows.Scan(&fo.Username, &fo.Avatar); err != nil {
+			return count, nil, err
+		}
+
+		owners = append(owners, fo)
+	}
+
+	return count, owners, rows.Err()
+}
+
+// CreateForkRepository inserts a new forked repository row. The forked_from_id
+// column links back to the source repository.
+func CreateForkRepository(repo Repository, forkedFromID int64) (int64, error) {
+	var id int64
+
+	err := DB.QueryRow(
+		context.Background(),
+		`INSERT INTO repositories
+		(name, owner_id, owner, description, visibility, path, default_branch, forked_from_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id`,
+		repo.Name,
+		repo.OwnerID,
+		repo.Owner,
+		repo.Description,
+		repo.Visibility,
+		repo.Path,
+		repo.DefaultBranch,
+		forkedFromID,
+	).Scan(&id)
+
+	return id, err
+}
