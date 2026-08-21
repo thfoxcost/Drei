@@ -1,6 +1,7 @@
 import { useState } from "react";
 import QRCode from "react-qr-code";
 import { Button } from "@/components/ui/button";
+import { authClient } from "#/lib/auth-client";
 import {
   Bot,
   ChevronDown,
@@ -69,10 +70,12 @@ function RepoStarsheader({
   langs = [],
   branch,
 }: RepoStarsheaderProps) {
+  const { data: session } = authClient.useSession();
   const status = visibility ? "Public" : "Private";
   const [qrOpen, setQrOpen] = useState(false);
   const [rssLoading, setRssLoading] = useState(false);
   const [llmsLoading, setLlmsLoading] = useState(false);
+  const isOwner = session?.user.name === owner;
 
   const handleRssDownload = async () => {
     setRssLoading(true);
@@ -854,7 +857,7 @@ ${commitItems}
           </Button>
         </ButtonGroup>
 
-        <ForksBtn />
+        <ForksBtn disabled={isOwner} />
 
         <ButtonGroup>
           <Button

@@ -12,19 +12,26 @@ import {
   ChevronDownIcon,
   GitFork,
 } from "lucide-react";
+import { useNavigate, useParams } from "@tanstack/react-router";
 
-export function ForksBtn() {
+export function ForksBtn({ disabled = false }: { disabled?: boolean }) {
+  const navigate = useNavigate();
+  const { username, repo } = useParams({ strict: false });
+
   return (
     <ButtonGroup>
-      <Button variant="secondary">
+      <Button
+        variant="secondary"
+        disabled={disabled}
+        onClick={() => navigate({ to: `/${username}/${repo}/forks` })}
+      >
         <GitFork  className="size-4" aria-hidden="true" />
         <span>Forks</span>
         <Badge variant="secondary">2.4k</Badge>
       </Button>
-
       <DropdownMenu >
         <DropdownMenuTrigger asChild>
-          <Button variant="secondary" size="icon">
+          <Button variant="secondary" size="icon" disabled={disabled}>
             <ChevronDownIcon className="size-4" aria-hidden="true" />
             <span className="sr-only">Toggle dropdown</span>
           </Button>
