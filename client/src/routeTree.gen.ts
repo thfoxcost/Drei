@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsernameIndexRouteImport } from './routes/$username/index'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/_auth/signin'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppReposRouteImport } from './routes/_app/repos'
 import { Route as AppPullsRouteImport } from './routes/_app/pulls'
 import { Route as AppNewRouteImport } from './routes/_app/new'
@@ -70,6 +71,11 @@ const AuthSigninRoute = AuthSigninRouteImport.update({
   id: '/signin',
   path: '/signin',
   getParentRoute: () => AuthRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppReposRoute = AppReposRouteImport.update({
   id: '/repos',
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/new': typeof AppNewRoute
   '/pulls': typeof AppPullsRoute
   '/repos': typeof AppReposRoute
+  '/settings': typeof AppSettingsRoute
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
   '/$username/': typeof UsernameIndexRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByTo {
   '/new': typeof AppNewRoute
   '/pulls': typeof AppPullsRoute
   '/repos': typeof AppReposRoute
+  '/settings': typeof AppSettingsRoute
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
   '/$username': typeof UsernameIndexRoute
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/_app/new': typeof AppNewRoute
   '/_app/pulls': typeof AppPullsRoute
   '/_app/repos': typeof AppReposRoute
+  '/_app/settings': typeof AppSettingsRoute
   '/_auth/signin': typeof AuthSigninRoute
   '/_auth/signup': typeof AuthSignupRoute
   '/$username/': typeof UsernameIndexRoute
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/pulls'
     | '/repos'
+    | '/settings'
     | '/signin'
     | '/signup'
     | '/$username/'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/pulls'
     | '/repos'
+    | '/settings'
     | '/signin'
     | '/signup'
     | '/$username'
@@ -331,6 +342,7 @@ export interface FileRouteTypes {
     | '/_app/new'
     | '/_app/pulls'
     | '/_app/repos'
+    | '/_app/settings'
     | '/_auth/signin'
     | '/_auth/signup'
     | '/$username/'
@@ -412,6 +424,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/signin'
       preLoaderRoute: typeof AuthSigninRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/repos': {
       id: '/_app/repos'
@@ -568,6 +587,7 @@ interface AppRouteChildren {
   AppNewRoute: typeof AppNewRoute
   AppPullsRoute: typeof AppPullsRoute
   AppReposRoute: typeof AppReposRoute
+  AppSettingsRoute: typeof AppSettingsRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -575,6 +595,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppNewRoute: AppNewRoute,
   AppPullsRoute: AppPullsRoute,
   AppReposRoute: AppReposRoute,
+  AppSettingsRoute: AppSettingsRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
