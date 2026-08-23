@@ -30,6 +30,9 @@ func main() {
 	http.HandleFunc("/api/users/{owner}/repos", handlers.GetRepos)
 	http.HandleFunc("/api/issues", handlers.AllIssuesHandler)
 	http.HandleFunc("/api/status", handlers.Status)
+	http.HandleFunc("/api/profile", handlers.ProfileHandler)
+	http.HandleFunc("/api/user/account/password", handlers.AccountPasswordHandler)
+	http.HandleFunc("/api/user/account", handlers.AccountHandler)
 	http.HandleFunc("/api/repos", handlers.CreateRepo)
 	http.HandleFunc("/api/repos/{owner}/{repo}", handlers.RepoHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/forks", handlers.ForksHandler)
@@ -50,6 +53,10 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}/comments/{commentId}", handlers.IssueCommentHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/labels", handlers.IssueLabelsHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/labels/{labelId}", handlers.IssueLabelHandler)
+	http.HandleFunc("/api/notifications", handlers.NotificationsHandler)
+	http.HandleFunc("/api/notifications/{id}", handlers.NotificationItemHandler)
+	http.HandleFunc("/api/notifications/test", handlers.NotificationTestHandler)
+	http.HandleFunc("/api/notifications/send", handlers.NotificationSendHandler)
 	http.HandleFunc("/git/", handlers.GitHandler)
 
 	// Serve uploaded repo logos from <REPOS_PATH>/logos under /uploads/.

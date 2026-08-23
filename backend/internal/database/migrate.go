@@ -284,5 +284,48 @@ func Migrate() error {
 		return err
 	}
 
+	// Profile fields on the better-auth "user" table.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS biography TEXT,
+		ADD COLUMN IF NOT EXISTS description TEXT,
+		ADD COLUMN IF NOT EXISTS country TEXT,
+		ADD COLUMN IF NOT EXISTS quote_person_name TEXT,
+		ADD COLUMN IF NOT EXISTS quote_text TEXT,
+		ADD COLUMN IF NOT EXISTS quote_person_title TEXT,
+		ADD COLUMN IF NOT EXISTS quote_person_image TEXT,
+		ADD COLUMN IF NOT EXISTS quote_verified BOOLEAN NOT NULL DEFAULT FALSE;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Webhooks table stores Discord notification webhook configurations.
+	// The URL is stored Base64-encoded for safety. repository_id is nullable;
+	// when NULL the webhook applies to the user globally.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS webhooks (
+			id BIGSERIAL PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			repository_id BIGINT REFERENCES repositories(id) ON DELETE CASCADE,
+			type TEXT NOT NULL DEFAULT 'discord',
+			encoded_url TEXT NOT NULL,
+			enabled BOOLEAN NOT NULL DEFAULT TRUE,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS webhooks_user_id_idx
+		ON webhooks (user_id);
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

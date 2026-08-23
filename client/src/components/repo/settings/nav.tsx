@@ -6,12 +6,12 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs'
 import {
+  Bell,
   CirclePlay,
   GitBranch,
   Settings,
   Tags,
   UsersRound,
-  Webhook,
 } from 'lucide-react'
 import General from './general'
 import Collab from './collab'
@@ -52,11 +52,11 @@ const tabs = [
       'Configure automated workflows and actions for your repository.',
   },
   {
-    name: 'Webhooks',
-    value: 'webhooks',
-    icon: Webhook,
+    name: 'Notifications',
+    value: 'notifications',
+    icon: Bell,
     content:
-      'Manage webhooks and configure integrations with external services.',
+      'Manage notifications and configure integrations with external services.',
   },
 ]
 
