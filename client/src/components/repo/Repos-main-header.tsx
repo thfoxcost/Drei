@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { ArrowLeftRight, BookMarked, BookOpen, Building2, ChevronDown, CircleDot, CircleQuestionMark, FilePlus2, FolderGit2, FolderPlus, GitBranchPlus, GitPullRequest, Inbox, LogOut, PackagePlus, Plus, Settings, Tag, User } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
@@ -41,6 +42,24 @@ export default function ReposMainHeader({
   repo,
 }: ReposMainHeaderProps) {
   const { data: session } = authClient.useSession()
+  const [biography, setBiography] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchBiography() {
+      try {
+        const res = await fetch("http://localhost:3200/api/profile", {
+          credentials: "include",
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setBiography(data.biography ?? null)
+        }
+      } catch {
+        // Silently ignore — biography is non-critical
+      }
+    }
+    fetchBiography()
+  }, [])
 
   return (
     <header className="mr-3 flex items-center justify-between gap-2 bg-muted/10 py-2 sm:px-2 sm:py-1">
@@ -142,8 +161,10 @@ export default function ReposMainHeader({
               </Button>
             </DropdownMenuLabel>
 
-            <DropdownMenuItem disabled>
-              🌴 Still learning
+            <DropdownMenuItem asChild>
+              <a href="/settings" className="truncate">
+                {biography || "No biography yet"}
+              </a>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />

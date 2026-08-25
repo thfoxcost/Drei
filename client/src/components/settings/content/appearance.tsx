@@ -67,10 +67,6 @@ function ContentAppearance() {
                 if (!cancelled) {
                     setLanguage(data.language)
                     setOriginal(data)
-
-                    if (data.theme !== theme) {
-                        setTheme(data.theme)
-                    }
                 }
             } catch {
                 if (!cancelled) {

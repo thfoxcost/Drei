@@ -61,7 +61,7 @@ func handleGetProfile(w http.ResponseWriter, user *AuthUser) {
 		&profile.QuoteVerified,
 	)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to fetch profile")
+		writeError(w, http.StatusInternalServerError, "failed to fetch profile: "+err.Error())
 		return
 	}
 
@@ -99,7 +99,7 @@ func handleUpdateProfile(w http.ResponseWriter, r *http.Request, user *AuthUser)
 		    quote_person_title = $8,
 		    quote_person_image = $9,
 		    quote_verified = $10,
-		    updated_at = NOW()
+		    "updatedAt" = NOW()
 		WHERE id = $11
 	`,
 		req.Name, req.Email,
@@ -109,7 +109,7 @@ func handleUpdateProfile(w http.ResponseWriter, r *http.Request, user *AuthUser)
 		req.QuoteVerified, user.ID,
 	)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to update profile")
+		writeError(w, http.StatusInternalServerError, "failed to update profile: "+err.Error())
 		return
 	}
 
