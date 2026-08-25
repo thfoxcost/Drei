@@ -12,7 +12,6 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Pattern } from "@/components/mode-toggle"
 import { authClient } from "#/lib/auth-client"
 import type { LucideIcon } from "lucide-react"
 import {
@@ -148,9 +147,6 @@ export default function Header() {
                         <span className="hidden sm:inline">Create</span>
                     </Button>
                 </a>
-
-                <Pattern />
-
                 <Separator
                     orientation="vertical"
                     className="mt-1 hidden h-6 self-center sm:block"
