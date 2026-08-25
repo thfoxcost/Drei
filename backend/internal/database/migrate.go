@@ -327,5 +327,16 @@ func Migrate() error {
 		return err
 	}
 
+	// User appearance preferences: theme and language.
+	// Defaults ensure existing users get English without a backfill migration.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS appearance_theme TEXT NOT NULL DEFAULT 'system',
+		ADD COLUMN IF NOT EXISTS appearance_language TEXT NOT NULL DEFAULT 'en';
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
