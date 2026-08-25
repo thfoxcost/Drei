@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Link, useNavigate } from "@tanstack/react-router"
@@ -65,6 +66,24 @@ const ORGANIZATIONS = [
 export default function Header() {
     const { data: session } = authClient.useSession()
     const navigate = useNavigate()
+    const [biography, setBiography] = useState<string | null>(null)
+
+    useEffect(() => {
+        async function fetchBiography() {
+            try {
+                const res = await fetch("http://localhost:3200/api/profile", {
+                    credentials: "include",
+                })
+                if (res.ok) {
+                    const data = await res.json()
+                    setBiography(data.biography ?? null)
+                }
+            } catch {
+                // Silently ignore — biography is non-critical
+            }
+        }
+        fetchBiography()
+    }, [])
 
     return (
         <header className="flex items-center justify-between gap-2 border-b bg-muted/10 px-3 py-2 sm:px-2 sm:py-1">
@@ -193,8 +212,10 @@ export default function Header() {
                             </Button>
                         </DropdownMenuLabel>
 
-                        <DropdownMenuItem disabled>
-                            🌴 Still learning
+                        <DropdownMenuItem asChild>
+                            <a href="/settings" className="truncate">
+                                {biography || "No biography yet"}
+                            </a>
                         </DropdownMenuItem>
 
                         <DropdownMenuSeparator />
