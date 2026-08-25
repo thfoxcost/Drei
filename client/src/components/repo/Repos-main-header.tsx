@@ -3,7 +3,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Link } from "@tanstack/react-router"
-import { Pattern } from "@/components/mode-toggle"
 import { authClient } from "#/lib/auth-client"
 import { UserAvatar } from "@/components/UserAvatar"
 import { Cmd } from "../cmd"
@@ -96,7 +95,6 @@ export default function ReposMainHeader({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Pattern />
 
         <Separator
           orientation="vertical"
