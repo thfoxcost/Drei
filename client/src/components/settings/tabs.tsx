@@ -3,12 +3,14 @@ import {
     Bell,
     CirclePlay,
     CircleUserRound,
+    Palette,
     Settings,
 } from "lucide-react"
 
 import ContentProfile from "./content/profile"
 import ContentAccount from "./content/account"
 import ContentNotifications from "./content/notifications"
+import ContentAppearance from "./content/appearance"
 
 const tabClass =
     "w-full justify-start gap-2 text-left data-active:bg-primary/20! data-active:text-primary! data-active:shadow-none! dark:data-active:border-transparent"
@@ -40,6 +42,11 @@ function VerticalTabsSettings() {
                     <Bell className="size-4" />
                     Notifications
                 </TabsTrigger>
+            
+                <TabsTrigger value="appearance" className={tabClass}>
+                    <Palette className="size-4" />
+                    Appearance
+                </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 px-6">
@@ -66,6 +73,10 @@ function VerticalTabsSettings() {
 
                 <TabsContent value="notifications">
                     <ContentNotifications />
+                </TabsContent>
+
+                <TabsContent value="appearance">
+                    <ContentAppearance />
                 </TabsContent>
             </div>
         </Tabs>
