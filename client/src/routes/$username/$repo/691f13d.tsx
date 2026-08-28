@@ -6,7 +6,7 @@ export const Route = createFileRoute('/$username/$repo/691f13d')({
 })
 
 function RouteComponent() {
-  return <div className='px-7 py-2'>
+  return <div className=''>
     <Commit />
   </div>
 }
