@@ -95,6 +95,29 @@ function CodeCommitBlock({
     const filePath =
         "backend/internal/handlers/profile.go"
 
+    const additions = diffLines.filter(
+        (line) => line.type === "added",
+    ).length
+
+    const deletions = diffLines.filter(
+        (line) => line.type === "removed",
+    ).length
+
+    const maxSquares = 5
+
+    const greenSquares = Math.min(
+        additions,
+        maxSquares,
+    )
+
+    const redSquares = Math.min(
+        deletions,
+        maxSquares - greenSquares,
+    )
+
+    const emptySquares =
+        maxSquares - greenSquares - redSquares
+
     return (
         <div className="mt-3 w-full overflow-hidden rounded-md border">
             <div className="flex h-10 items-center gap-2 border-b bg-muted/30 px-2">
@@ -124,24 +147,69 @@ function CodeCommitBlock({
                     {filePath}
                 </span>
 
-                <button
-                    type="button"
-                    onClick={() =>
-                        copyToClipboard(filePath)
-                    }
-                    className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    aria-label={
-                        isCopied
-                            ? "Copied"
-                            : "Copy file path"
-                    }
-                >
-                    {isCopied ? (
-                        <Check size={15} />
-                    ) : (
-                        <Copy size={15} />
-                    )}
-                </button>
+                <div className="ml-auto flex shrink-0 items-center gap-3">
+                    <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                        {additions > 0 && (
+                            <span className="text-green-600 dark:text-green-500">
+                                +{additions}
+                            </span>
+                        )}
+
+                        {deletions > 0 && (
+                            <span className="text-red-600 dark:text-red-500">
+                                -{deletions}
+                            </span>
+                        )}
+
+                        <div className="flex items-center gap-0.5">
+                            {Array.from({
+                                length: greenSquares,
+                            }).map((_, index) => (
+                                <span
+                                    key={`green-${index}`}
+                                    className="h-2 w-2  bg-green-500"
+                                />
+                            ))}
+
+                            {Array.from({
+                                length: redSquares,
+                            }).map((_, index) => (
+                                <span
+                                    key={`red-${index}`}
+                                    className="h-2 w-2 bg-red-500"
+                                />
+                            ))}
+
+                            {Array.from({
+                                length: emptySquares,
+                            }).map((_, index) => (
+                                <span
+                                    key={`empty-${index}`}
+                                    className="h-2 w-2 bg-muted"
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            copyToClipboard(filePath)
+                        }
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        aria-label={
+                            isCopied
+                                ? "Copied"
+                                : "Copy file path"
+                        }
+                    >
+                        {isCopied ? (
+                            <Check size={15} />
+                        ) : (
+                            <Copy size={15} />
+                        )}
+                    </button>
+                </div>
             </div>
 
             {isExpanded && (
