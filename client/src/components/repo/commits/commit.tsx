@@ -2,13 +2,19 @@ import { useState } from "react"
 import { Badge } from "#/components/reui/badge"
 import { Button } from "#/components/ui/button"
 import { Input } from "#/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar"
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "#/components/ui/avatar"
 import {
     Diff,
+    Ellipsis,
     File,
     FileCode,
     Folder,
     GitBranch,
+    PanelLeft,
     Search,
     SquareDot,
     SquareMinus,
@@ -16,7 +22,11 @@ import {
 } from "lucide-react"
 import { useNavigate, useLocation } from "@tanstack/react-router"
 import { Separator } from "#/components/ui/separator"
-import { type TreeDataItem, TreeView } from "#/components/tree-view"
+import {
+    type TreeDataItem,
+    TreeView,
+} from "#/components/tree-view"
+import CodeCommitBlock from "./code-commit"
 
 type ChangeStatus = "added" | "changed" | "removed"
 
@@ -90,7 +100,9 @@ function FileRowLabel({
     )
 }
 
-function buildCommitFileTree(files: CommitFile[]): TreeDataItem[] {
+function buildCommitFileTree(
+    files: CommitFile[],
+): TreeDataItem[] {
     const root: TreeDataItem[] = []
 
     const sorted = [...files].sort((a, b) =>
@@ -127,7 +139,10 @@ function buildCommitFileTree(files: CommitFile[]): TreeDataItem[] {
         current.push({
             id: file.path,
             name: (
-                <FileRowLabel fileName={fileName} status={file.status} />
+                <FileRowLabel
+                    fileName={fileName}
+                    status={file.status}
+                />
             ) as unknown as string,
             icon: File,
         })
@@ -138,9 +153,13 @@ function buildCommitFileTree(files: CommitFile[]): TreeDataItem[] {
 
 function Commit() {
     const hash = "691f13d"
+
     const navigate = useNavigate()
     const location = useLocation()
+
     const [search, setSearch] = useState("")
+    const [codeSearch, setCodeSearch] = useState("")
+    const [showFileTree, setShowFileTree] = useState(true)
 
     const [, owner, repo] = location.pathname.split("/")
 
@@ -150,7 +169,7 @@ function Commit() {
 
     return (
         <div>
-            <div className="flex items-center justify-between mx-4">
+            <div className="mx-4 flex items-center justify-between">
                 <span className="text-2xl font-medium">
                     Commit{" "}
                     <Badge size="xl" variant="secondary">
@@ -160,26 +179,30 @@ function Commit() {
 
                 <Button
                     variant="outline"
-                    onClick={() => navigate({ to: `/${owner}/${repo}` })}
+                    onClick={() =>
+                        navigate({
+                            to: `/${owner}/${repo}`,
+                        })
+                    }
                 >
                     <FileCode />
                     Browse Files
                 </Button>
             </div>
 
-            <div className="mt-4 rounded-md border p-3 mx-4">
+            <div className="mx-4 mt-2 rounded-md border p-3">
                 <div className="font-mono text-sm">
-                    feat: enhance profile handling with biography fetching and
-                    error management
+                    feat: enhance profile handling with biography
+                    fetching and error management
                 </div>
 
-                <div className="mt-2 text-xs font-mono text-muted-foreground">
+                <div className="mt-2 font-mono text-xs text-muted-foreground">
                     It is a long established fact that a reader will be
-                    distracted by the readable content of a page when looking
-                    at its layout. The point of using Lorem Ipsum is that it
-                    has a more-or-less normal distribution of letters, as
-                    opposed to using 'Content here, content here', making it
-                    look like readable English.
+                    distracted by the readable content of a page when
+                    looking at its layout. It has a more-or-less normal
+                    distribution of letters, as opposed to using
+                    'Content here, content here', making it look like
+                    readable English.
                 </div>
 
                 <Separator className="my-3" />
@@ -191,7 +214,10 @@ function Commit() {
                             className="text-muted-foreground"
                         />
 
-                        <Badge size="lg" variant="secondary">
+                        <Badge
+                            size="lg"
+                            variant="secondary"
+                        >
                             main
                         </Badge>
                     </div>
@@ -242,7 +268,9 @@ function Commit() {
                     <div className="flex items-center gap-2">
                         <Avatar size="sm">
                             <AvatarImage src="https://github.com/shadcn.png" />
-                            <AvatarFallback>CN</AvatarFallback>
+                            <AvatarFallback>
+                                CN
+                            </AvatarFallback>
                         </Avatar>
 
                         <span className="text-sm">
@@ -258,23 +286,67 @@ function Commit() {
             <Separator className="mt-4" />
 
             <div className="flex min-h-[400px]">
-                <div className="ml-4 w-[250px] shrink-0 pr-2">
-                    <div className="relative mt-4">
-                        <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search files..."
-                            className="pl-8"
-                        />
+                {showFileTree && (
+                    <>
+                        <div className="ml-4 w-[250px] shrink-0 pr-2">
+                            <div className="relative mt-4">
+                                <Search
+                                    className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                                />
+
+                                <Input
+                                    value={search}
+                                    onChange={(e) =>
+                                        setSearch(e.target.value)
+                                    }
+                                    placeholder="Search files..."
+                                    className="pl-8"
+                                />
+                            </div>
+
+                            <TreeView
+                                data={buildCommitFileTree(
+                                    filteredFiles,
+                                )}
+                            />
+                        </div>
+
+                        <Separator orientation="vertical" />
+                    </>
+                )}
+
+                <div className="m-3 min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="secondary"
+                                onClick={() =>
+                                    setShowFileTree(
+                                        (value) => !value,
+                                    )
+                                }
+                            >
+                                <PanelLeft />
+                            </Button>
+
+                            <Input
+                                type="search"
+                                placeholder="Search within code"
+                                value={codeSearch}
+                                onChange={(e) =>
+                                    setCodeSearch(e.target.value)
+                                }
+                                className="w-[300px]"
+                            />
+                        </div>
+
+                        <Button variant="outline">
+                            <Ellipsis />
+                        </Button>
                     </div>
 
-                    <TreeView
-                        data={buildCommitFileTree(filteredFiles)}
-                    />
+                    <CodeCommitBlock search={codeSearch} />
                 </div>
-
-                <Separator orientation="vertical" />
             </div>
         </div>
     )
