@@ -258,9 +258,10 @@ func GetCommitDetail(owner, repo, hash string) (*CommitDetail, error) {
 	}, nil
 }
 
-// resolveBranchForCommit finds the first local branch whose HEAD matches the
-// given commit hash, returning the branch name. Returns an empty string if no
-// branch is found (e.g. a detached HEAD or orphaned commit).
+// resolveBranchForCommit finds the first local branch that contains the given
+// commit, returning the branch name. A commit is considered to belong to a
+// branch if it is an ancestor of (or equal to) the branch HEAD. Returns an
+// empty string if no branch is found.
 func resolveBranchForCommit(r *git.Repository, target plumbing.Hash) string {
 	head, err := r.Head()
 	if err == nil && head.Hash() == target {
@@ -269,31 +270,29 @@ func resolveBranchForCommit(r *git.Repository, target plumbing.Hash) string {
 		}
 	}
 
+	targetObj, err := r.CommitObject(target)
+	if err != nil {
+		return ""
+	}
+
 	iter, err := r.Branches()
 	if err != nil {
 		return ""
 	}
 
-	_ = iter.ForEach(func(ref *plumbing.Reference) error {
-		if ref.Hash() == target {
-			return nil
-		}
-		return nil
-	})
-
-	// Walk branches and resolve each one.
 	var branchName string
 
-	iter2, err := r.Branches()
-	if err != nil {
-		return ""
-	}
+	_ = iter.ForEach(func(ref *plumbing.Reference) error {
+		branchCommit, err := r.CommitObject(ref.Hash())
+		if err != nil {
+			return nil
+		}
 
-	_ = iter2.ForEach(func(ref *plumbing.Reference) error {
-		resolved, err := r.ResolveRevision(plumbing.Revision(ref.Name()))
-		if err == nil && *resolved == target {
+		isAncestor, err := targetObj.IsAncestor(branchCommit)
+		if err == nil && isAncestor {
 			branchName = ref.Name().Short()
 		}
+
 		return nil
 	})
 
