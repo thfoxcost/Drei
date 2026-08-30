@@ -36,6 +36,7 @@ func main() {
 	http.HandleFunc("/api/user/appearance", handlers.AppearanceHandler)
 	http.HandleFunc("/api/repos", handlers.CreateRepo)
 	http.HandleFunc("/api/repos/{owner}/{repo}", handlers.RepoHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/commits/{hash}", handlers.CommitHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/forks", handlers.ForksHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/fork", handlers.ForkHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/blob/{branch}/{path...}", handlers.BlobHandler)

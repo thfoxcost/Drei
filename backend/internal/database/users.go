@@ -36,6 +36,28 @@ func GetAllUsers() ([]Contributor, error) {
 	return users, rows.Err()
 }
 
+// GetUserByUsername returns the user record for the given username, or nil if
+// no matching user exists. The lookup is case-insensitive.
+func GetUserByUsername(username string) (*Contributor, error) {
+	var user Contributor
+
+	err := DB.QueryRow(
+		context.Background(),
+		`
+		SELECT id, COALESCE(name, ''), image
+		FROM "user"
+		WHERE lower(name) = lower($1)
+		`,
+		username,
+	).Scan(&user.ID, &user.Username, &user.Avatar)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 // ResolveUsernamesByEmails returns a map from lowercased email address to the
 // registered username for every user whose email matches one of the given
 // addresses (case-insensitively). Addresses without a matching user are absent
