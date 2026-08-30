@@ -10,6 +10,7 @@ import (
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/object"
+	"github.com/go-git/go-git/v6/utils/merkletrie"
 )
 
 type CommitInfo struct {
@@ -146,6 +147,15 @@ type CommitDetail struct {
 	ChangedFiles int `json:"changedFiles"`
 	Additions    int `json:"additions"`
 	Deletions    int `json:"deletions"`
+	Files        []FileChange `json:"files"`
+}
+
+// FileChange represents a single file that was added, modified, or removed in
+// a commit. The Action field uses the frontend's terminology: "added",
+// "changed", or "removed".
+type FileChange struct {
+	Path   string `json:"path"`
+	Action string `json:"action"`
 }
 
 // GetCommitDetail returns the detailed metadata for a single commit identified
@@ -239,7 +249,7 @@ func GetCommitDetail(owner, repo, hash string) (*CommitDetail, error) {
 		authorUsername = commit.Author.Name
 	}
 
-	changedFiles, additions, deletions := computeCommitStats(r, commit)
+	changedFiles, additions, deletions, files := computeCommitStats(r, commit)
 
 	return &CommitDetail{
 		FullHash:     commit.Hash.String(),
@@ -255,6 +265,7 @@ func GetCommitDetail(owner, repo, hash string) (*CommitDetail, error) {
 		ChangedFiles: changedFiles,
 		Additions:    additions,
 		Deletions:    deletions,
+		Files:        files,
 	}, nil
 }
 
@@ -303,13 +314,13 @@ func resolveBranchForCommit(r *git.Repository, target plumbing.Hash) string {
 // diff stats for root commits that have no parent.
 var emptyTreeHash = plumbing.NewHash("4b825dc642cb6eb9a060e54bf899d69f74d2e6e6")
 
-// computeCommitStats returns the number of changed files, total additions, and
-// total deletions for a commit by diffing its tree against the first parent's
-// tree (or an empty tree for root commits).
-func computeCommitStats(r *git.Repository, commit *object.Commit) (int, int, int) {
+// computeCommitStats returns the number of changed files, total additions,
+// total deletions, and per-file changes for a commit by diffing its tree
+// against the first parent's tree (or an empty tree for root commits).
+func computeCommitStats(r *git.Repository, commit *object.Commit) (int, int, int, []FileChange) {
 	commitTree, err := commit.Tree()
 	if err != nil {
-		return 0, 0, 0
+		return 0, 0, 0, nil
 	}
 
 	var parentTree *object.Tree
@@ -326,17 +337,19 @@ func computeCommitStats(r *git.Repository, commit *object.Commit) (int, int, int
 	}
 
 	if parentTree == nil {
-		return 0, 0, 0
+		return 0, 0, 0, nil
 	}
 
 	changes, err := object.DiffTree(parentTree, commitTree)
 	if err != nil {
-		return 0, 0, 0
+		return 0, 0, 0, nil
 	}
+
+	fileChanges := fileChangesFromDiff(changes)
 
 	patch, err := changes.Patch()
 	if err != nil {
-		return 0, 0, 0
+		return 0, 0, 0, fileChanges
 	}
 
 	stats := patch.Stats()
@@ -349,5 +362,42 @@ func computeCommitStats(r *git.Repository, commit *object.Commit) (int, int, int
 		deletions += s.Deletion
 	}
 
-	return len(stats), additions, deletions
+	return len(stats), additions, deletions, fileChanges
+}
+
+// fileChangesFromDiff extracts per-file change information from the diff
+// between two trees. Each change is mapped to the frontend's three-status
+// model: "added" (insert), "changed" (modify), or "removed" (delete).
+func fileChangesFromDiff(changes object.Changes) []FileChange {
+	result := make([]FileChange, 0, len(changes))
+
+	for _, c := range changes {
+		action, err := c.Action()
+		if err != nil {
+			continue
+		}
+
+		var status string
+
+		switch action {
+		case merkletrie.Insert:
+			status = "added"
+		case merkletrie.Modify:
+			status = "changed"
+		case merkletrie.Delete:
+			status = "removed"
+		}
+
+		path := c.To.Name
+		if c.From.Name != "" {
+			path = c.From.Name
+		}
+
+		result = append(result, FileChange{
+			Path:   path,
+			Action: status,
+		})
+	}
+
+	return result
 }
