@@ -3,12 +3,14 @@ package gitrepo
 import (
 	"backend/internal/config"
 	"backend/internal/database"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/go-git/go-git/v6/plumbing/format/diff"
 	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/go-git/go-git/v6/utils/merkletrie"
 )
@@ -148,6 +150,7 @@ type CommitDetail struct {
 	Additions    int `json:"additions"`
 	Deletions    int `json:"deletions"`
 	Files        []FileChange `json:"files"`
+	Diffs        []FileDiff   `json:"diffs"`
 }
 
 // FileChange represents a single file that was added, modified, or removed in
@@ -156,6 +159,32 @@ type CommitDetail struct {
 type FileChange struct {
 	Path   string `json:"path"`
 	Action string `json:"action"`
+}
+
+// DiffLine represents a single line in a unified diff hunk. OldLine is set for
+// removed and unchanged lines; NewLine is set for added and unchanged lines.
+type DiffLine struct {
+	Type    string `json:"type"`
+	OldLine *int   `json:"oldLine"`
+	NewLine *int   `json:"newLine"`
+	Content string `json:"content"`
+}
+
+// DiffHunk represents a contiguous group of changes with surrounding context
+// lines, matching the unified diff @@ header format.
+type DiffHunk struct {
+	Header string     `json:"header"`
+	Lines  []DiffLine `json:"lines"`
+}
+
+// FileDiff represents the complete diff for a single file in a commit,
+// including per-file metadata and line-level hunks.
+type FileDiff struct {
+	Path      string     `json:"path"`
+	Action    string     `json:"action"`
+	Additions int        `json:"additions"`
+	Deletions int        `json:"deletions"`
+	Hunks     []DiffHunk `json:"hunks"`
 }
 
 // GetCommitDetail returns the detailed metadata for a single commit identified
@@ -251,6 +280,8 @@ func GetCommitDetail(owner, repo, hash string) (*CommitDetail, error) {
 
 	changedFiles, additions, deletions, files := computeCommitStats(r, commit)
 
+	diffs := computeFileDiffs(r, commit)
+
 	return &CommitDetail{
 		FullHash:     commit.Hash.String(),
 		ShortHash:    commit.Hash.String()[:7],
@@ -266,6 +297,7 @@ func GetCommitDetail(owner, repo, hash string) (*CommitDetail, error) {
 		Additions:    additions,
 		Deletions:    deletions,
 		Files:        files,
+		Diffs:        diffs,
 	}, nil
 }
 
@@ -400,4 +432,239 @@ func fileChangesFromDiff(changes object.Changes) []FileChange {
 	}
 
 	return result
+}
+
+// computeFileDiffs builds per-file line-level diffs for a commit by diffing
+// its tree against the first parent's tree (or an empty tree for root commits).
+func computeFileDiffs(r *git.Repository, commit *object.Commit) []FileDiff {
+	commitTree, err := commit.Tree()
+	if err != nil {
+		return nil
+	}
+
+	var parentTree *object.Tree
+
+	if commit.NumParents() > 0 {
+		parent, err := commit.Parent(0)
+		if err == nil {
+			parentTree, _ = parent.Tree()
+		}
+	}
+
+	if parentTree == nil {
+		parentTree, _ = r.TreeObject(emptyTreeHash)
+	}
+
+	if parentTree == nil {
+		return nil
+	}
+
+	changes, err := object.DiffTree(parentTree, commitTree)
+	if err != nil {
+		return nil
+	}
+
+	fileChanges := fileChangesFromDiff(changes)
+
+	actionMap := make(map[string]string, len(fileChanges))
+	for _, fc := range fileChanges {
+		actionMap[fc.Path] = fc.Action
+	}
+
+	patch, err := changes.Patch()
+	if err != nil {
+		return nil
+	}
+
+	result := make([]FileDiff, 0, len(patch.FilePatches()))
+
+	for _, fp := range patch.FilePatches() {
+		from, to := fp.Files()
+
+		path := ""
+		if to != nil {
+			path = to.Path()
+		} else if from != nil {
+			path = from.Path()
+		}
+
+		action := actionMap[path]
+		if action == "" {
+			action = "changed"
+		}
+
+		lines, additions, deletions := chunksToDiffLines(fp.Chunks())
+		hunks := groupHunks(lines)
+
+		result = append(result, FileDiff{
+			Path:      path,
+			Action:    action,
+			Additions: additions,
+			Deletions: deletions,
+			Hunks:     hunks,
+		})
+	}
+
+	return result
+}
+
+// chunksToDiffLines converts go-git diff chunks into DiffLines with sequential
+// line numbers. Added lines get only a new-line number, removed lines get only
+// an old-line number, and unchanged lines get both.
+func chunksToDiffLines(chunks []diff.Chunk) ([]DiffLine, int, int) {
+	var lines []DiffLine
+	oldLine := 1
+	newLine := 1
+	additions := 0
+	deletions := 0
+
+	for _, chunk := range chunks {
+		content := strings.TrimRight(chunk.Content(), "\n")
+		if content == "" {
+			continue
+		}
+
+		chunkLines := strings.Split(content, "\n")
+
+		for _, line := range chunkLines {
+			switch chunk.Type() {
+			case diff.Equal:
+				ol := oldLine
+				nl := newLine
+
+				lines = append(lines, DiffLine{
+					Type:    "unchanged",
+					OldLine: &ol,
+					NewLine: &nl,
+					Content: line,
+				})
+
+				oldLine++
+				newLine++
+			case diff.Add:
+				nl := newLine
+				additions++
+
+				lines = append(lines, DiffLine{
+					Type:    "added",
+					NewLine: &nl,
+					Content: line,
+				})
+
+				newLine++
+			case diff.Delete:
+				ol := oldLine
+				deletions++
+
+				lines = append(lines, DiffLine{
+					Type:    "removed",
+					OldLine: &ol,
+					Content: line,
+				})
+
+				oldLine++
+			}
+		}
+	}
+
+	return lines, additions, deletions
+}
+
+// contextLines is the number of unchanged lines shown around each change in a
+// unified diff hunk.
+const contextLines = 3
+
+// groupHunks splits a flat list of DiffLines into hunks. Two changes belong to
+// the same hunk if the gap of unchanged lines between them is at most
+// 2*contextLines. Each hunk is extended by contextLines of surrounding context
+// on both sides.
+func groupHunks(lines []DiffLine) []DiffHunk {
+	if len(lines) == 0 {
+		return nil
+	}
+
+	var changeIdxs []int
+	for i, l := range lines {
+		if l.Type != "unchanged" {
+			changeIdxs = append(changeIdxs, i)
+		}
+	}
+
+	if len(changeIdxs) == 0 {
+		return nil
+	}
+
+	type span struct {
+		start, end int
+	}
+
+	var spans []span
+	cur := span{start: changeIdxs[0], end: changeIdxs[0]}
+
+	for i := 1; i < len(changeIdxs); i++ {
+		if changeIdxs[i]-cur.end <= contextLines*2 {
+			cur.end = changeIdxs[i]
+		} else {
+			spans = append(spans, cur)
+			cur = span{start: changeIdxs[i], end: changeIdxs[i]}
+		}
+	}
+
+	spans = append(spans, cur)
+
+	hunks := make([]DiffHunk, 0, len(spans))
+
+	for _, s := range spans {
+		lo := s.start - contextLines
+		if lo < 0 {
+			lo = 0
+		}
+
+		hi := s.end + contextLines
+		if hi >= len(lines) {
+			hi = len(lines) - 1
+		}
+
+		hunkLines := lines[lo : hi+1]
+
+		oldStart := -1
+		newStart := -1
+		oldCount := 0
+		newCount := 0
+
+		for _, l := range hunkLines {
+			if l.OldLine != nil {
+				if oldStart == -1 || *l.OldLine < oldStart {
+					oldStart = *l.OldLine
+				}
+
+				oldCount++
+			}
+
+			if l.NewLine != nil {
+				if newStart == -1 || *l.NewLine < newStart {
+					newStart = *l.NewLine
+				}
+
+				newCount++
+			}
+		}
+
+		if oldStart == -1 {
+			oldStart = 0
+		}
+
+		if newStart == -1 {
+			newStart = 0
+		}
+
+		header := fmt.Sprintf("@@ -%d,%d +%d,%d @@", oldStart, oldCount, newStart, newCount)
+
+		hunks = append(hunks, DiffHunk{
+			Header: header,
+			Lines:  hunkLines,
+		})
+	}
+
+	return hunks
 }
