@@ -36,33 +36,6 @@ type CommitFile = {
 	status: ChangeStatus
 }
 
-const mockChangedFiles: CommitFile[] = [
-	{
-		path: "main.go",
-		status: "changed",
-	},
-	{
-		path: "internal.go",
-		status: "added",
-	},
-	{
-		path: "tests/test.nim",
-		status: "added",
-	},
-	{
-		path: "tests/test.py",
-		status: "changed",
-	},
-	{
-		path: "tests/test.ts",
-		status: "removed",
-	},
-	{
-		path: "tests/test.js",
-		status: "changed",
-	},
-]
-
 function getStatusIcon(status: ChangeStatus) {
 	if (status === "added") return SquarePlus
 	if (status === "changed") return SquareDot
@@ -166,6 +139,7 @@ interface CommitDetail {
 	changedFiles: number
 	additions: number
 	deletions: number
+	files: { path: string; action: string }[]
 }
 
 interface CommitProps {
@@ -197,7 +171,10 @@ function Commit({ hash, owner, repo }: CommitProps) {
 		staleTime: 60_000,
 	})
 
-	const filteredFiles = mockChangedFiles.filter((file) =>
+	const filteredFiles: CommitFile[] = (commit?.files ?? []).map((f) => ({
+		path: f.path,
+		status: f.action as ChangeStatus,
+	})).filter((file) =>
 		file.path.toLowerCase().includes(search.toLowerCase()),
 	)
 
