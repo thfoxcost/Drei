@@ -10,10 +10,13 @@ import {
 } from "#/components/ui/avatar"
 import {
 	Diff,
+	Download,
 	Ellipsis,
 	FileCode,
 	Folder,
 	GitBranch,
+	ListChevronsDownUp,
+	ListChevronsUpDown,
 	PanelLeft,
 	Search,
 	SquareDot,
@@ -23,10 +26,20 @@ import {
 import { useNavigate, useLocation } from "@tanstack/react-router"
 import { Separator } from "#/components/ui/separator"
 import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "#/components/ui/dropdown-menu"
+import {
 	type TreeDataItem,
 	TreeView,
 } from "#/components/tree-view"
-import CodeCommitBlock from "./code-commit"
+import CodeCommitBlock, { type FileDiff } from "./code-commit"
+
+function filePathToId(path: string): string {
+	return `diff-${path.replace(/[^a-zA-Z0-9]/g, "-")}`
+}
 
 type ChangeStatus = "added" | "changed" | "removed"
 
@@ -171,7 +184,7 @@ const filenameToIcon: Record<string, string> = {
 	"README.md": "readme.svg",
 	"readme.md": "readme.svg",
 	"CHANGELOG.md": "changelog.svg",
-	"CONTRIBUTING.md": "contributors.svg",
+	"CONTRIBUTING.md": "contributing.svg",
 	"AUTHORS": "authors.svg",
 	"CODEOWNERS": "codeowners.svg",
 }
@@ -200,14 +213,20 @@ function makeFileIconComponent(
 		className,
 	}: {
 		className?: string
-	}) => (
-		<img
-			src={`/icons/${svgName}`}
-			alt=""
-			className={className}
-			style={{ filter: "grayscale(1)" }}
-		/>
-	)
+	}) => {
+		const filtered = (className ?? "")
+			.replace(/\bh-\d+\b/g, "")
+			.replace(/\bw-\d+\b/g, "")
+			.trim()
+		return (
+			<img
+				src={`/icons/${svgName}`}
+				alt=""
+				className={`h-4.5 w-4.5 ${filtered}`}
+				style={{ filter: "grayscale(1)" }}
+			/>
+		)
+	}
 	Component.displayName = `FileIcon(${svgName})`
 	return Component
 }
@@ -252,6 +271,7 @@ function FileRowLabel({
 
 function buildCommitFileTree(
 	files: CommitFile[],
+	onFileClick?: (path: string) => void,
 ): TreeDataItem[] {
 	const root: TreeDataItem[] = []
 
@@ -295,6 +315,7 @@ function buildCommitFileTree(
 				/>
 			) as unknown as string,
 			icon: makeFileIconComponent(getFileIconName(file.path)),
+			onClick: onFileClick ? () => onFileClick(file.path) : undefined,
 		})
 	}
 
@@ -316,6 +337,7 @@ interface CommitDetail {
 	additions: number
 	deletions: number
 	files: { path: string; action: string }[]
+	diffs: FileDiff[]
 }
 
 interface CommitProps {
@@ -332,6 +354,8 @@ function Commit({ hash, owner, repo }: CommitProps) {
 	const [search, setSearch] = useState("")
 	const [codeSearch, setCodeSearch] = useState("")
 	const [showFileTree, setShowFileTree] = useState(true)
+	const [allExpanded, setAllExpanded] = useState(true)
+	const [expandGeneration, setExpandGeneration] = useState(0)
 
 	const [, routeOwner, routeRepo] = location.pathname.split("/")
 
@@ -362,6 +386,78 @@ function Commit({ hash, owner, repo }: CommitProps) {
 				year: "numeric",
 			})
 		: ""
+
+	const codeMatchCount = (() => {
+		if (!codeSearch.trim() || !commit?.diffs) return 0
+		let count = 0
+		const term = codeSearch.toLowerCase()
+		for (const d of commit.diffs) {
+			for (const h of d.hunks) {
+				for (const l of h.lines) {
+					if (l.content.toLowerCase().includes(term)) {
+						count++
+					}
+				}
+			}
+		}
+		return count
+	})()
+
+	function scrollToDiff(path: string) {
+		const el = document.getElementById(filePathToId(path))
+		if (!el) return
+
+		el.scrollIntoView({ behavior: "smooth", block: "start" })
+
+		el.classList.add("bg-blue-500/10", "ring-1", "ring-blue-500/30")
+
+		const timer = setTimeout(() => {
+			el.classList.remove("bg-blue-500/10", "ring-1", "ring-blue-500/30")
+		}, 1500)
+
+		return () => clearTimeout(timer)
+	}
+
+	function downloadDiff() {
+		const diffs = commit?.diffs
+		if (!diffs || diffs.length === 0) return
+
+		let content = ""
+
+		for (const d of diffs) {
+			content += `diff --git a/${d.path} b/${d.path}\n`
+			content += `--- a/${d.path}\n`
+			content += `+++ b/${d.path}\n`
+
+			for (const hunk of d.hunks) {
+				content += `${hunk.header}\n`
+
+				for (const line of hunk.lines) {
+					const prefix =
+						line.type === "added"
+							? "+"
+							: line.type === "removed"
+								? "-"
+								: " "
+
+					content += `${prefix}${line.content}\n`
+				}
+			}
+
+			content += "\n"
+		}
+
+		const blob = new Blob([content], {
+			type: "text/plain",
+		})
+		const url = URL.createObjectURL(blob)
+		const a = document.createElement("a")
+
+		a.href = url
+		a.download = `${commit?.shortHash ?? "commit"}.diff`
+		a.click()
+		URL.revokeObjectURL(url)
+	}
 
 	return (
 		<div>
@@ -482,7 +578,7 @@ function Commit({ hash, owner, repo }: CommitProps) {
 			<div className="flex min-h-[400px]">
 				{showFileTree && (
 					<>
-						<div className="ml-4 w-[250px] shrink-0 pr-2">
+						<div className="sticky top-0 ml-4 max-h-[calc(100vh-2rem)] w-[250px] shrink-0 self-start overflow-y-auto pr-2">
 							<div className="relative mt-4">
 								<Search
 									className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -501,6 +597,7 @@ function Commit({ hash, owner, repo }: CommitProps) {
 							<TreeView
 								data={buildCommitFileTree(
 									filteredFiles,
+									scrollToDiff,
 								)}
 							/>
 						</div>
@@ -510,36 +607,85 @@ function Commit({ hash, owner, repo }: CommitProps) {
 				)}
 
 				<div className="m-3 min-w-0 flex-1">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2">
-							<Button
-								variant="secondary"
-								onClick={() =>
-									setShowFileTree(
-										(value) => !value,
-									)
-								}
-							>
-								<PanelLeft />
-							</Button>
+					<div className="sticky top-0 z-10 bg-background pb-2">
+						<div className="flex items-center justify-between">
+							<div className="flex items-center gap-2">
+								<Button
+									variant="secondary"
+									onClick={() =>
+										setShowFileTree(
+											(value) => !value,
+										)
+									}
+								>
+									<PanelLeft />
+								</Button>
 
-							<Input
-								type="search"
-								placeholder="Search within code"
-								value={codeSearch}
-								onChange={(e) =>
-									setCodeSearch(e.target.value)
-								}
-								className="w-[300px]"
-							/>
+								<Input
+									type="search"
+									placeholder="Search within code"
+									value={codeSearch}
+									onChange={(e) =>
+										setCodeSearch(e.target.value)
+									}
+									className="w-[300px]"
+								/>
+
+								{codeSearch.trim() && (
+									<span className="shrink-0 text-xs text-muted-foreground">
+										{codeMatchCount === 0
+											? "No matches"
+											: `${codeMatchCount} ${codeMatchCount === 1 ? "match" : "matches"}`}
+									</span>
+								)}
+							</div>
+
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button variant="outline">
+										<Ellipsis />
+									</Button>
+								</DropdownMenuTrigger>
+
+								<DropdownMenuContent align="end" className="w-44 p-1">
+									<DropdownMenuItem
+										onClick={() => {
+											setAllExpanded((v) => !v)
+											setExpandGeneration((g) => g + 1)
+										}}
+									>
+										{allExpanded ? (
+											<>
+												<ListChevronsDownUp className="mr-2 h-4 w-4" />
+												Collapse all
+											</>
+										) : (
+											<>
+												<ListChevronsUpDown className="mr-2 h-4 w-4" />
+												Expand all
+											</>
+										)}
+									</DropdownMenuItem>
+
+									<DropdownMenuItem onClick={downloadDiff}>
+										<Download className="mr-2 h-4 w-4" />
+										Download diff
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
 						</div>
-
-						<Button variant="outline">
-							<Ellipsis />
-						</Button>
 					</div>
 
-					<CodeCommitBlock search={codeSearch} />
+					{commit?.diffs?.map((d) => (
+						<CodeCommitBlock
+							key={d.path}
+							diff={d}
+							search={codeSearch}
+							expanded={allExpanded}
+							expandGeneration={expandGeneration}
+							diffId={filePathToId(d.path)}
+						/>
+					))}
 				</div>
 			</div>
 		</div>
