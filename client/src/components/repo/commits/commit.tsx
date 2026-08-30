@@ -11,7 +11,6 @@ import {
 import {
 	Diff,
 	Ellipsis,
-	File,
 	FileCode,
 	Folder,
 	GitBranch,
@@ -34,6 +33,183 @@ type ChangeStatus = "added" | "changed" | "removed"
 type CommitFile = {
 	path: string
 	status: ChangeStatus
+}
+
+const extensionToIcon: Record<string, string> = {
+	go: "go.svg",
+	ts: "typescript.svg",
+	tsx: "typescript.svg",
+	js: "javascript.svg",
+	jsx: "javascript.svg",
+	py: "python.svg",
+	rs: "rust.svg",
+	java: "java.svg",
+	rb: "ruby.svg",
+	php: "php.svg",
+	c: "c.svg",
+	h: "c.svg",
+	cpp: "cpp.svg",
+	hpp: "cpp.svg",
+	cs: "csharp.svg",
+	swift: "swift.svg",
+	kt: "kotlin.svg",
+	kts: "kotlin.svg",
+	scala: "scala.svg",
+	html: "html.svg",
+	htm: "html.svg",
+	css: "css.svg",
+	scss: "sass.svg",
+	sass: "sass.svg",
+	less: "less.svg",
+	json: "json.svg",
+	yaml: "yaml.svg",
+	yml: "yaml.svg",
+	xml: "svg.svg",
+	md: "markdown.svg",
+	mdx: "mdx.svg",
+	sql: "database.svg",
+	sh: "console.svg",
+	bash: "console.svg",
+	zsh: "console.svg",
+	ps1: "powershell.svg",
+	bat: "console.svg",
+	cmd: "console.svg",
+	dockerfile: "docker.svg",
+	vue: "vue.svg",
+	svelte: "svelte.svg",
+	astro: "astro.svg",
+	toml: "settings.svg",
+	ini: "settings.svg",
+	env: "settings.svg",
+	lua: "lua.svg",
+	dart: "dart.svg",
+	ex: "elixir.svg",
+	exs: "elixir.svg",
+	hs: "haskell.svg",
+	ml: "ocaml.svg",
+	erl: "erlang.svg",
+	gradle: "gradle.svg",
+	cmake: "cmake.svg",
+	nix: "nix.svg",
+	zig: "zig.svg",
+	nim: "nim.svg",
+	ad: "ada.svg",
+	cob: "clojure.svg",
+	f: "fortran.svg",
+	pas: "pascal.svg",
+	pl: "perl.svg",
+	pm: "perl.svg",
+	r: "r.svg",
+	tex: "tex.svg",
+	latex: "tex.svg",
+	diff: "diff.svg",
+	log: "changelog.svg",
+	lock: "lock.svg",
+	pdf: "pdf.svg",
+	audio: "audio.svg",
+	video: "video.svg",
+	image: "image.svg",
+	font: "font.svg",
+	doc: "document.svg",
+	docx: "document.svg",
+	xls: "document.svg",
+	pptx: "document.svg",
+}
+
+const filenameToIcon: Record<string, string> = {
+	Makefile: "makefile.svg",
+	makefile: "makefile.svg",
+	"GNUmakefile": "makefile.svg",
+	Dockerfile: "docker.svg",
+	".gitignore": "git.svg",
+	".gitmodules": "git.svg",
+	"go.mod": "go-mod.svg",
+	"go.sum": "go-mod.svg",
+	"package.json": "npm.svg",
+	"package-lock.json": "npm.svg",
+	"bun.lockb": "bun.svg",
+	"tsconfig.json": "tsconfig.svg",
+	".eslintrc": "eslint.svg",
+	".eslintrc.js": "eslint.svg",
+	".eslintrc.json": "eslint.svg",
+	".prettierrc": "prettier.svg",
+	".prettierrc.json": "prettier.svg",
+	"biome.json": "biome.svg",
+	"vite.config.ts": "vite.svg",
+	"vite.config.js": "vite.svg",
+	"vitest.config.ts": "vitest.svg",
+	"tailwind.config.ts": "tailwindcss.svg",
+	"tailwind.config.js": "tailwindcss.svg",
+	"next.config.js": "next.svg",
+	"next.config.mjs": "next.svg",
+	"nuxt.config.ts": "nuxt.svg",
+	"astro.config.mjs": "astro.svg",
+	"svelte.config.js": "svelte.svg",
+	"Cargo.toml": "rust.svg",
+	"Cargo.lock": "rust.svg",
+	"pubspec.yaml": "dart.svg",
+	"mix.exs": "elixir.svg",
+	"stack.yaml": "haskell.svg",
+	"cabal.project": "haskell.svg",
+	"Gemfile": "ruby.svg",
+	"Rakefile": "ruby.svg",
+	"Pipfile": "python.svg",
+	"pyproject.toml": "python.svg",
+	"setup.py": "python.svg",
+	"requirements.txt": "python.svg",
+	"composer.json": "php.svg",
+	".env": "settings.svg",
+	".env.local": "settings.svg",
+	".editorconfig": "editorconfig.svg",
+	"nginx.conf": "nginx.svg",
+	"docker-compose.yml": "docker.svg",
+	"docker-compose.yaml": "docker.svg",
+	".travis.yml": "travis.svg",
+	".github": "github.svg",
+	"LICENSE": "key.svg",
+	"LICENCE": "key.svg",
+	"README.md": "readme.svg",
+	"readme.md": "readme.svg",
+	"CHANGELOG.md": "changelog.svg",
+	"CONTRIBUTING.md": "contributors.svg",
+	"AUTHORS": "authors.svg",
+	"CODEOWNERS": "codeowners.svg",
+}
+
+function getFileIconName(path: string): string {
+	const parts = path.split("/")
+	const fileName = parts[parts.length - 1]
+
+	if (filenameToIcon[fileName]) {
+		return filenameToIcon[fileName]
+	}
+
+	const dotIndex = fileName.lastIndexOf(".")
+	if (dotIndex === -1) {
+		return "file.svg"
+	}
+
+	const ext = fileName.slice(dotIndex + 1).toLowerCase()
+	return extensionToIcon[ext] ?? "file.svg"
+}
+
+function makeFileIconComponent(
+	svgName: string,
+): React.ComponentType<{ className?: string }> {
+	const Component = ({
+		className,
+	}: {
+		className?: string
+	}) => (
+		<img
+			src={`/icons/${svgName}`}
+			alt=""
+			className={className}
+			style={{ filter: "grayscale(1)" }}
+		/>
+	)
+	Component.displayName = `FileIcon(${svgName})`
+	return Component
 }
 
 function getStatusIcon(status: ChangeStatus) {
@@ -118,7 +294,7 @@ function buildCommitFileTree(
 					status={file.status}
 				/>
 			) as unknown as string,
-			icon: File,
+			icon: makeFileIconComponent(getFileIconName(file.path)),
 		})
 	}
 
