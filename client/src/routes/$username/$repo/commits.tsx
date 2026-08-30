@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { endOfDay, format, startOfDay } from "date-fns";
 import {
 	CalendarIcon,
@@ -307,6 +307,11 @@ function RouteComponent() {
 	const { username, repo }: { username: string; repo: string } =
 		Route.useParams();
 
+	const routerState = useRouterState();
+	const isCommitDetail = routerState.location.pathname.startsWith(
+		`/${username}/${repo}/commits/`,
+	);
+
 	const [branch, setBranch] = useState<string | undefined>();
 	const [branchQuery, setBranchQuery] = useState("");
 	const [user, setUser] = useState<string | undefined>();
@@ -374,6 +379,10 @@ function RouteComponent() {
 
 		return groups;
 	}, [filteredCommits]);
+
+	if (isCommitDetail) {
+		return <Outlet />;
+	}
 
 	if (isLoading && !data) {
 		return (
@@ -459,6 +468,8 @@ function RouteComponent() {
 											<CommitCard
 												{...group.commits[0]}
 												avatar={avatarForAuthor(group.commits[0].author)}
+												owner={username}
+												repo={repo}
 											/>
 										</div>
 									) : (
@@ -468,6 +479,8 @@ function RouteComponent() {
 													key={commit.hash}
 													{...commit}
 													avatar={avatarForAuthor(commit.author)}
+													owner={username}
+													repo={repo}
 												/>
 											))}
 										</div>

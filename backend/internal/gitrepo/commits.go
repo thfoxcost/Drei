@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/object"
 )
 
@@ -129,4 +130,225 @@ func GetCommits(owner, repo, branch string) ([]CommitInfo, CommitInfo, error) {
 	}
 
 	return commits, lastCommit, nil
+}
+
+type CommitDetail struct {
+	FullHash     string `json:"fullHash"`
+	ShortHash    string `json:"shortHash"`
+	Message      string `json:"message"`
+	Body         string `json:"body"`
+	Branch       string `json:"branch"`
+	ParentCount  int    `json:"parentCount"`
+	ParentHashes []string `json:"parentHashes"`
+	Date         string `json:"date"`
+	AuthorName   string `json:"authorName"`
+	AuthorAvatar string `json:"authorAvatar"`
+	ChangedFiles int `json:"changedFiles"`
+	Additions    int `json:"additions"`
+	Deletions    int `json:"deletions"`
+}
+
+// GetCommitDetail returns the detailed metadata for a single commit identified
+// by its full or short hash. The author name is resolved against registered
+// Drei users by email, and the author avatar is fetched from the user table.
+func GetCommitDetail(owner, repo, hash string) (*CommitDetail, error) {
+	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
+
+	r, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var commitHash plumbing.Hash
+
+	if plumbing.IsHash(hash) {
+		commitHash = plumbing.NewHash(hash)
+	} else {
+		// Short hash: iterate refs and match prefix.
+		var found bool
+
+		iter, err := r.References()
+		if err != nil {
+			return nil, err
+		}
+
+		prefix := strings.ToLower(hash)
+
+		err = iter.ForEach(func(ref *plumbing.Reference) error {
+			h := ref.Hash().String()
+			if strings.HasPrefix(strings.ToLower(h), prefix) {
+				commitHash = ref.Hash()
+				found = true
+				return nil
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if !found {
+			return nil, plumbing.ErrObjectNotFound
+		}
+	}
+
+	commit, err := r.CommitObject(commitHash)
+	if err != nil {
+		return nil, err
+	}
+
+	message := strings.TrimRight(commit.Message, "\n")
+	subject := message
+	body := ""
+
+	if idx := strings.Index(message, "\n\n"); idx != -1 {
+		subject = message[:idx]
+		body = strings.TrimSpace(message[idx+2:])
+	} else if idx := strings.Index(message, "\n"); idx != -1 {
+		subject = message[:idx]
+		body = strings.TrimSpace(message[idx+1:])
+	}
+
+	parentHashes := make([]string, 0, commit.NumParents())
+	for i := 0; i < commit.NumParents(); i++ {
+		p, err := commit.Parent(i)
+		if err != nil {
+			break
+		}
+		parentHashes = append(parentHashes, p.Hash.String())
+	}
+
+	branch := resolveBranchForCommit(r, commitHash)
+
+	authorUsername := ""
+	authorAvatar := ""
+
+	usernames, err := database.ResolveUsernamesByEmails([]string{strings.ToLower(commit.Author.Email)})
+	if err == nil {
+		if username, ok := usernames[strings.ToLower(commit.Author.Email)]; ok {
+			authorUsername = username
+
+			user, err := database.GetUserByUsername(username)
+			if err == nil && user.Avatar != nil {
+				authorAvatar = *user.Avatar
+			}
+		}
+	}
+
+	if authorUsername == "" {
+		authorUsername = commit.Author.Name
+	}
+
+	changedFiles, additions, deletions := computeCommitStats(r, commit)
+
+	return &CommitDetail{
+		FullHash:     commit.Hash.String(),
+		ShortHash:    commit.Hash.String()[:7],
+		Message:      subject,
+		Body:         body,
+		Branch:       branch,
+		ParentCount:  commit.NumParents(),
+		ParentHashes: parentHashes,
+		Date:         commit.Author.When.Format(time.RFC3339),
+		AuthorName:   authorUsername,
+		AuthorAvatar: authorAvatar,
+		ChangedFiles: changedFiles,
+		Additions:    additions,
+		Deletions:    deletions,
+	}, nil
+}
+
+// resolveBranchForCommit finds the first local branch whose HEAD matches the
+// given commit hash, returning the branch name. Returns an empty string if no
+// branch is found (e.g. a detached HEAD or orphaned commit).
+func resolveBranchForCommit(r *git.Repository, target plumbing.Hash) string {
+	head, err := r.Head()
+	if err == nil && head.Hash() == target {
+		if head.Name().IsBranch() {
+			return head.Name().Short()
+		}
+	}
+
+	iter, err := r.Branches()
+	if err != nil {
+		return ""
+	}
+
+	_ = iter.ForEach(func(ref *plumbing.Reference) error {
+		if ref.Hash() == target {
+			return nil
+		}
+		return nil
+	})
+
+	// Walk branches and resolve each one.
+	var branchName string
+
+	iter2, err := r.Branches()
+	if err != nil {
+		return ""
+	}
+
+	_ = iter2.ForEach(func(ref *plumbing.Reference) error {
+		resolved, err := r.ResolveRevision(plumbing.Revision(ref.Name()))
+		if err == nil && *resolved == target {
+			branchName = ref.Name().Short()
+		}
+		return nil
+	})
+
+	return branchName
+}
+
+// emptyTreeHash is the SHA-1 of an empty tree, used as the base when computing
+// diff stats for root commits that have no parent.
+var emptyTreeHash = plumbing.NewHash("4b825dc642cb6eb9a060e54bf899d69f74d2e6e6")
+
+// computeCommitStats returns the number of changed files, total additions, and
+// total deletions for a commit by diffing its tree against the first parent's
+// tree (or an empty tree for root commits).
+func computeCommitStats(r *git.Repository, commit *object.Commit) (int, int, int) {
+	commitTree, err := commit.Tree()
+	if err != nil {
+		return 0, 0, 0
+	}
+
+	var parentTree *object.Tree
+
+	if commit.NumParents() > 0 {
+		parent, err := commit.Parent(0)
+		if err == nil {
+			parentTree, _ = parent.Tree()
+		}
+	}
+
+	if parentTree == nil {
+		parentTree, _ = r.TreeObject(emptyTreeHash)
+	}
+
+	if parentTree == nil {
+		return 0, 0, 0
+	}
+
+	changes, err := object.DiffTree(parentTree, commitTree)
+	if err != nil {
+		return 0, 0, 0
+	}
+
+	patch, err := changes.Patch()
+	if err != nil {
+		return 0, 0, 0
+	}
+
+	stats := patch.Stats()
+
+	additions := 0
+	deletions := 0
+
+	for _, s := range stats {
+		additions += s.Addition
+		deletions += s.Deletion
+	}
+
+	return len(stats), additions, deletions
 }
