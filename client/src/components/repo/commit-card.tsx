@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Check, Code, CopyIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -11,15 +12,26 @@ interface CommitCardProps {
 	author: string;
 	date: string;
 	avatar?: string | null;
+	owner: string;
+	repo: string;
 }
 
 function getInitials(name: string): string {
 	return name.slice(0, 2).toUpperCase();
 }
 
-function CommitCard({ hash, message, author, date, avatar }: CommitCardProps) {
+function CommitCard({
+	hash,
+	message,
+	author,
+	date,
+	avatar,
+	owner,
+	repo,
+}: CommitCardProps) {
 	const title = message.trim() || "No commit message";
 	const [copied, setCopied] = useState(false);
+	const commitPath = `/${owner}/${repo}/commits/${hash}`;
 
 	const handleCopy = async () => {
 		try {
@@ -39,12 +51,13 @@ function CommitCard({ hash, message, author, date, avatar }: CommitCardProps) {
 			</Avatar>
 
 			<div className="min-w-0 flex-1">
-				<p
-					className="truncate text-base hover:cursor-pointer hover:underline font-semibold text-foreground"
+				<Link
+					to={commitPath}
+					className="truncate text-base hover:underline font-semibold text-foreground block"
 					title={title}
 				>
 					{title}
-				</p>
+				</Link>
 
 				<p className="mt-0.5 truncate text-xs text-muted-foreground">
 					{author} committed {timeAgo(date)}
@@ -75,14 +88,13 @@ function CommitCard({ hash, message, author, date, avatar }: CommitCardProps) {
 					)}
 				</Button>
 
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					className="text-muted-foreground"
+				<Link
+					to={commitPath}
+					className="inline-flex items-center justify-center size-8 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
 					title="View diff"
 				>
 					<Code className="size-4" />
-				</Button>
+				</Link>
 			</div>
 		</div>
 	);
