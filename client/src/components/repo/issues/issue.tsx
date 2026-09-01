@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { Check, ChevronDown, CircleCheck, CircleDot } from "lucide-react";
+import { Check, ChevronDown, CircleCheck, CircleDot, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Contributor } from "#/components/repo/contributor-avatars";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
@@ -22,6 +22,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import IssueItem from "./issue-item";
+import { Separator } from "#/components/ui/separator";
 
 const sortOptions: { value: IssueSort; label: string }[] = [
 	{ value: "newest", label: "Newest" },
@@ -101,9 +102,20 @@ function Issues() {
 	const authorList = matchQuery(contributors, authorQuery);
 	const assigneeList = matchQuery(contributors, assigneeQuery);
 
+
 	return (
-		<div className="mx-40 my-5">
-			<h1 className="mb-4 text-xl font-semibold">All issues</h1>
+		<div className="mx-20 my-5">
+			<div className="flex items-center justify-between">
+				<h1 className="text-2xl">Issues</h1>
+				<Button
+					onClick={() => navigate({ to: `/${username}/${repo}/issues/new` })}
+				>
+					<Plus className="size-4" />
+					New Issue
+				</Button>
+			</div>
+
+			<Separator className="my-2 mb-4" />
 
 			<div className="my-2 flex flex-row items-center justify-between">
 				<Tabs
@@ -291,12 +303,7 @@ function Issues() {
 						</DropdownMenuContent>
 					</DropdownMenu>
 
-					<Button
-						className="bg-green-700 text-white hover:bg-green-800"
-						onClick={() => navigate({ to: `/${username}/${repo}/issues/new` })}
-					>
-						New Issue
-					</Button>
+
 				</div>
 			</div>
 

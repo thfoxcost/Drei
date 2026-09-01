@@ -117,7 +117,7 @@ function Issues() {
 	const username = session?.user.name;
 
 	return (
-		<div className=" my-2">
+		<div className=" my-1">
 			<h1 className="text-2xl">All issues</h1>
 			<Separator className="my-2 mb-4" />
 			<div className="my-2 flex flex-row items-center justify-between">

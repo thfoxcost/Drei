@@ -1,9 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
+import PullRequests from "@/components/repo/pulls/prs";
 
-export const Route = createFileRoute('/$username/$repo/prs')({
-  component: RouteComponent,
-})
+export const Route = createFileRoute("/$username/$repo/prs")({
+	component: RouteComponent,
+});
 
 function RouteComponent() {
-  return <div>Hello "/$username/$repo/prs"!</div>
+	const { username, repo }  = Route.useParams();
+
+	return <PullRequests owner={username} repo={repo} />;
 }
+
