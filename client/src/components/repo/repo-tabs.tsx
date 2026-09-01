@@ -24,7 +24,7 @@ const tabs = [
 		name: "Pull Requests",
 		value: "pulls",
 		icon: GitPullRequest,
-		disabled: true,
+		disabled: false,
 	},
 	{ name: "Actions", value: "actions", icon: Play, disabled: true },
 	{ name: "Security", value: "security", icon: Shield, disabled: true },
@@ -90,7 +90,7 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 	const tabTo = (value: string) => tabRouteTo[value as keyof typeof tabRouteTo];
 
 	const triggerClass = (value: string) => `
-    mx-3 gap-2 rounded-t-md border-0
+    mx-2 gap-2 rounded-t-md border-0
     hover:cursor-pointer
     hover:bg-secondary
     active:bg-secondary
@@ -122,9 +122,9 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 					forkedFromName={repoData?.forkedFromName}
 				/>
 			)}
-			<Tabs value={currentTab} className="gap-4 ">
+			<Tabs value={currentTab} className="gap-4">
 				<div className="w-full border-b pb-1 bg-muted/10">
-					<TabsList variant="line" className="rounded-none p-0">
+					<TabsList variant="line" className="rounded-none p-0 ml-2">
 						{tabs.map((tab) => {
 							const Icon = tab.icon;
 							const isLoadingThisTab = loadingTab === tab.value;
@@ -138,8 +138,13 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 									)}
 									<span className="text-sm">{tab.name}</span>
 									{tab.value === "issues" && (issuesData?.open ?? 0) > 0 && (
-										<Badge variant="secondary" className="ml-1">
+										<Badge variant="secondary">
 											{issuesData?.open ?? 0}
+										</Badge>
+									)}
+									{tab.value === "pulls" && (3) > 0 && (
+										<Badge variant="secondary">
+											{3}
 										</Badge>
 									)}
 								</>
