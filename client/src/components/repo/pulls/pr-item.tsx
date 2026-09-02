@@ -1,5 +1,4 @@
 import { GitMerge, GitPullRequest, MessageSquare } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { timeAgo } from "#/lib/time-ago";
 
 interface PullRequestUser {
@@ -27,23 +26,17 @@ interface PullRequestItemProps {
 	onNavigate?: (number: number) => void;
 }
 
-function getInitials(name: string): string {
-	return name.slice(0, 2).toUpperCase();
-}
 
 function PullRequestItem({
 	title,
 	number,
 	state,
 	author,
-	sourceBranch,
-	targetBranch,
 	createdAt,
 	mergedAt,
 	closedAt,
 	commentCount,
 	repoLabel,
-	showAuthorAvatar,
 	onNavigate,
 }: PullRequestItemProps) {
 	const isOpen = state === "open";
@@ -102,18 +95,6 @@ function PullRequestItem({
 							? `${author.username} closed ${timeAgo(closedAt)}`
 							: `${author.username} opened ${timeAgo(createdAt)}`}
 				</div>
-
-				<div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-					<code className="rounded bg-muted px-1.5 py-0.5">
-						{sourceBranch}
-					</code>
-
-					<span>→</span>
-
-					<code className="rounded bg-muted px-1.5 py-0.5">
-						{targetBranch}
-					</code>
-				</div>
 			</div>
 
 			<div className="flex items-center gap-2">
@@ -127,21 +108,6 @@ function PullRequestItem({
 						<MessageSquare size={14} />
 						{commentCount}
 					</span>
-				)}
-
-				{showAuthorAvatar && (
-					<Avatar size="sm" title={author.username}>
-						{author.avatar ? (
-							<AvatarImage
-								src={author.avatar}
-								alt={author.username}
-							/>
-						) : null}
-
-						<AvatarFallback>
-							{getInitials(author.username)}
-						</AvatarFallback>
-					</Avatar>
 				)}
 			</div>
 		</div>

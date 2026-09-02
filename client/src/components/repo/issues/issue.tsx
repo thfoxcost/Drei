@@ -104,7 +104,7 @@ function Issues() {
 
 
 	return (
-		<div className="mx-20 my-5">
+		<div className="mx-30 my-5">
 			<div className="flex items-center justify-between">
 				<h1 className="text-2xl">Issues</h1>
 				<Button

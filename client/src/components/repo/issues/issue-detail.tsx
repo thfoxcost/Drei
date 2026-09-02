@@ -450,8 +450,8 @@ function IssueDetail() {
 	const canDelete = isAuthor || currentUserID === repoData?.ownerId;
 
 	return (
-		<div className="mx-40 mb-10">
-			<div className="pt-4">
+		<div className="mx-30 mb-10">
+			<div className="pt-1">
 				<div className="mb-2 flex flex-wrap items-center justify-between gap-2">
 					<Button
 						variant="ghost"

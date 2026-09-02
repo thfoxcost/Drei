@@ -103,7 +103,7 @@ const dummyPullRequests = [
 	},
 	{
 		number: 8,
-		title: "Update repository settings UI",
+		title: "feat: implement pull requests feature with UI components and routing",
 		description: "Redesign the repository settings page.",
 		author: {
 			id: 5,
@@ -119,25 +119,6 @@ const dummyPullRequests = [
 		mergedAt: null,
 		closedAt: "2026-08-28T13:00:00Z",
 		commentCount: 3,
-	},
-	{
-		number: 7,
-		title: "Improve README rendering",
-		description: "Improve Markdown rendering inside repositories.",
-		author: {
-			id: 6,
-			username: "maria",
-			displayName: "Maria",
-			avatar: "",
-		},
-		sourceBranch: "fix/readme",
-		targetBranch: "main",
-		state: "closed" as const,
-		createdAt: "2026-08-24T09:00:00Z",
-		updatedAt: "2026-08-26T11:00:00Z",
-		mergedAt: null,
-		closedAt: "2026-08-26T11:00:00Z",
-		commentCount: 1,
 	},
 ];
 
@@ -188,14 +169,14 @@ export default function PullRequests({
 	});
 
 	return (
-		<div className="my-5 mx-20 mb-10">
+		<div className="my-5 mx-30 mb-10">
 			<div className="flex items-center justify-between">
 				<h1 className="text-2xl">Pull Requests</h1>
 
 				<Button
 					onClick={() =>
 						navigate({
-							to: `/${owner}/${repo}/prs/new`,
+							to: `/${owner}/${repo}/pulls/new`,
 						})
 					}
 					disabled
@@ -281,7 +262,7 @@ export default function PullRequests({
 							showAuthorAvatar
 							onNavigate={() =>
 								navigate({
-									to: `/${owner}/${repo}/prs/${pull.number}`,
+									to: `/${owner}/${repo}/pulls/${pull.number}`,
 								})
 							}
 						/>
