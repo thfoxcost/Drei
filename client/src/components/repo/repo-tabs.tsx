@@ -19,7 +19,6 @@ import RepoStarsheader from "./repo-stars-header";
 const tabs = [
 	{ name: "Code", value: "files", icon: Code, disabled: false },
 	{ name: "Issues", value: "issues", icon: CircleDot, disabled: false },
-
 	{
 		name: "Pull Requests",
 		value: "pulls",
@@ -32,11 +31,10 @@ const tabs = [
 	{ name: "Settings", value: "settings", icon: Settings, disabled: false },
 ];
 
-// Route each tab navigates to. Pull Requests maps to the existing /prs route.
 const tabRouteTo = {
 	files: "/$username/$repo",
 	issues: "/$username/$repo/issues",
-	pulls: "/$username/$repo/prs",
+	pulls: "/$username/$repo/pulls",
 	settings: "/$username/$repo/settings",
 } as const;
 
@@ -48,16 +46,15 @@ interface RepoProps {
 export default function RepoTabs({ owner, repo }: RepoProps) {
 	const { data: repoData, isPending } = useRepoData(owner, repo);
 	const { data: issuesData } = useIssues(owner, repo, { state: "open" });
+
 	const [loadingTab, setLoadingTab] = useState<string | null>(null);
 
-	// Derive the active tab from the matched routes so nested pages such as
-	// /issues/new still highlight their parent tab.
-	const matches = useRouterState({ select: (s) => s.matches });
+	const matches = useRouterState({
+		select: (s) => s.matches,
+	});
+
 	const repoPrefix = "/$username/$repo";
 
-	// The stars header stays in its original spot in the layout but only
-	// renders on the repository code root (the default branch and any
-	// selected branch tree), not on nested routes like /issues.
 	const isRepoRoot = matches.some(
 		(match) =>
 			match.routeId === `${repoPrefix}/` ||
@@ -67,39 +64,55 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 	const currentTab = useMemo(() => {
 		const routeIds = matches.map((match) => match.routeId);
 
-		// Deepest matched route wins.
 		for (const routeId of [...routeIds].reverse()) {
-			if (routeId === `${repoPrefix}/tree/$branch`) return "files";
-			if (routeId === `${repoPrefix}/branch/$branchName`) return "files";
-			if (routeId.startsWith(`${repoPrefix}/issues`)) return "issues";
-			if (routeId === `${repoPrefix}/settings`) return "settings";
-			if (routeId === `${repoPrefix}/prs`) return "pulls";
-			if (routeId === `${repoPrefix}/`) return "files";
+			if (routeId === `${repoPrefix}/tree/$branch`) {
+				return "files";
+			}
+
+			if (routeId === `${repoPrefix}/branch/$branchName`) {
+				return "files";
+			}
+
+			if (routeId.startsWith(`${repoPrefix}/issues`)) {
+				return "issues";
+			}
+
+			if (routeId.startsWith(`${repoPrefix}/pulls`)) {
+				return "pulls";
+			}
+
+			if (routeId === `${repoPrefix}/settings`) {
+				return "settings";
+			}
+
+			if (routeId === `${repoPrefix}/`) {
+				return "files";
+			}
 		}
 
 		return "files";
 	}, [matches]);
 
-	// Clear the loading indicator once navigation lands on the clicked tab.
 	useEffect(() => {
 		if (loadingTab && currentTab === loadingTab) {
 			setLoadingTab(null);
 		}
 	}, [currentTab, loadingTab]);
 
-	const tabTo = (value: string) => tabRouteTo[value as keyof typeof tabRouteTo];
+	const tabTo = (value: string) =>
+		tabRouteTo[value as keyof typeof tabRouteTo];
 
 	const triggerClass = (value: string) => `
-    mx-2 gap-2 rounded-t-md border-0
-    hover:cursor-pointer
-    hover:bg-secondary
-    active:bg-secondary
-    data-[state=active]:bg-muted
-    group-data-horizontal/tabs:after:bottom-[-6px]
-    not-data-active:hover:group-data-horizontal/tabs:after:bg-muted-foreground/30
-    not-data-active:hover:group-data-horizontal/tabs:after:opacity-100
-    ${value === "settings" ? "ml-auto mr-3" : ""}
-  `;
+		mx-2 gap-2 rounded-t-md border-0
+		hover:cursor-pointer
+		hover:bg-secondary
+		active:bg-secondary
+		data-[state=active]:bg-muted
+		group-data-horizontal/tabs:after:bottom-[-6px]
+		not-data-active:hover:group-data-horizontal/tabs:after:bg-muted-foreground/30
+		not-data-active:hover:group-data-horizontal/tabs:after:opacity-100
+		${value === "settings" ? "ml-auto mr-3" : ""}
+	`;
 
 	return (
 		<div className="w-full">
@@ -122,13 +135,17 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 					forkedFromName={repoData?.forkedFromName}
 				/>
 			)}
+
 			<Tabs value={currentTab} className="gap-4">
-				<div className="w-full border-b pb-1 bg-muted/10">
-					<TabsList variant="line" className="rounded-none p-0 ml-2">
+				<div className="w-full border-b bg-muted/10 pb-1">
+					<TabsList variant="line" className="ml-2 rounded-none p-0">
 						{tabs.map((tab) => {
 							const Icon = tab.icon;
 							const isLoadingThisTab = loadingTab === tab.value;
-							const to = tab.disabled ? undefined : tabTo(tab.value);
+							const to = tab.disabled
+								? undefined
+								: tabTo(tab.value);
+
 							const trigger = (
 								<>
 									{isLoadingThisTab ? (
@@ -136,16 +153,18 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 									) : (
 										<Icon className="size-4" />
 									)}
+
 									<span className="text-sm">{tab.name}</span>
-									{tab.value === "issues" && (issuesData?.open ?? 0) > 0 && (
-										<Badge variant="secondary">
-											{issuesData?.open ?? 0}
-										</Badge>
-									)}
-									{tab.value === "pulls" && (3) > 0 && (
-										<Badge variant="secondary">
-											{3}
-										</Badge>
+
+									{tab.value === "issues" &&
+										(issuesData?.open ?? 0) > 0 && (
+											<Badge variant="secondary">
+												{issuesData?.open ?? 0}
+											</Badge>
+										)}
+
+									{tab.value === "pulls" && (
+										<Badge variant="secondary">3</Badge>
 									)}
 								</>
 							);
@@ -160,8 +179,13 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 									>
 										<Link
 											to={to}
-											params={{ username: owner, repo }}
-											onClick={() => setLoadingTab(tab.value)}
+											params={{
+												username: owner,
+												repo,
+											}}
+											onClick={() =>
+												setLoadingTab(tab.value)
+											}
 										>
 											{trigger}
 										</Link>
@@ -184,7 +208,10 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 				</div>
 
 				{tabs.map((tab) => (
-					<TabsContent key={tab.value} value={tab.value}></TabsContent>
+					<TabsContent
+						key={tab.value}
+						value={tab.value}
+					/>
 				))}
 			</Tabs>
 		</div>
