@@ -14,7 +14,18 @@ import (
 // repository. The current user's fork status is also included so the frontend
 // can disable the fork button appropriately.
 //
-// GET /api/repos/{owner}/{repo}/forks
+//	GET /api/repos/{owner}/{repo}/forks
+//
+//	@Summary		List repository forks
+//	@Description	Returns the fork count, list of fork owners, and current user's fork status
+//	@Tags			Repositories
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/forks [get]
 func ForksHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET")
 
@@ -63,7 +74,21 @@ func ForksHandler(w http.ResponseWriter, r *http.Request) {
 // current user, clones the bare repo, inserts the forked repository row with
 // a forked_from_id back-reference, and adds the user as a contributor.
 //
-// POST /api/repos/{owner}/{repo}/fork
+//	POST /api/repos/{owner}/{repo}/fork
+//
+//	@Summary		Fork a repository
+//	@Description	Creates a Git fork of a repository for the authenticated user
+//	@Tags			Repositories
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		409		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/repos/{owner}/{repo}/fork [post]
 func ForkHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "POST")
 
