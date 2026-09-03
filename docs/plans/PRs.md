@@ -341,9 +341,9 @@ Apply these across all screens:
 ## Summary — Build Sequence
 
 ```
-0. A New PR indicator -> item + button from shadnc (i added this manaully)
+[X] 0. A New PR indicator -> item + button from shadnc (i added this manaully)
 1. New PR page        → branch picker + form
-2. PR list page       → tabs + search + list
+[X] 2. PR list page       → tabs + search + list
 3. PR detail shell    → header + tab bar
 4. Conversation tab   → description + comments + events
 5. Commits tab        → commit list
