@@ -44,6 +44,20 @@ func isPushRequest(r *http.Request, path string) bool {
 	return false
 }
 
+// GitHandler godoc
+//
+//	@Summary		Git HTTP backend
+//	@Description	Passthrough to git-http-backend CGI for git clone/push operations
+//	@Tags			Git
+//	@Produce		application/x-git-upload-pack-result
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name (with .git suffix)"
+//	@Param			*		query		string	false	"Git CGI query parameters"
+//	@Success		200		{string}	string
+//	@Failure		403		{string}	string
+//	@Failure		500		{string}	string
+//	@Router			/git/{owner}/{repo}.git [get]
+//	@Router			/git/{owner}/{repo}.git [post]
 func GitHandler(w http.ResponseWriter, r *http.Request) {
 	// Remove the /git prefix
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, "/git")

@@ -7,6 +7,21 @@ import (
 	"strings"
 )
 
+// RawHandler godoc
+//
+//	@Summary		Get raw file content
+//	@Description	Returns the raw file content as plain text
+//	@Tags			Files
+//	@Produce		plain
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			branch	path		string	true	"Branch name"
+//	@Param			path	path		string	true	"File path within the repository"
+//	@Success		200		{string}	string
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/raw/{branch}/{path} [get]
 func RawHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET")
 

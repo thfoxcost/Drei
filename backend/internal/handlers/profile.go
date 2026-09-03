@@ -20,6 +20,30 @@ type ProfileData struct {
 	QuoteVerified    bool    `json:"quoteVerified"`
 }
 
+// ProfileHandler godoc
+//
+//	@Summary		Get user profile
+//	@Description	Returns the authenticated user's full profile
+//	@Tags			Users
+//	@Produce		json
+//	@Success		200	{object}	handlers.ProfileData
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		500	{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/profile [get]
+//
+//	@Summary		Update user profile
+//	@Description	Updates the authenticated user's profile fields
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			profile	body		handlers.ProfileData	true	"Profile fields to update"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/profile [patch]
 func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET, PATCH")
 

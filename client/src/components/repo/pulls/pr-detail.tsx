@@ -2,7 +2,6 @@ import { Badge as ReuiBadge } from "@/components/reui/badge";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import {
-  CircleCheck,
   Copy,
   FileDiff,
   GitCommit,

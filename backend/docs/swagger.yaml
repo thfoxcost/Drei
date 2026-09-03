@@ -1,0 +1,3412 @@
+basePath: /api
+definitions:
+  backend_internal_database.Contributor:
+    properties:
+      avatar:
+        type: string
+      id:
+        type: string
+      username:
+        type: string
+    type: object
+  backend_internal_database.Issue:
+    properties:
+      assignees:
+        items:
+          $ref: '#/definitions/backend_internal_database.IssueUser'
+        type: array
+      author:
+        $ref: '#/definitions/backend_internal_database.IssueUser'
+      closeReason:
+        type: string
+      closedAt:
+        type: string
+      closedBy:
+        $ref: '#/definitions/backend_internal_database.IssueUser'
+      commentCount:
+        type: integer
+      comments:
+        items:
+          $ref: '#/definitions/backend_internal_database.IssueComment'
+        type: array
+      createdAt:
+        type: string
+      description:
+        type: string
+      dueDate:
+        type: string
+      id:
+        type: integer
+      labels:
+        items:
+          type: string
+        type: array
+      number:
+        type: integer
+      owner:
+        type: string
+      repo:
+        type: string
+      state:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  backend_internal_database.IssueComment:
+    properties:
+      body:
+        type: string
+      createdAt:
+        type: string
+      createdBy:
+        $ref: '#/definitions/backend_internal_database.IssueUser'
+      id:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  backend_internal_database.IssueLabel:
+    properties:
+      color:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  backend_internal_database.IssueUser:
+    properties:
+      avatar:
+        type: string
+      id:
+        type: string
+      username:
+        type: string
+    type: object
+  backend_internal_gitrepo.BlobFile:
+    properties:
+      content:
+        type: string
+      hash:
+        type: string
+      lastCommit:
+        $ref: '#/definitions/backend_internal_gitrepo.CommitInfo'
+      name:
+        type: string
+      path:
+        type: string
+      size:
+        type: integer
+    type: object
+  backend_internal_gitrepo.CommitDay:
+    properties:
+      count:
+        type: integer
+      date:
+        type: string
+    type: object
+  backend_internal_gitrepo.CommitDetail:
+    properties:
+      additions:
+        type: integer
+      authorAvatar:
+        type: string
+      authorName:
+        type: string
+      body:
+        type: string
+      branch:
+        type: string
+      changedFiles:
+        type: integer
+      date:
+        type: string
+      deletions:
+        type: integer
+      diffs:
+        items:
+          $ref: '#/definitions/backend_internal_gitrepo.FileDiff'
+        type: array
+      files:
+        items:
+          $ref: '#/definitions/backend_internal_gitrepo.FileChange'
+        type: array
+      fullHash:
+        type: string
+      message:
+        type: string
+      parentCount:
+        type: integer
+      parentHashes:
+        items:
+          type: string
+        type: array
+      shortHash:
+        type: string
+    type: object
+  backend_internal_gitrepo.CommitInfo:
+    properties:
+      author:
+        type: string
+      date:
+        type: string
+      hash:
+        type: string
+      message:
+        type: string
+    type: object
+  backend_internal_gitrepo.DiffHunk:
+    properties:
+      header:
+        type: string
+      lines:
+        items:
+          $ref: '#/definitions/backend_internal_gitrepo.DiffLine'
+        type: array
+    type: object
+  backend_internal_gitrepo.DiffLine:
+    properties:
+      content:
+        type: string
+      newLine:
+        type: integer
+      oldLine:
+        type: integer
+      type:
+        type: string
+    type: object
+  backend_internal_gitrepo.FileChange:
+    properties:
+      action:
+        type: string
+      path:
+        type: string
+    type: object
+  backend_internal_gitrepo.FileDiff:
+    properties:
+      action:
+        type: string
+      additions:
+        type: integer
+      deletions:
+        type: integer
+      hunks:
+        items:
+          $ref: '#/definitions/backend_internal_gitrepo.DiffHunk'
+        type: array
+      path:
+        type: string
+    type: object
+  backend_internal_gitrepo.FileInfo:
+    properties:
+      content:
+        type: string
+      hash:
+        type: string
+      isNested:
+        type: boolean
+      lastCommit:
+        $ref: '#/definitions/backend_internal_gitrepo.CommitInfo'
+      name:
+        type: string
+      path:
+        type: string
+      size:
+        type: integer
+      type:
+        description: true = file, false = folder
+        type: boolean
+    type: object
+  backend_internal_gitrepo.Language:
+    properties:
+      bytes:
+        type: integer
+      name:
+        type: string
+      percent:
+        type: number
+    type: object
+  backend_internal_gitrepo.RepoResponse:
+    properties:
+      archived:
+        type: boolean
+      archivedAt:
+        type: string
+      branches:
+        items:
+          type: string
+        type: array
+      cloneUrl:
+        type: string
+      commitActivity:
+        items:
+          $ref: '#/definitions/backend_internal_gitrepo.CommitDay'
+        type: array
+      commits:
+        items:
+          $ref: '#/definitions/backend_internal_gitrepo.CommitInfo'
+        type: array
+      contributors:
+        items:
+          $ref: '#/definitions/backend_internal_database.Contributor'
+        type: array
+      created:
+        type: string
+      defaultBranch:
+        type: string
+      description:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/backend_internal_gitrepo.FileInfo'
+        type: array
+      forkedFromName:
+        type: string
+      forkedFromOwner:
+        type: string
+      hasCommits:
+        type: boolean
+      isFork:
+        type: boolean
+      issueCount:
+        type: integer
+      langs:
+        items:
+          $ref: '#/definitions/backend_internal_gitrepo.Language'
+        type: array
+      lastCommit:
+        $ref: '#/definitions/backend_internal_gitrepo.CommitInfo'
+      logo:
+        type: string
+      name:
+        type: string
+      owner:
+        type: string
+      ownerId:
+        type: string
+      size:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      visibility:
+        type: boolean
+      website:
+        type: string
+    type: object
+  internal_handlers.AccountInfo:
+    properties:
+      email:
+        type: string
+    type: object
+  internal_handlers.AppearanceResponse:
+    properties:
+      language:
+        type: string
+      theme:
+        type: string
+    type: object
+  internal_handlers.CreateRepoRequest:
+    properties:
+      avatar:
+        type: string
+      defaultbranch:
+        type: string
+      description:
+        type: string
+      reponame:
+        type: string
+      useremail:
+        type: string
+      userid:
+        type: string
+      username:
+        type: string
+      visibility:
+        type: boolean
+    type: object
+  internal_handlers.ProfileData:
+    properties:
+      biography:
+        type: string
+      country:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      quotePersonImage:
+        type: string
+      quotePersonName:
+        type: string
+      quotePersonTitle:
+        type: string
+      quoteText:
+        type: string
+      quoteVerified:
+        type: boolean
+    type: object
+  internal_handlers.RepoInfo:
+    properties:
+      archived:
+        type: boolean
+      description:
+        type: string
+      forked:
+        description: Fork and mirror support
+        type: boolean
+      forkedFromName:
+        type: string
+      forkedFromOwner:
+        type: string
+      forks:
+        type: integer
+      language:
+        type: string
+      lastUpdated:
+        type: string
+      lastUpdatedAt:
+        type: string
+      license:
+        type: string
+      mirrored:
+        type: boolean
+      name:
+        type: string
+      owner:
+        type: string
+      stars:
+        description: dummy for now
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      visibility:
+        type: boolean
+    type: object
+  internal_handlers.UpdateRepoRequest:
+    properties:
+      defaultBranch:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      renameDefaultBranch:
+        type: string
+      website:
+        type: string
+    type: object
+  internal_handlers.Webhook:
+    properties:
+      created_at:
+        type: string
+      enabled:
+        type: boolean
+      encoded_url:
+        type: string
+      id:
+        type: integer
+      repository_id:
+        type: integer
+      type:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+host: localhost:3200
+info:
+  contact: {}
+  description: API for Drei, a self-hosted Git repository platform
+  title: Drei API
+  version: 1.0.0
+paths:
+  /contribution:
+    get:
+      description: Returns demo contribution data from data/contribution.json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get contribution data
+      tags:
+      - System
+  /git/{owner}/{repo}.git:
+    get:
+      description: Passthrough to git-http-backend CGI for git clone/push operations
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name (with .git suffix)
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Git CGI query parameters
+        in: query
+        name: '*'
+        type: string
+      produces:
+      - application/x-git-upload-pack-result
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Git HTTP backend
+      tags:
+      - Git
+    post:
+      description: Passthrough to git-http-backend CGI for git clone/push operations
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name (with .git suffix)
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Git CGI query parameters
+        in: query
+        name: '*'
+        type: string
+      produces:
+      - application/x-git-upload-pack-result
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Git HTTP backend
+      tags:
+      - Git
+  /issues:
+    get:
+      description: Returns issues from all repositories with optional filters for
+        state, author, assignee, search, label, and sort
+      parameters:
+      - description: Issue state filter (open or closed)
+        in: query
+        name: state
+        type: string
+      - description: Author user ID
+        in: query
+        name: author
+        type: string
+      - description: Assignee user ID
+        in: query
+        name: assignee
+        type: string
+      - description: Search term (matches title, description, number)
+        in: query
+        name: search
+        type: string
+      - description: Label name
+        in: query
+        name: label
+        type: string
+      - description: Sort order (newest, oldest, recently-updated, etc.)
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List all issues across repositories
+      tags:
+      - Issues
+  /notifications:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Returns all webhooks for the authenticated user
+        Creates a new webhook for the authenticated user
+      parameters:
+      - description: Webhook configuration (type, encoded_url, repository_id)
+        in: body
+        name: webhook
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.Webhook'
+            type: array
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.Webhook'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Create a notification webhook
+      tags:
+      - Notifications
+      - Notifications
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Returns all webhooks for the authenticated user
+        Creates a new webhook for the authenticated user
+      parameters:
+      - description: Webhook configuration (type, encoded_url, repository_id)
+        in: body
+        name: webhook
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.Webhook'
+            type: array
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.Webhook'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Create a notification webhook
+      tags:
+      - Notifications
+      - Notifications
+  /notifications/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Updates a webhook's URL or enabled state
+        Permanently deletes a webhook
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update (encoded_url, enabled)
+        in: body
+        name: webhook
+        required: true
+        schema:
+          type: object
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Delete a notification webhook
+      tags:
+      - Notifications
+      - Notifications
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Updates a webhook's URL or enabled state
+        Permanently deletes a webhook
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update (encoded_url, enabled)
+        in: body
+        name: webhook
+        required: true
+        schema:
+          type: object
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Delete a notification webhook
+      tags:
+      - Notifications
+      - Notifications
+  /notifications/send:
+    post:
+      consumes:
+      - application/json
+      description: Sends a notification to all matching webhooks for the user
+      parameters:
+      - description: Notification details (repository_id, title, description)
+        in: body
+        name: notification
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Send a notification
+      tags:
+      - Notifications
+  /notifications/test:
+    post:
+      consumes:
+      - application/json
+      description: Sends a test notification to the specified webhook
+      parameters:
+      - description: Test notification details (webhook_id, title, description)
+        in: body
+        name: test
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Test a notification webhook
+      tags:
+      - Notifications
+  /profile:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Returns the authenticated user's full profile
+        Updates the authenticated user's profile fields
+      parameters:
+      - description: Profile fields to update
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.ProfileData'
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Update user profile
+      tags:
+      - Users
+      - Users
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Returns the authenticated user's full profile
+        Updates the authenticated user's profile fields
+      parameters:
+      - description: Profile fields to update
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.ProfileData'
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Update user profile
+      tags:
+      - Users
+      - Users
+  /repos:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new bare Git repository and stores it in the database
+      parameters:
+      - description: Repository details
+        in: body
+        name: repo
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateRepoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new repository
+      tags:
+      - Repositories
+  /repos/{owner}/{repo}:
+    delete:
+      consumes:
+      - application/json
+      - application/json
+      description: |-
+        Returns full repository metadata including branches, files, commits, and contributors
+        Updates repository name, description, default branch, and other settings
+        Permanently deletes a repository and its data
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Branch name
+        in: query
+        name: branch
+        type: string
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Update details
+        in: body
+        name: repo
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateRepoRequest'
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a repository
+      tags:
+      - Repositories
+      - Repositories
+      - Repositories
+    get:
+      consumes:
+      - application/json
+      - application/json
+      description: |-
+        Returns full repository metadata including branches, files, commits, and contributors
+        Updates repository name, description, default branch, and other settings
+        Permanently deletes a repository and its data
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Branch name
+        in: query
+        name: branch
+        type: string
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Update details
+        in: body
+        name: repo
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateRepoRequest'
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a repository
+      tags:
+      - Repositories
+      - Repositories
+      - Repositories
+    patch:
+      consumes:
+      - application/json
+      - application/json
+      description: |-
+        Returns full repository metadata including branches, files, commits, and contributors
+        Updates repository name, description, default branch, and other settings
+        Permanently deletes a repository and its data
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Branch name
+        in: query
+        name: branch
+        type: string
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Update details
+        in: body
+        name: repo
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateRepoRequest'
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a repository
+      tags:
+      - Repositories
+      - Repositories
+      - Repositories
+  /repos/{owner}/{repo}/archive:
+    post:
+      consumes:
+      - application/json
+      description: Sets the archived state of a repository
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Archived state
+        in: body
+        name: archive
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Archive or unarchive a repository
+      tags:
+      - Settings
+  /repos/{owner}/{repo}/blob/{branch}/{path}:
+    get:
+      description: Returns file content and metadata for a specific file in a repository
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Branch name
+        in: path
+        name: branch
+        required: true
+        type: string
+      - description: File path within the repository
+        in: path
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend_internal_gitrepo.BlobFile'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get file blob
+      tags:
+      - Files
+  /repos/{owner}/{repo}/collaborators:
+    delete:
+      consumes:
+      - application/json
+      - application/json
+      description: |-
+        Returns users that can be added as collaborators
+        Adds a user as a collaborator to the repository
+        Removes a user from the repository's collaborators
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Collaborator details
+        in: body
+        name: collaborator
+        required: true
+        schema:
+          $ref: '#/definitions/backend_internal_database.Contributor'
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Username to remove
+        in: body
+        name: collaborator
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Remove a collaborator
+      tags:
+      - Collaborators
+      - Collaborators
+      - Collaborators
+    get:
+      consumes:
+      - application/json
+      - application/json
+      description: |-
+        Returns users that can be added as collaborators
+        Adds a user as a collaborator to the repository
+        Removes a user from the repository's collaborators
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Collaborator details
+        in: body
+        name: collaborator
+        required: true
+        schema:
+          $ref: '#/definitions/backend_internal_database.Contributor'
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Username to remove
+        in: body
+        name: collaborator
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Remove a collaborator
+      tags:
+      - Collaborators
+      - Collaborators
+      - Collaborators
+    post:
+      consumes:
+      - application/json
+      - application/json
+      description: |-
+        Returns users that can be added as collaborators
+        Adds a user as a collaborator to the repository
+        Removes a user from the repository's collaborators
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Collaborator details
+        in: body
+        name: collaborator
+        required: true
+        schema:
+          $ref: '#/definitions/backend_internal_database.Contributor'
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Username to remove
+        in: body
+        name: collaborator
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Remove a collaborator
+      tags:
+      - Collaborators
+      - Collaborators
+      - Collaborators
+  /repos/{owner}/{repo}/commits/{hash}:
+    get:
+      description: Returns detailed metadata and diffs for a specific commit
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Commit hash (full or short)
+        in: path
+        name: hash
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend_internal_gitrepo.CommitDetail'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get commit details
+      tags:
+      - Commits
+  /repos/{owner}/{repo}/download:
+    get:
+      description: Downloads a repository as a zip or tar.gz archive
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Branch name (defaults to default branch)
+        in: query
+        name: branch
+        type: string
+      - description: 'Archive format: zip or tar.gz (defaults to zip)'
+        in: query
+        name: format
+        type: string
+      produces:
+      - application/zip
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Download repository archive
+      tags:
+      - Repositories
+  /repos/{owner}/{repo}/fork:
+    post:
+      description: Creates a Git fork of a repository for the authenticated user
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Fork a repository
+      tags:
+      - Repositories
+  /repos/{owner}/{repo}/forks:
+    get:
+      description: Returns the fork count, list of fork owners, and current user's
+        fork status
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List repository forks
+      tags:
+      - Repositories
+  /repos/{owner}/{repo}/issues:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Returns issues for a repository with optional filters
+        Creates a new issue in the repository. Requires authentication and repository membership.
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue state filter (open or closed)
+        in: query
+        name: state
+        type: string
+      - description: Author user ID
+        in: query
+        name: author
+        type: string
+      - description: Assignee user ID
+        in: query
+        name: assignee
+        type: string
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - description: Label name
+        in: query
+        name: label
+        type: string
+      - description: Sort order
+        in: query
+        name: sort
+        type: string
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue details (title, description, labels, assignees, dueDate)
+        in: body
+        name: issue
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/backend_internal_database.Issue'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Create an issue
+      tags:
+      - Issues
+      - Issues
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Returns issues for a repository with optional filters
+        Creates a new issue in the repository. Requires authentication and repository membership.
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue state filter (open or closed)
+        in: query
+        name: state
+        type: string
+      - description: Author user ID
+        in: query
+        name: author
+        type: string
+      - description: Assignee user ID
+        in: query
+        name: assignee
+        type: string
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - description: Label name
+        in: query
+        name: label
+        type: string
+      - description: Sort order
+        in: query
+        name: sort
+        type: string
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue details (title, description, labels, assignees, dueDate)
+        in: body
+        name: issue
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/backend_internal_database.Issue'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Create an issue
+      tags:
+      - Issues
+      - Issues
+  /repos/{owner}/{repo}/issues/{number}:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Returns a single issue with its comments
+        Updates the title, description, labels, and due date of an issue
+        Permanently deletes an issue. Only the author or repo owner can delete.
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: issue
+        required: true
+        schema:
+          type: object
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Delete an issue
+      tags:
+      - Issues
+      - Issues
+      - Issues
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Returns a single issue with its comments
+        Updates the title, description, labels, and due date of an issue
+        Permanently deletes an issue. Only the author or repo owner can delete.
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: issue
+        required: true
+        schema:
+          type: object
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Delete an issue
+      tags:
+      - Issues
+      - Issues
+      - Issues
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Returns a single issue with its comments
+        Updates the title, description, labels, and due date of an issue
+        Permanently deletes an issue. Only the author or repo owner can delete.
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: issue
+        required: true
+        schema:
+          type: object
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Delete an issue
+      tags:
+      - Issues
+      - Issues
+      - Issues
+  /repos/{owner}/{repo}/issues/{number}/assignee:
+    post:
+      consumes:
+      - application/json
+      description: Sets the assignees for an issue
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Assignees list
+        in: body
+        name: assignee
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend_internal_database.Issue'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Update issue assignees
+      tags:
+      - Issues
+  /repos/{owner}/{repo}/issues/{number}/comments:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Returns all comments on an issue
+        Adds a comment to an issue
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Comment body
+        in: body
+        name: comment
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/backend_internal_database.IssueComment'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Create a comment
+      tags:
+      - Issues
+      - Issues
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Returns all comments on an issue
+        Adds a comment to an issue
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Comment body
+        in: body
+        name: comment
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/backend_internal_database.IssueComment'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Create a comment
+      tags:
+      - Issues
+      - Issues
+  /repos/{owner}/{repo}/issues/{number}/comments/{commentId}:
+    delete:
+      consumes:
+      - application/json
+      description: |-
+        Updates the body of a comment
+        Permanently deletes a comment
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Comment ID
+        format: int64
+        in: path
+        name: commentId
+        required: true
+        type: integer
+      - description: Updated comment body
+        in: body
+        name: comment
+        required: true
+        schema:
+          type: object
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Comment ID
+        format: int64
+        in: path
+        name: commentId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a comment
+      tags:
+      - Issues
+      - Issues
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Updates the body of a comment
+        Permanently deletes a comment
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Comment ID
+        format: int64
+        in: path
+        name: commentId
+        required: true
+        type: integer
+      - description: Updated comment body
+        in: body
+        name: comment
+        required: true
+        schema:
+          type: object
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: Comment ID
+        format: int64
+        in: path
+        name: commentId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a comment
+      tags:
+      - Issues
+      - Issues
+  /repos/{owner}/{repo}/issues/{number}/state:
+    post:
+      consumes:
+      - application/json
+      description: Changes the state of an issue (open or closed)
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Issue number
+        in: path
+        name: number
+        required: true
+        type: integer
+      - description: 'State change (state: open|closed, reason: completed|not_planned|duplicated)'
+        in: body
+        name: state
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend_internal_database.Issue'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Close or reopen an issue
+      tags:
+      - Issues
+  /repos/{owner}/{repo}/issues/images:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads an image for use in issue descriptions
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Image file (PNG, JPG, WebP, or GIF, max 5MB)
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Upload issue image
+      tags:
+      - Issues
+  /repos/{owner}/{repo}/labels:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Returns all labels for a repository
+        Creates a new label for the repository
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Label details (name, color)
+        in: body
+        name: label
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/backend_internal_database.IssueLabel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a label
+      tags:
+      - Labels
+      - Labels
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Returns all labels for a repository
+        Creates a new label for the repository
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Label details (name, color)
+        in: body
+        name: label
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/backend_internal_database.IssueLabel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a label
+      tags:
+      - Labels
+      - Labels
+  /repos/{owner}/{repo}/labels/{labelId}:
+    delete:
+      description: Permanently removes a label from the repository
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Label ID
+        format: int64
+        in: path
+        name: labelId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a label
+      tags:
+      - Labels
+  /repos/{owner}/{repo}/logo:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads an image as the repository logo
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Logo image (PNG, JPG, WebP, or GIF, max 2MB)
+        in: formData
+        name: logo
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Upload repository logo
+      tags:
+      - Settings
+  /repos/{owner}/{repo}/raw/{branch}/{path}:
+    get:
+      description: Returns the raw file content as plain text
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Branch name
+        in: path
+        name: branch
+        required: true
+        type: string
+      - description: File path within the repository
+        in: path
+        name: path
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get raw file content
+      tags:
+      - Files
+  /repos/{owner}/{repo}/visibility:
+    post:
+      consumes:
+      - application/json
+      description: Sets the visibility (public/private) of a repository
+      parameters:
+      - description: Repository owner
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Repository name
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: Visibility setting
+        in: body
+        name: visibility
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update repository visibility
+      tags:
+      - Settings
+  /status:
+    get:
+      description: Returns demo status data from data/status.json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get API status
+      tags:
+      - System
+  /user/account:
+    delete:
+      consumes:
+      - application/json
+      - application/json
+      description: |-
+        Returns the authenticated user's email
+        Updates the authenticated user's email address
+        Permanently deletes the authenticated user's account
+      parameters:
+      - description: New email address
+        in: body
+        name: account
+        required: true
+        schema:
+          type: object
+      - description: Password confirmation
+        in: body
+        name: account
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Delete account
+      tags:
+      - Authentication
+      - Authentication
+      - Authentication
+    get:
+      consumes:
+      - application/json
+      - application/json
+      description: |-
+        Returns the authenticated user's email
+        Updates the authenticated user's email address
+        Permanently deletes the authenticated user's account
+      parameters:
+      - description: New email address
+        in: body
+        name: account
+        required: true
+        schema:
+          type: object
+      - description: Password confirmation
+        in: body
+        name: account
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Delete account
+      tags:
+      - Authentication
+      - Authentication
+      - Authentication
+    patch:
+      consumes:
+      - application/json
+      - application/json
+      description: |-
+        Returns the authenticated user's email
+        Updates the authenticated user's email address
+        Permanently deletes the authenticated user's account
+      parameters:
+      - description: New email address
+        in: body
+        name: account
+        required: true
+        schema:
+          type: object
+      - description: Password confirmation
+        in: body
+        name: account
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Delete account
+      tags:
+      - Authentication
+      - Authentication
+      - Authentication
+  /user/account/password:
+    post:
+      consumes:
+      - application/json
+      description: Changes the authenticated user's password after verifying the current
+        one
+      parameters:
+      - description: Current and new password
+        in: body
+        name: password
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Change password
+      tags:
+      - Authentication
+  /user/appearance:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Returns the authenticated user's theme and language preferences
+        Updates the authenticated user's theme and language preferences
+      parameters:
+      - description: Theme (light|dark|system) and language (en)
+        in: body
+        name: appearance
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Update appearance settings
+      tags:
+      - Settings
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Returns the authenticated user's theme and language preferences
+        Updates the authenticated user's theme and language preferences
+      parameters:
+      - description: Theme (light|dark|system) and language (en)
+        in: body
+        name: appearance
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - SessionAuth: []
+      - SessionAuth: []
+      summary: Update appearance settings
+      tags:
+      - Settings
+      - Settings
+  /users:
+    get:
+      description: Returns all registered users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List all users
+      tags:
+      - Users
+  /users/{owner}/repos:
+    get:
+      description: Returns all repositories owned by the specified user
+      parameters:
+      - description: Repository owner username
+        in: path
+        name: owner
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.RepoInfo'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List repositories for a user
+      tags:
+      - Repositories
+securityDefinitions:
+  SessionAuth:
+    description: Better-auth session cookie for authenticated requests
+    in: cookie
+    name: better-auth.session_token
+    type: apiKey
+swagger: "2.0"
