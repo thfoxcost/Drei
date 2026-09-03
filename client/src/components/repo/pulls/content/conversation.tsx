@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu"
 import { Ellipsis } from "lucide-react"
+import { timeAgo } from "@/lib/time-ago"
 
 type CommentItemProps = {
   username: string
@@ -42,7 +43,9 @@ export default function CommentItem({
 
             <span className="relative z-30 text-muted-foreground">
               {" "}commented{" "}
-              <span className="underline">{date}</span>
+              <span className="underline text-xs">
+                {timeAgo(date)}
+              </span>
             </span>
           </div>
 
@@ -81,7 +84,7 @@ export default function CommentItem({
         </div>
 
         <div className="rounded-b-sm border border-foreground/30 border-t-0 p-4">
-          <p className="text-sm italic text-muted-foreground">
+          <p className="text-sm">
             {comment}
           </p>
         </div>
