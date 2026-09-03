@@ -6,6 +6,15 @@ import (
 	"os"
 )
 
+// Contribution godoc
+//
+//	@Summary		Get contribution data
+//	@Description	Returns demo contribution data from data/contribution.json
+//	@Tags			System
+//	@Produce		json
+//	@Success		200	{object}	interface{}
+//	@Failure		500	{string}	string
+//	@Router			/contribution [get]
 func Contribution(w http.ResponseWriter, r *http.Request) {
 	// CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")

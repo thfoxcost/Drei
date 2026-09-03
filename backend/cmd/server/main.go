@@ -8,7 +8,21 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+
+	_ "backend/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+//	@title						Drei API
+//	@version					1.0.0
+//	@description				API for Drei, a self-hosted Git repository platform
+//	@host						localhost:3200
+//	@BasePath					/api
+//	@securityDefinitions.apikey	SessionAuth
+//	@in							cookie
+//	@name						better-auth.session_token
+//	@description				Better-auth session cookie for authenticated requests
 
 func main() {
 	if err := config.Load(); err != nil {
@@ -70,6 +84,11 @@ func main() {
 	// takes precedence over the logo file server.
 	issueImagesDir := filepath.Join(config.App.ReposPath, "issue-images")
 	http.Handle("/uploads/issue-images/", http.StripPrefix("/uploads/issue-images/", http.FileServer(http.Dir(issueImagesDir))))
+
+	// Swagger UI
+	http.Handle("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	fmt.Printf("[OK] Server listening on :%s\n", config.App.Port)
 

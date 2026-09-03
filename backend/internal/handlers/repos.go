@@ -54,6 +54,19 @@ func createRepoFiles(userPath, repoPath string) error {
 	return nil
 }
 
+// CreateRepo godoc
+//
+//	@Summary		Create a new repository
+//	@Description	Creates a new bare Git repository and stores it in the database
+//	@Tags			Repositories
+//	@Accept			json
+//	@Produce		json
+//	@Param			repo	body		CreateRepoRequest	true	"Repository details"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		409		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos [post]
 func CreateRepo(w http.ResponseWriter, r *http.Request) {
 	// CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -313,6 +326,45 @@ func deleteRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 	})
 }
 
+// RepoHandler godoc
+//
+//	@Summary		Get repository details
+//	@Description	Returns full repository metadata including branches, files, commits, and contributors
+//	@Tags			Repositories
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			branch	query		string	false	"Branch name"
+//	@Success		200		{object}	gitrepo.RepoResponse
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo} [get]
+//
+//	@Summary		Update a repository
+//	@Description	Updates repository name, description, default branch, and other settings
+//	@Tags			Repositories
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string				true	"Repository owner"
+//	@Param			repo	path		string				true	"Repository name"
+//	@Param			repo	body		UpdateRepoRequest	true	"Update details"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo} [patch]
+//
+//	@Summary		Delete a repository
+//	@Description	Permanently deletes a repository and its data
+//	@Tags			Repositories
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo} [delete]
 func RepoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, PATCH, DELETE, OPTIONS")

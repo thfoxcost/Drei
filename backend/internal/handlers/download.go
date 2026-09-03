@@ -10,6 +10,20 @@ import (
 // DownloadHandler serves the repository contents as a zip or tar.gz archive
 // built from the current branch (or a branch selected with the "branch" query
 // parameter).
+//
+//	@Summary		Download repository archive
+//	@Description	Downloads a repository as a zip or tar.gz archive
+//	@Tags			Repositories
+//	@Produce		application/zip
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			branch	query		string	false	"Branch name (defaults to default branch)"
+//	@Param			format	query		string	false	"Archive format: zip or tar.gz (defaults to zip)"
+//	@Success		200		{file}		binary
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/download [get]
 func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET")
 

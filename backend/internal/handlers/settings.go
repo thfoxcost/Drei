@@ -41,6 +41,20 @@ func handleOptions(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// ArchiveHandler godoc
+//
+//	@Summary		Archive or unarchive a repository
+//	@Description	Sets the archived state of a repository
+//	@Tags			Settings
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			archive	body		object	true	"Archived state"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/archive [post]
 func ArchiveHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "POST")
 
@@ -83,6 +97,20 @@ func ArchiveHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// VisibilityHandler godoc
+//
+//	@Summary		Update repository visibility
+//	@Description	Sets the visibility (public/private) of a repository
+//	@Tags			Settings
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner		path		string	true	"Repository owner"
+//	@Param			repo		path		string	true	"Repository name"
+//	@Param			visibility	body		object	true	"Visibility setting"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		500			{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/visibility [post]
 func VisibilityHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "POST")
 

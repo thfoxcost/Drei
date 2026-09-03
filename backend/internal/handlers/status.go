@@ -6,6 +6,15 @@ import (
 	"os"
 )
 
+// Status godoc
+//
+//	@Summary		Get API status
+//	@Description	Returns demo status data from data/status.json
+//	@Tags			System
+//	@Produce		json
+//	@Success		200	{object}	interface{}
+//	@Failure		500	{string}	string
+//	@Router			/status [get]
 func Status(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")

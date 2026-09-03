@@ -6,6 +6,20 @@ import (
 	"net/http"
 )
 
+// CommitHandler godoc
+//
+//	@Summary		Get commit details
+//	@Description	Returns detailed metadata and diffs for a specific commit
+//	@Tags			Commits
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			hash	path		string	true	"Commit hash (full or short)"
+//	@Success		200		{object}	gitrepo.CommitDetail
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/commits/{hash} [get]
 func CommitHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET")
 

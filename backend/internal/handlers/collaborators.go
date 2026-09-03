@@ -12,6 +12,45 @@ import (
 //	GET    /api/repos/{owner}/{repo}/collaborators -> users that can be added
 //	POST   /api/repos/{owner}/{repo}/collaborators -> add a collaborator
 //	DELETE /api/repos/{owner}/{repo}/collaborators -> remove a collaborator
+//
+//	@Summary		List collaborator candidates
+//	@Description	Returns users that can be added as collaborators
+//	@Tags			Collaborators
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/collaborators [get]
+//
+//	@Summary		Add a collaborator
+//	@Description	Adds a user as a collaborator to the repository
+//	@Tags			Collaborators
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string				true	"Repository owner"
+//	@Param			repo	path		string				true	"Repository name"
+//	@Param			collaborator	body	database.Contributor	true	"Collaborator details"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/collaborators [post]
+//
+//	@Summary		Remove a collaborator
+//	@Description	Removes a user from the repository's collaborators
+//	@Tags			Collaborators
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			collaborator	body	object	true	"Username to remove"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/collaborators [delete]
 func CollaboratorsHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET, POST, DELETE")
 
