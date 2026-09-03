@@ -346,7 +346,7 @@ Apply these across all screens:
 [X] 2. PR list page       → tabs + search + list
 3. PR detail shell    → header + tab bar
 4. Conversation tab   → description + comments + events
-5. Commits tab        → commit list
+[X] Commits tab        → commit list
 6. File Changes tab   → diff viewer
 7. Merge button       → merge flow
 8. Empty/loading/error → polish across all screens
