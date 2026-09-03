@@ -26,6 +26,29 @@ type Webhook struct {
 }
 
 // NotificationsHandler routes /api/notifications to the appropriate method.
+//
+//	@Summary		List notification webhooks
+//	@Description	Returns all webhooks for the authenticated user
+//	@Tags			Notifications
+//	@Produce		json
+//	@Success		200	{object}	[]handlers.Webhook
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		500	{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/notifications [get]
+//
+//	@Summary		Create a notification webhook
+//	@Description	Creates a new webhook for the authenticated user
+//	@Tags			Notifications
+//	@Accept			json
+//	@Produce		json
+//	@Param			webhook	body		object	true	"Webhook configuration (type, encoded_url, repository_id)"
+//	@Success		201		{object}	handlers.Webhook
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/notifications [post]
 func NotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET, POST, OPTIONS")
 
@@ -51,6 +74,31 @@ func NotificationsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // NotificationItemHandler routes /api/notifications/{id} for PATCH and DELETE.
+//
+//	@Summary		Update a notification webhook
+//	@Description	Updates a webhook's URL or enabled state
+//	@Tags			Notifications
+//	@Accept			json
+//	@Produce		json
+//	@Param			id			path		string	true	"Webhook ID"
+//	@Param			webhook		body		object	true	"Fields to update (encoded_url, enabled)"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		401			{object}	map[string]interface{}
+//	@Failure		500			{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/notifications/{id} [patch]
+//
+//	@Summary		Delete a notification webhook
+//	@Description	Permanently deletes a webhook
+//	@Tags			Notifications
+//	@Produce		json
+//	@Param			id	path		string	true	"Webhook ID"
+//	@Success		200	{object}	map[string]interface{}
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		500	{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/notifications/{id} [delete]
 func NotificationItemHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "PATCH, DELETE, OPTIONS")
 
@@ -78,6 +126,20 @@ func NotificationItemHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // NotificationTestHandler routes POST /api/notifications/test.
+//
+//	@Summary		Test a notification webhook
+//	@Description	Sends a test notification to the specified webhook
+//	@Tags			Notifications
+//	@Accept			json
+//	@Produce		json
+//	@Param			test	body		object	true	"Test notification details (webhook_id, title, description)"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/notifications/test [post]
 func NotificationTestHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "POST, OPTIONS")
 
@@ -142,6 +204,19 @@ func NotificationTestHandler(w http.ResponseWriter, r *http.Request) {
 // NotificationSendHandler routes POST /api/notifications/send.
 // It sends a notification to all matching webhooks for the authenticated user.
 // Intended for future application event integration.
+//
+//	@Summary		Send a notification
+//	@Description	Sends a notification to all matching webhooks for the user
+//	@Tags			Notifications
+//	@Accept			json
+//	@Produce		json
+//	@Param			notification	body		object	true	"Notification details (repository_id, title, description)"
+//	@Success		200				{object}	map[string]interface{}
+//	@Failure		400				{object}	map[string]interface{}
+//	@Failure		401				{object}	map[string]interface{}
+//	@Failure		500				{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/notifications/send [post]
 func NotificationSendHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "POST, OPTIONS")
 

@@ -28,6 +28,29 @@ type AppearanceResponse struct {
 }
 
 // AppearanceHandler serves GET and PUT /api/user/appearance.
+//
+//	@Summary		Get appearance settings
+//	@Description	Returns the authenticated user's theme and language preferences
+//	@Tags			Settings
+//	@Produce		json
+//	@Success		200	{object}	handlers.AppearanceResponse
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		500	{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/user/appearance [get]
+//
+//	@Summary		Update appearance settings
+//	@Description	Updates the authenticated user's theme and language preferences
+//	@Tags			Settings
+//	@Accept			json
+//	@Produce		json
+//	@Param			appearance	body		object	true	"Theme (light|dark|system) and language (en)"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/user/appearance [put]
 func AppearanceHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET, PUT")
 

@@ -8,6 +8,20 @@ import (
 // AllIssuesHandler lists and counts issues across every repository.
 //
 //	GET /api/issues  ?state=open&author=&assignee=&search=&sort=&label=
+//
+//	@Summary		List all issues across repositories
+//	@Description	Returns issues from all repositories with optional filters for state, author, assignee, search, label, and sort
+//	@Tags			Issues
+//	@Produce		json
+//	@Param			state	query		string	false	"Issue state filter (open or closed)"
+//	@Param			author	query		string	false	"Author user ID"
+//	@Param			assignee	query		string	false	"Assignee user ID"
+//	@Param			search	query		string	false	"Search term (matches title, description, number)"
+//	@Param			label	query		string	false	"Label name"
+//	@Param			sort	query		string	false	"Sort order (newest, oldest, recently-updated, etc.)"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/issues [get]
 func AllIssuesHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET")
 
@@ -58,6 +72,14 @@ func AllIssuesHandler(w http.ResponseWriter, r *http.Request) {
 // such as the author and assignee dropdowns.
 //
 //	GET /api/users
+//
+//	@Summary		List all users
+//	@Description	Returns all registered users
+//	@Tags			Users
+//	@Produce		json
+//	@Success		200	{object}	map[string]interface{}
+//	@Failure		500	{object}	map[string]interface{}
+//	@Router			/users [get]
 func UsersHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET")
 

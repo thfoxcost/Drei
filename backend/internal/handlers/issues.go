@@ -76,6 +76,40 @@ func parseDueDate(raw json.RawMessage) (*time.Time, error) {
 //
 //	GET  /api/repos/{owner}/{repo}/issues  ?state=open&author=&assignee=&search=&sort=&label=
 //	POST /api/repos/{owner}/{repo}/issues
+//
+//	@Summary		List repository issues
+//	@Description	Returns issues for a repository with optional filters
+//	@Tags			Issues
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			state	query		string	false	"Issue state filter (open or closed)"
+//	@Param			author	query		string	false	"Author user ID"
+//	@Param			assignee	query		string	false	"Assignee user ID"
+//	@Param			search	query		string	false	"Search term"
+//	@Param			label	query		string	false	"Label name"
+//	@Param			sort	query		string	false	"Sort order"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/issues [get]
+//
+//	@Summary		Create an issue
+//	@Description	Creates a new issue in the repository. Requires authentication and repository membership.
+//	@Tags			Issues
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			issue	body		object	true	"Issue details (title, description, labels, assignees, dueDate)"
+//	@Success		201		{object}	database.Issue
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		403		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/repos/{owner}/{repo}/issues [post]
 func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET, POST")
 
@@ -211,6 +245,48 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 //	GET    /api/repos/{owner}/{repo}/issues/{number}
 //	PATCH  /api/repos/{owner}/{repo}/issues/{number}
 //	DELETE /api/repos/{owner}/{repo}/issues/{number}
+//
+//	@Summary		Get an issue
+//	@Description	Returns a single issue with its comments
+//	@Tags			Issues
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			number	path		int		true	"Issue number"
+//	@Success		200		{object}	database.Issue
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/issues/{number} [get]
+//
+//	@Summary		Update an issue
+//	@Description	Updates the title, description, labels, and due date of an issue
+//	@Tags			Issues
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			number	path		int		true	"Issue number"
+//	@Param			issue	body		object	true	"Fields to update"
+//	@Success		200		{object}	database.Issue
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/issues/{number} [patch]
+//
+//	@Summary		Delete an issue
+//	@Description	Permanently deletes an issue. Only the author or repo owner can delete.
+//	@Tags			Issues
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			number	path		int		true	"Issue number"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		403		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/repos/{owner}/{repo}/issues/{number} [delete]
 func IssueHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET, PATCH, DELETE")
 
@@ -347,6 +423,23 @@ func IssueHandler(w http.ResponseWriter, r *http.Request) {
 // IssueStateHandler closes or reopens an issue.
 //
 //	POST /api/repos/{owner}/{repo}/issues/{number}/state
+//
+//	@Summary		Close or reopen an issue
+//	@Description	Changes the state of an issue (open or closed)
+//	@Tags			Issues
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			number	path		int		true	"Issue number"
+//	@Param			state	body		object	true	"State change (state: open|closed, reason: completed|not_planned|duplicated)"
+//	@Success		200		{object}	database.Issue
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/repos/{owner}/{repo}/issues/{number}/state [post]
 func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "POST")
 
@@ -423,6 +516,24 @@ func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
 // IssueAssigneeHandler assigns or unassigns an issue.
 //
 //	POST /api/repos/{owner}/{repo}/issues/{number}/assignee
+//
+//	@Summary		Update issue assignees
+//	@Description	Sets the assignees for an issue
+//	@Tags			Issues
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			number	path		int		true	"Issue number"
+//	@Param			assignee	body	object	true	"Assignees list"
+//	@Success		200		{object}	database.Issue
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		403		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/repos/{owner}/{repo}/issues/{number}/assignee [post]
 func IssueAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "POST")
 
@@ -500,6 +611,34 @@ func IssueAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 //
 //	GET  /api/repos/{owner}/{repo}/issues/{number}/comments
 //	POST /api/repos/{owner}/{repo}/issues/{number}/comments
+//
+//	@Summary		List issue comments
+//	@Description	Returns all comments on an issue
+//	@Tags			Issues
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			number	path		int		true	"Issue number"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/issues/{number}/comments [get]
+//
+//	@Summary		Create a comment
+//	@Description	Adds a comment to an issue
+//	@Tags			Issues
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			number	path		int		true	"Issue number"
+//	@Param			comment	body		object	true	"Comment body"
+//	@Success		201		{object}	database.IssueComment
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/repos/{owner}/{repo}/issues/{number}/comments [post]
 func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET, POST")
 
@@ -579,6 +718,34 @@ func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
 //
 //	PATCH  /api/repos/{owner}/{repo}/issues/{number}/comments/{commentId}
 //	DELETE /api/repos/{owner}/{repo}/issues/{number}/comments/{commentId}
+//
+//	@Summary		Update a comment
+//	@Description	Updates the body of a comment
+//	@Tags			Issues
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner		path		string	true	"Repository owner"
+//	@Param			repo		path		string	true	"Repository name"
+//	@Param			number		path		int		true	"Issue number"
+//	@Param			commentId	path		int64	true	"Comment ID"
+//	@Param			comment		body		object	true	"Updated comment body"
+//	@Success		200			{object}	database.IssueComment
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		500			{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/issues/{number}/comments/{commentId} [patch]
+//
+//	@Summary		Delete a comment
+//	@Description	Permanently deletes a comment
+//	@Tags			Issues
+//	@Produce		json
+//	@Param			owner		path		string	true	"Repository owner"
+//	@Param			repo		path		string	true	"Repository name"
+//	@Param			number		path		int		true	"Issue number"
+//	@Param			commentId	path		int64	true	"Comment ID"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		500			{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/issues/{number}/comments/{commentId} [delete]
 func IssueCommentHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "PATCH, DELETE")
 
@@ -651,6 +818,30 @@ func IssueCommentHandler(w http.ResponseWriter, r *http.Request) {
 //
 //	GET  /api/repos/{owner}/{repo}/labels
 //	POST /api/repos/{owner}/{repo}/labels
+//
+//	@Summary		List repository labels
+//	@Description	Returns all labels for a repository
+//	@Tags			Labels
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/labels [get]
+//
+//	@Summary		Create a label
+//	@Description	Creates a new label for the repository
+//	@Tags			Labels
+//	@Accept			json
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			label	body		object	true	"Label details (name, color)"
+//	@Success		201		{object}	database.IssueLabel
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/labels [post]
 func IssueLabelsHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET, POST")
 
@@ -712,6 +903,18 @@ func IssueLabelsHandler(w http.ResponseWriter, r *http.Request) {
 // IssueLabelHandler deletes a repository label.
 //
 //	DELETE /api/repos/{owner}/{repo}/labels/{labelId}
+//
+//	@Summary		Delete a label
+//	@Description	Permanently removes a label from the repository
+//	@Tags			Labels
+//	@Produce		json
+//	@Param			owner		path		string	true	"Repository owner"
+//	@Param			repo		path		string	true	"Repository name"
+//	@Param			labelId		path		int64	true	"Label ID"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		500			{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/labels/{labelId} [delete]
 func IssueLabelHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "DELETE")
 
