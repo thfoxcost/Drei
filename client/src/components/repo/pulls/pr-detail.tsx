@@ -17,11 +17,14 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import Commits from "./content/commits";
-import { CommitItemMSG, ConversationSheet } from "./content/conversation";
+import {
+  CommitItemMSG,
+  ConversationSheet,
+  ReviewItemMSG,
+} from "./content/conversation";
 import CommentItem from "./content/conversation";
 
 function PRdetail({ pull }: { pull: string }) {
-  // swap these for real data whenever you wire it up
   const stats = {
     conversation: 8,
     commits: 4,
@@ -31,92 +34,56 @@ function PRdetail({ pull }: { pull: string }) {
     deletions: 171,
   };
 
+  const conversation = [
+    {
+      type: "comment" as const,
+      date: "2026-08-27T09:15:00",
+      username: "alexdev",
+      avatarLink: "https://github.com/shadcn.png",
+      comment:
+        "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English.",
+    },
 
+    {
+      type: "commit" as const,
+      date: "2026-08-28T13:42:00",
+      username: "thefoxcost",
+      avatarLink: "https://github.com/shadcn.png",
+      message: "feat: add pull request tabs and statistics",
+      hash: "b72c410",
+    },
+    {
+      type: "commit" as const,
+      date: "2026-08-29T09:20:00",
+      username: "thefoxcost",
+      avatarLink: "https://github.com/shadcn.png",
+      message: "feat: add commit messages to pull request timeline",
+      hash: "c33e686",
+    },
 
-const conversation = [
-  {
-    type: "comment" as const,
-    date: "2026-08-27T09:15:00",
-    username: "alexdev",
-    avatarLink: "https://github.com/shadcn.png",
-    comment:
-      "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).",
-  },
-  {
-    type: "commit" as const,
-    date: "2026-08-28T10:15:00",
-    username: "thefoxcost",
-    avatarLink: "https://github.com/shadcn.png",
-    message: "feat: add pull request conversation UI",
-    hash: "a13f921",
-  },
-  {
-    type: "commit" as const,
-    date: "2026-08-28T13:42:00",
-    username: "thefoxcost",
-    avatarLink: "https://github.com/shadcn.png",
-    message: "feat: add pull request tabs and statistics",
-    hash: "b72c410",
-  },
-  {
-    type: "commit" as const,
-    date: "2026-08-29T09:20:00",
-    username: "thefoxcost",
-    avatarLink: "https://github.com/shadcn.png",
-    message: "feat: add commit messages to pull request timeline",
-    hash: "c33e686",
-  },
-  {
-    type: "comment" as const,
-    date: "2026-08-29T16:45:00",
-    username: "alexdev",
-    avatarLink: "https://github.com/shadcn.png",
-    comment:
-      "The implementation looks good. The conversation timeline is much easier to follow now. I only noticed a few spacing issues.",
-  },
-  {
-    type: "commit" as const,
-    date: "2026-08-30T11:05:00",
-    username: "thefoxcost",
-    avatarLink: "https://github.com/shadcn.png",
-    message: "fix: improve pull request conversation spacing",
-    hash: "e82b104",
-  },
-  {
-    type: "commit" as const,
-    date: "2026-08-30T15:30:00",
-    username: "thefoxcost",
-    avatarLink: "https://github.com/shadcn.png",
-    message: "fix: align pull request action buttons",
-    hash: "91f3a27",
-  },
-  {
-    type: "comment" as const,
-    date: "2026-08-31T10:20:00",
-    username: "mohdev",
-    avatarLink: "https://github.com/shadcn.png",
-    comment:
-      "Reviewed the latest changes. Everything looks clean from my side.",
-  },
-  {
-    type: "commit" as const,
-    date: "2026-09-01T08:40:00",
-    username: "thefoxcost",
-    avatarLink: "https://github.com/shadcn.png",
-    message: "feat: add merge status and pull request actions",
-    hash: "f41d8ac",
-  },
-  {
-    type: "comment" as const,
-    date: "2026-09-01T13:25:00",
-    username: "alexdev",
-    avatarLink: "https://github.com/shadcn.png",
-    comment:
-      "Everything looks good now. Approved.",
-  },
-];
+    {
+      type: "review" as const,
+      date: "2026-08-30T11:30:00",
+      username: "alexdev",
+      avatarLink: "https://github.com/shadcn.png",
+      message: "approved these changes",
+      hash: "c33e686",
+      filePath: "src/components/repo/pulls/pr-detail.tsx",
+      isOutdated: false,
+    },
 
-  
+    {
+      type: "review" as const,
+      date: "2026-08-30T11:30:00",
+      username: "alexdev",
+      avatarLink: "https://github.com/shadcn.png",
+      message: "approved these changes",
+      hash: "c33e686",
+      filePath: "src/components/repo/pulls/pr-detail.tsx",
+      isOutdated: true,
+    },
+  ];
+
   const maxSquares = 5;
 
   const greenSquares = Math.min(stats.additions, maxSquares);
@@ -141,7 +108,22 @@ const conversation = [
 
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <Button variant="outline">
-            <svg className="text-green-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12zm13.707-1.293a1 1 0 0 0-1.414-1.414L11 12.586l-1.293-1.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z" fill="currentColor" /></g></svg>
+            <svg
+              className="text-green-500"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+            >
+              <g fill="none">
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12zm13.707-1.293a1 1 0 0 0-1.414-1.414L11 12.586l-1.293-1.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z"
+                  fill="currentColor"
+                />
+              </g>
+            </svg>
             Able to merge
           </Button>
 
@@ -167,7 +149,11 @@ const conversation = [
           <ReuiBadge variant="save-info">feat/pulls</ReuiBadge>
         </span>
 
-        <Button variant="ghost" size="icon" className="text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground"
+        >
           <Copy />
         </Button>
       </div>
@@ -311,7 +297,7 @@ const conversation = [
           <TabsContent value="conversation">
             <div className="flex w-full flex-row gap-4">
               <div className="flex w-full flex-col gap-4">
-                <div className="flex flex-col gap-4 w-full">
+                <div className="flex w-full flex-col gap-4">
                   {[...conversation]
                     .sort(
                       (a, b) =>
@@ -326,7 +312,20 @@ const conversation = [
                             username={item.username}
                             avatarLink={item.avatarLink}
                             comment={item.comment}
-                            date={new Date(item.date).toLocaleDateString()}
+                            date={item.date}
+                          />
+                        );
+                      }
+
+                      if (item.type === "review") {
+                        return (
+                          <ReviewItemMSG
+                            key={`${item.type}-${index}`}
+                            username={item.username}
+                            avatarLink={item.avatarLink}
+                            date={item.date}
+                            filePath={item.filePath}
+                            isOutdated={item.isOutdated}
                           />
                         );
                       }
@@ -338,6 +337,7 @@ const conversation = [
                           avatarLink={item.avatarLink}
                           message={item.message}
                           hash={item.hash}
+                          date={item.date}
                         />
                       );
                     })}
