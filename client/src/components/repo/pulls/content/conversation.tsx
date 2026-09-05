@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar"
 import {
   DropdownMenu,
@@ -6,7 +7,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu"
-import { ChevronDown, Ellipsis, Eye, FoldHorizontal, TriangleAlert } from "lucide-react"
+import { Badge } from "#/components/ui/badge"
+import {
+  ChevronDown,
+  Ellipsis,
+  Eye,
+  FoldHorizontal,
+  TriangleAlert,
+} from "lucide-react"
 import { timeAgo } from "@/lib/time-ago"
 
 import type {
@@ -14,8 +22,7 @@ import type {
   ConversationCommit,
   ConversationReview,
 } from "./types/conversation"
-import { useState } from "react"
-import { Badge } from "#/components/ui/badge"
+import { Input } from "#/components/ui/input"
 
 export default function CommentItem({
   username,
@@ -24,7 +31,7 @@ export default function CommentItem({
   date,
 }: Omit<ConversationComment, "type">) {
   return (
-    <div className="flex flex-row gap-4 w-full">
+    <div className="group flex w-full flex-row gap-4">
       <Avatar className="size-9">
         <AvatarImage src={avatarLink} />
         <AvatarFallback>
@@ -44,31 +51,61 @@ export default function CommentItem({
 
             <span className="relative z-30 text-muted-foreground">
               {" "}commented{" "}
-              <span className="underline text-xs">
+              <span className="text-xs underline">
                 {timeAgo(date)}
               </span>
             </span>
           </div>
 
-          <div className="ml-auto flex items-center gap-1">
+          {/* Comment actions */}
+          <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
                   className="flex size-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+                  aria-label="Comment actions"
                 >
                   <Ellipsis size={16} />
                 </button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent className="min-w-35">
-                <DropdownMenuItem>Copy link</DropdownMenuItem>
-                <DropdownMenuItem>Copy Markdown</DropdownMenuItem>
-                <DropdownMenuItem>Quote Reply</DropdownMenuItem>
+              <DropdownMenuContent
+                side="right"
+                align="start"
+                className="min-w-44"
+              >
+                <DropdownMenuItem>
+                  Copy link
+                </DropdownMenuItem>
+
+                <DropdownMenuItem>
+                  Copy Markdown
+                </DropdownMenuItem>
+
+                <DropdownMenuItem>
+                  Quote Reply
+                </DropdownMenuItem>
+
+                <DropdownMenuItem>
+                  Reference in new issue
+                </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem>Edit</DropdownMenuItem>
+                <DropdownMenuItem>
+                  Hide
+                </DropdownMenuItem>
+
+                <DropdownMenuItem>
+                  Edit
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem variant="destructive">
+                  Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -89,7 +126,7 @@ export function CommitItemMSG({
   hash,
 }: Omit<ConversationCommit, "type">) {
   return (
-    <div className="flex flex-row items-center gap-2 text-sm ml-13">
+    <div className="ml-13 flex flex-row items-center gap-2 text-sm">
       <div className="flex size-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -99,7 +136,7 @@ export function CommitItemMSG({
         >
           <path
             fill="currentColor"
-            d="M960 384H826q-23 110-111 183t-203 73t-203-73t-111-183H64q-27 0-45.5-19T0 319.5t18.5-45T64 256h134q23-111 111-183.5T512 0t203 72.5T826 256h134q27 0 45.5 18.5t18.5 45t-18.5 45.5t-45.5 19M512 128q-80 0-136 56t-56 136t56 136t136 56t136-56t56-136t-56-136t-136-56"
+            d="M960 384H826q-23 110-111 183t-203 73t-203-73t-111-183H64q-27 0-45.5-19T0 319.5t18.5-45T64 256h134q23-111 111-183.5T512 0t203 72.5T826 256h134q27 0 45.5 18.5t18.5 45t-18.5 45.5T960 384M512 128q-80 0-136 56t-56 136t56 136t136 56t136-56t56-136t-56-136t-136-56"
           />
         </svg>
       </div>
@@ -111,17 +148,23 @@ export function CommitItemMSG({
         </AvatarFallback>
       </Avatar>
 
-      <span className="font-semibold">{username}</span>
+      <span className="font-semibold">
+        {username}
+      </span>
 
-      <p className="text-muted-foreground truncate font-mono text-xs underline underline-offset-2">
+      <p className="truncate font-mono text-xs text-muted-foreground underline underline-offset-2">
         {message}
       </p>
 
-      <span className="text-xs text-muted-foreground font-mono hover:underline cursor-pointer ml-auto">
+      <span className="ml-auto cursor-pointer font-mono text-xs text-muted-foreground hover:underline">
         {hash}
       </span>
     </div>
   )
+}
+
+type ReviewItemMSGProps = Omit<ConversationReview, "type"> & {
+  isAuthor?: boolean
 }
 
 
@@ -131,21 +174,56 @@ export function ReviewItemMSG({
   date,
   filePath,
   isOutdated,
-}: Omit<ConversationReview, "type">) {
-  const [isExpanded, setIsExpanded] = useState(true)
-
-  // this outdate state should be set based on the review status, for now it's hardcoded to false
-  // the logic is if a new commit is pushed to the PR after the review and the reviewd line changed so i sett it as outdated.
+  isAuthor = false,
+}: ReviewItemMSGProps) {
+  const [isExpanded, setIsExpanded] = useState(!isOutdated)
+  const [showAllComments, setShowAllComments] = useState(false)
 
   const toggleExpanded = () => {
-    if (isOutdated) return
-
     setIsExpanded((value) => !value)
   }
 
+  const notes = [
+    {
+      username: "thefoxcost",
+      avatar:
+        "https://api.dicebear.com/10.x/sprouts/svg?seed=i5rw5xmn",
+      message:
+        "Consider using the logger instead of console.log here.",
+    },
+    {
+      username: "alice",
+      avatar:
+        "https://api.dicebear.com/10.x/sprouts/svg?seed=9p1b8wb2",
+      message:
+        "Could we extract this into a reusable function?",
+    },
+    {
+      username: "bob",
+      avatar:
+        "https://api.dicebear.com/10.x/sprouts/svg?seed=4q5xhvgl",
+      message:
+        "This condition can probably be simplified.",
+    },
+    {
+      username: "charlie",
+      avatar:
+        "https://api.dicebear.com/10.x/sprouts/svg?seed=46ocup8i",
+      message:
+        "Please add a test case for this behavior.",
+    },
+    {
+      username: "david",
+      avatar:
+        "https://api.dicebear.com/10.x/shapes/svg?seed=w81z4jq7",
+      message:
+        "Looks good overall, but I would rename this variable.",
+    },
+  ]
+
   return (
-    <div className="ml-13 flex flex-col">
-      {/* Review header */}
+    <div className="group ml-13 flex flex-col">
+      {/* Header - always active */}
       <div className="flex flex-row items-center gap-2 text-sm">
         <div className="flex size-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <Eye size={17} />
@@ -162,62 +240,52 @@ export function ReviewItemMSG({
           {username}
         </span>
 
-        <span className="text-muted-foreground text-xs underline underline-offset-2">
+        <span className="text-xs text-muted-foreground underline underline-offset-2">
           {timeAgo(date)}
         </span>
       </div>
 
-      <div className="mt-4 ml-9">
-        {/* Review header */}
-        <div className="rounded-t-sm border border-foreground/10 bg-accent/40 p-1">
+      <div className="mt-2 ml-9">
+        <div
+          className={`border border-foreground/10 bg-accent/40 p-1 ${isExpanded ? "rounded-t-sm" : "rounded-sm"
+            }`}
+        >
           <div className="flex flex-row items-center gap-2 text-sm">
-            {/* Expand / collapse */}
             <div
               onClick={toggleExpanded}
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground ${
-                isOutdated
-                  ? "cursor-not-allowed opacity-50"
-                  : "cursor-pointer transition-colors hover:bg-muted hover:text-foreground"
-              }`}
+              className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               role="button"
-              tabIndex={isOutdated ? -1 : 0}
-              aria-disabled={isOutdated}
+              tabIndex={0}
               aria-label={
-                isOutdated
-                  ? "Outdated review"
-                  : isExpanded
-                    ? "Collapse code"
-                    : "Expand code"
+                isExpanded
+                  ? "Collapse code"
+                  : "Expand code"
               }
               onKeyDown={(event) => {
-                if (isOutdated) return
-
                 if (
                   event.key === "Enter" ||
                   event.key === " "
                 ) {
+                  event.preventDefault()
                   toggleExpanded()
                 }
               }}
             >
               <ChevronDown
                 size={16}
-                className={`transition-transform duration-200 ${
-                  isExpanded
-                    ? "rotate-0"
-                    : "-rotate-90"
-                }`}
+                className={`transition-transform duration-200 ${isExpanded
+                  ? "rotate-0"
+                  : "-rotate-90"
+                  }`}
               />
             </div>
 
-            {/* File path */}
             <div
               onClick={toggleExpanded}
-              className={`truncate font-mono text-xs ${
-                isOutdated
-                  ? "cursor-not-allowed opacity-50"
-                  : "cursor-pointer transition-colors hover:text-blue-400 hover:underline"
-              }`}
+              className={`truncate font-mono text-xs transition-colors ${isOutdated
+                ? "cursor-default opacity-50"
+                : "cursor-pointer hover:text-blue-400 hover:underline"
+                }`}
             >
               {filePath}
             </div>
@@ -233,40 +301,56 @@ export function ReviewItemMSG({
               </Badge>
             )}
 
-            {/* Resolved */}
-            <div
-              onClick={toggleExpanded}
-              className={`ml-auto mr-2 flex items-center gap-1 text-xs ${
-                isOutdated
-                  ? "cursor-not-allowed opacity-50"
-                  : "cursor-pointer text-muted-foreground hover:text-foreground"
-              }`}
-              role="button"
-              tabIndex={isOutdated ? -1 : 0}
-              aria-disabled={isOutdated}
-              onKeyDown={(event) => {
-                if (isOutdated) return
+            <div className="ml-auto mr-1 flex items-center gap-2">
+              {/* Resolved - only shown for outdated reviews */}
+              {isOutdated && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <FoldHorizontal size={14} />
 
-                if (
-                  event.key === "Enter" ||
-                  event.key === " "
-                ) {
-                  toggleExpanded()
-                }
-              }}
-            >
-              <FoldHorizontal size={14} />
+                  {isExpanded
+                    ? "Hide Resolved"
+                    : "Show Resolved"}
+                </div>
+              )}
 
-              {isExpanded
-                ? "Hide Resolved"
-                : "Show Resolved"}
+              {notes.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowAllComments((value) => !value)
+                  }
+                  className="flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label={
+                    showAllComments
+                      ? "Hide comments"
+                      : "Show all comments"
+                  }
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M9 22a1 1 0 0 1-1-1v-3H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6.1l-3.7 3.71c-.2.19-.45.29-.7.29zm8-11V9h-2v2zm-4 0V9h-2v2zm-4 0V9H7v2z"
+                    />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Review diff */}
+        {/* Review content - disabled/muted when outdated */}
         {isExpanded && (
-          <div className="overflow-x-auto rounded-b-sm border border-foreground/20 border-t-0">
+          <div
+            className={`overflow-x-auto rounded-b-sm border border-foreground/20 border-t-0 ${isOutdated
+              ? "pointer-events-none select-none opacity-50"
+              : ""
+              }`}
+          >
             <div className="min-w-max font-mono text-xs">
               {/* Diff hunk header */}
               <div className="flex min-h-7 items-center bg-muted/30 px-2 text-muted-foreground">
@@ -333,18 +417,115 @@ export function ReviewItemMSG({
               </div>
             </div>
 
-            {/* Review comment */}
-            <div className="border-t border-foreground/10 bg-accent/30 p-3">
-              <p className="text-sm text-muted-foreground">
-                Consider using the logger instead of console.log here.
-              </p>
+            <div className="border-t border-foreground/10 p-3">
+              <div className="flex flex-col gap-3">
+                {notes.map((note, index) => {
+                  if (index > 0 && !showAllComments) {
+                    return null
+                  }
+
+                  return (
+                    <div
+                      key={index}
+                      className="group/note flex items-start gap-2"
+                    >
+                      <Avatar className="size-5 shrink-0">
+                        <AvatarImage src={note.avatar} />
+                        <AvatarFallback className="text-[9px]">
+                          {note.username
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+                        <p className="text-sm font-semibold">
+                          {note.username}
+
+                          {note.username === username &&
+                            isAuthor && (
+                              <span className="ml-1 font-normal text-muted-foreground">
+                                (Author)
+                              </span>
+                            )}
+                        </p>
+
+                        <p className="text-sm">
+                          {note.message}
+                        </p>
+                      </div>
+
+                      <div className="opacity-0 transition-opacity group-hover/note:opacity-100">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                              aria-label="Comment actions"
+                            >
+                              <Ellipsis size={14} />
+                            </button>
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent
+                            side="right"
+                            align="start"
+                            className="min-w-50"
+                          >
+                            <DropdownMenuItem>
+                              Copy Markdown
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem>
+                              Quote Reply
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem>
+                              Reference in new issue
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem>
+                              Hide
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem>
+                              Edit
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem variant="destructive">
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className=" flex flex-row gap-2 items-center border-t border-foreground/10 bg-accent/40 p-2 px-2">
+              <Avatar size="sm">
+                <AvatarImage src="https://github.com/shadcn.png" />
+                <AvatarFallback>CN</AvatarFallback>
+              </Avatar>
+
+              <Input
+                className="w-full"
+                placeholder="Reply..."
+              />
             </div>
           </div>
+
         )}
       </div>
     </div>
   )
 }
+
 
 export function ConversationSheet() {
   return (
