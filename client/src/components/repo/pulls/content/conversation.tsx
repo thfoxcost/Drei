@@ -23,6 +23,7 @@ import type {
   ConversationReview,
 } from "./types/conversation"
 import { Input } from "#/components/ui/input"
+import { Button } from "#/components/ui/button"
 
 export default function CommentItem({
   username,
@@ -163,10 +164,10 @@ export function CommitItemMSG({
   )
 }
 
+
 type ReviewItemMSGProps = Omit<ConversationReview, "type"> & {
   isAuthor?: boolean
 }
-
 
 export function ReviewItemMSG({
   username,
@@ -176,11 +177,26 @@ export function ReviewItemMSG({
   isOutdated,
   isAuthor = false,
 }: ReviewItemMSGProps) {
+  const [isResolved, setIsResolved] = useState(false)
   const [isExpanded, setIsExpanded] = useState(!isOutdated)
   const [showAllComments, setShowAllComments] = useState(false)
 
+  const isDisabled = isOutdated || isResolved
+
   const toggleExpanded = () => {
     setIsExpanded((value) => !value)
+  }
+
+  const toggleResolved = () => {
+    const nextResolved = !isResolved
+
+    setIsResolved(nextResolved)
+
+    if (nextResolved) {
+      setIsExpanded(false)
+    } else {
+      setIsExpanded(true)
+    }
   }
 
   const notes = [
@@ -223,7 +239,7 @@ export function ReviewItemMSG({
 
   return (
     <div className="group ml-13 flex flex-col">
-      {/* Header - always active */}
+      {/* Review author */}
       <div className="flex flex-row items-center gap-2 text-sm">
         <div className="flex size-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <Eye size={17} />
@@ -236,9 +252,7 @@ export function ReviewItemMSG({
           </AvatarFallback>
         </Avatar>
 
-        <span className="font-semibold">
-          {username}
-        </span>
+        <span className="font-semibold">{username}</span>
 
         <span className="text-xs text-muted-foreground underline underline-offset-2">
           {timeAgo(date)}
@@ -246,20 +260,20 @@ export function ReviewItemMSG({
       </div>
 
       <div className="mt-2 ml-9">
+        {/* Review header */}
         <div
           className={`border border-foreground/10 bg-accent/40 p-1 ${isExpanded ? "rounded-t-sm" : "rounded-sm"
             }`}
         >
           <div className="flex flex-row items-center gap-2 text-sm">
+            {/* Expand / collapse */}
             <div
               onClick={toggleExpanded}
-              className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
               role="button"
               tabIndex={0}
               aria-label={
-                isExpanded
-                  ? "Collapse code"
-                  : "Expand code"
+                isExpanded ? "Collapse review" : "Expand review"
               }
               onKeyDown={(event) => {
                 if (
@@ -273,18 +287,17 @@ export function ReviewItemMSG({
             >
               <ChevronDown
                 size={16}
-                className={`transition-transform duration-200 ${isExpanded
-                  ? "rotate-0"
-                  : "-rotate-90"
+                className={`transition-transform duration-200 ${isExpanded ? "rotate-0" : "-rotate-90"
                   }`}
               />
             </div>
 
+            {/* File path */}
             <div
               onClick={toggleExpanded}
-              className={`truncate font-mono text-xs transition-colors ${isOutdated
-                ? "cursor-default opacity-50"
-                : "cursor-pointer hover:text-blue-400 hover:underline"
+              className={`truncate font-mono text-xs ${isDisabled
+                  ? "cursor-default opacity-50"
+                  : "cursor-pointer hover:text-blue-400 hover:underline"
                 }`}
             >
               {filePath}
@@ -302,9 +315,14 @@ export function ReviewItemMSG({
             )}
 
             <div className="ml-auto mr-1 flex items-center gap-2">
-              {/* Resolved - only shown for outdated reviews */}
-              {isOutdated && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {/* Show / Hide Resolved
+                  Only shown when resolved.
+                  NEVER disabled. */}
+              {isResolved && (
+                <div
+                  onClick={toggleExpanded}
+                  className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                >
                   <FoldHorizontal size={14} />
 
                   {isExpanded
@@ -313,13 +331,15 @@ export function ReviewItemMSG({
                 </div>
               )}
 
+              {/* Show / hide all comments
+                  NEVER disabled. */}
               {notes.length > 1 && (
                 <button
                   type="button"
                   onClick={() =>
                     setShowAllComments((value) => !value)
                   }
-                  className="flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                   aria-label={
                     showAllComments
                       ? "Hide comments"
@@ -343,189 +363,216 @@ export function ReviewItemMSG({
           </div>
         </div>
 
-        {/* Review content - disabled/muted when outdated */}
+        {/* Review content */}
         {isExpanded && (
           <div
-            className={`overflow-x-auto rounded-b-sm border border-foreground/20 border-t-0 ${isOutdated
-              ? "pointer-events-none select-none opacity-50"
-              : ""
+            className={`overflow-x-auto rounded-b-sm border border-foreground/20 border-t-0 ${isDisabled
+                ? "select-none"
+                : ""
               }`}
           >
-            <div className="min-w-max font-mono text-xs">
-              {/* Diff hunk header */}
-              <div className="flex min-h-7 items-center bg-muted/30 px-2 text-muted-foreground">
-                <span className="whitespace-pre">
-                  @@ -10,7 +10,7 @@
-                </span>
+            {/* Disabled review area */}
+            <div
+              className={
+                isDisabled
+                  ? "pointer-events-none opacity-50"
+                  : ""
+              }
+            >
+              {/* Diff */}
+              <div className="min-w-max font-mono text-xs">
+                {/* Hunk */}
+                <div className="flex min-h-7 items-center bg-muted/30 px-2 text-muted-foreground">
+                  <span className="whitespace-pre">
+                    @@ -10,7 +10,7 @@
+                  </span>
+                </div>
+
+                {/* Line 10 */}
+                <div className="flex min-h-6">
+                  <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
+                    10
+                  </span>
+
+                  <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
+                    10
+                  </span>
+
+                  <span className="w-6 shrink-0 select-none text-center font-semibold text-muted-foreground">
+                    {" "}
+                  </span>
+
+                  <code className="whitespace-pre px-2">
+                    {"  const handleClick = () => {"}
+                  </code>
+                </div>
+
+                {/* Reviewed line */}
+                <div className="flex min-h-6 bg-yellow-500/10">
+                  <span className="min-w-8 shrink-0 select-none bg-yellow-500/20 px-1 text-center text-yellow-700 dark:text-yellow-400">
+                    11
+                  </span>
+
+                  <span className="min-w-8 shrink-0 select-none bg-yellow-500/20 px-1 text-center text-yellow-700 dark:text-yellow-400">
+                    11
+                  </span>
+
+                  <span className="w-6 shrink-0 select-none text-center font-semibold text-yellow-600 dark:text-yellow-500">
+                    {" "}
+                  </span>
+
+                  <code className="whitespace-pre px-2 text-yellow-800 dark:text-yellow-300">
+                    {"  console.log('hello')"}
+                  </code>
+                </div>
+
+                {/* Line 12 */}
+                <div className="flex min-h-6">
+                  <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
+                    12
+                  </span>
+
+                  <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
+                    12
+                  </span>
+
+                  <span className="w-6 shrink-0 select-none text-center font-semibold text-muted-foreground">
+                    {" "}
+                  </span>
+
+                  <code className="whitespace-pre px-2">
+                    {"  return response.json()"}
+                  </code>
+                </div>
               </div>
 
-              {/* Unchanged line */}
-              <div className="flex min-h-6">
-                <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
-                  10
-                </span>
+              {/* Review notes */}
+              <div className="border-t border-foreground/10 p-3">
+                <div className="flex flex-col gap-3">
+                  {notes.map((note, index) => {
+                    if (index > 0 && !showAllComments) {
+                      return null
+                    }
 
-                <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
-                  10
-                </span>
+                    return (
+                      <div
+                        key={index}
+                        className="group/note flex items-start gap-2"
+                      >
+                        <Avatar className="size-5 shrink-0">
+                          <AvatarImage src={note.avatar} />
+                          <AvatarFallback className="text-[9px]">
+                            {note.username
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
 
-                <span className="w-6 shrink-0 select-none text-center font-semibold text-muted-foreground">
-                  {" "}
-                </span>
+                        <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+                          <p className="text-sm font-semibold">
+                            {note.username}
 
-                <code className="whitespace-pre px-2">
-                  {"  const handleClick = () => {"}
-                </code>
-              </div>
+                            {note.username === username &&
+                              isAuthor && (
+                                <span className="ml-1 font-normal text-muted-foreground">
+                                  (Author)
+                                </span>
+                              )}
+                          </p>
 
-              {/* Reviewed line */}
-              <div className="flex min-h-6 bg-yellow-500/10">
-                <span className="min-w-8 shrink-0 select-none bg-yellow-500/20 px-1 text-center text-yellow-700 dark:text-yellow-400">
-                  11
-                </span>
+                          <p className="text-sm">
+                            {note.message}
+                          </p>
+                        </div>
 
-                <span className="min-w-8 shrink-0 select-none bg-yellow-500/20 px-1 text-center text-yellow-700 dark:text-yellow-400">
-                  11
-                </span>
+                        <div className="opacity-0 transition-opacity group-hover/note:opacity-100">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                                aria-label="Comment actions"
+                              >
+                                <Ellipsis size={14} />
+                              </button>
+                            </DropdownMenuTrigger>
 
-                <span className="w-6 shrink-0 select-none text-center font-semibold text-yellow-600 dark:text-yellow-500">
-                  {" "}
-                </span>
-
-                <code className="whitespace-pre px-2 text-yellow-800 dark:text-yellow-300">
-                  {"  console.log('hello')"}
-                </code>
-              </div>
-
-              {/* Unchanged line */}
-              <div className="flex min-h-6">
-                <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
-                  12
-                </span>
-
-                <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
-                  12
-                </span>
-
-                <span className="w-6 shrink-0 select-none text-center font-semibold text-muted-foreground">
-                  {" "}
-                </span>
-
-                <code className="whitespace-pre px-2">
-                  {"  return response.json()"}
-                </code>
-              </div>
-            </div>
-
-            <div className="border-t border-foreground/10 p-3">
-              <div className="flex flex-col gap-3">
-                {notes.map((note, index) => {
-                  if (index > 0 && !showAllComments) {
-                    return null
-                  }
-
-                  return (
-                    <div
-                      key={index}
-                      className="group/note flex items-start gap-2"
-                    >
-                      <Avatar className="size-5 shrink-0">
-                        <AvatarImage src={note.avatar} />
-                        <AvatarFallback className="text-[9px]">
-                          {note.username
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-                        <p className="text-sm font-semibold">
-                          {note.username}
-
-                          {note.username === username &&
-                            isAuthor && (
-                              <span className="ml-1 font-normal text-muted-foreground">
-                                (Author)
-                              </span>
-                            )}
-                        </p>
-
-                        <p className="text-sm">
-                          {note.message}
-                        </p>
-                      </div>
-
-                      <div className="opacity-0 transition-opacity group-hover/note:opacity-100">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                              aria-label="Comment actions"
+                            <DropdownMenuContent
+                              side="right"
+                              align="start"
+                              className="min-w-50"
                             >
-                              <Ellipsis size={14} />
-                            </button>
-                          </DropdownMenuTrigger>
+                              <DropdownMenuItem>
+                                Copy Markdown
+                              </DropdownMenuItem>
 
-                          <DropdownMenuContent
-                            side="right"
-                            align="start"
-                            className="min-w-50"
-                          >
-                            <DropdownMenuItem>
-                              Copy Markdown
-                            </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                Quote Reply
+                              </DropdownMenuItem>
 
-                            <DropdownMenuItem>
-                              Quote Reply
-                            </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                Reference in new issue
+                              </DropdownMenuItem>
 
-                            <DropdownMenuItem>
-                              Reference in new issue
-                            </DropdownMenuItem>
+                              <DropdownMenuSeparator />
 
-                            <DropdownMenuSeparator />
+                              <DropdownMenuItem>
+                                Hide
+                              </DropdownMenuItem>
 
-                            <DropdownMenuItem>
-                              Hide
-                            </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                Edit
+                              </DropdownMenuItem>
 
-                            <DropdownMenuItem>
-                              Edit
-                            </DropdownMenuItem>
+                              <DropdownMenuSeparator />
 
-                            <DropdownMenuSeparator />
-
-                            <DropdownMenuItem variant="destructive">
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              <DropdownMenuItem variant="destructive">
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Reply */}
+              <div className="flex flex-row items-center gap-2 border-y border-foreground/10 bg-accent/40 p-2 px-2">
+                <Avatar size="sm">
+                  <AvatarImage src="https://github.com/shadcn.png" />
+                  <AvatarFallback>CN</AvatarFallback>
+                </Avatar>
+
+                <Input
+                  className="w-full"
+                  placeholder="Reply..."
+                />
               </div>
             </div>
-            <div className=" flex flex-row gap-2 items-center border-t border-foreground/10 bg-accent/40 p-2 px-2">
-              <Avatar size="sm">
-                <AvatarImage src="https://github.com/shadcn.png" />
-                <AvatarFallback>CN</AvatarFallback>
-              </Avatar>
 
-              <Input
-                className="w-full"
-                placeholder="Reply..."
-              />
+
+            <div className="flex items-center px-3 py-3 gap-2">
+              <Button
+                variant="outline"
+                onClick={toggleResolved}
+              >
+                {isResolved
+                  ? "Unresolve Conversation"
+                  : "Resolve Conversation"}
+              </Button>
+              <span className="text-muted-foreground">
+                <span className="font-semibold">thefoxcost</span>{" "}
+                marked this conversation as resolved.
+              </span>
             </div>
           </div>
-
         )}
       </div>
     </div>
   )
 }
-
 
 export function ConversationSheet() {
   return (
