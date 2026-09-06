@@ -447,18 +447,27 @@ export function ReviewItemMSG({
               </div>
 
               {/* Review notes */}
-              <div className="border-t border-foreground/10 p-3">
-                <div className="flex flex-col gap-3">
-                  {notes.map((note, index) => {
-                    if (index > 0 && !showAllComments) {
-                      return null
-                    }
+              <div className="border-t border-foreground/10 px-2 py-1.5">
+                {notes.map((note, index) => {
+                  if (index > 0 && !showAllComments) {
+                    return null
+                  }
 
-                    return (
-                      <div
-                        key={index}
-                        className="group/note flex items-start gap-2"
-                      >
+                  const isRoot = index === 0
+                  const isLastVisible =
+                    index === notes.length - 1 || !showAllComments
+
+                  return (
+                    <div
+                      key={index}
+                      className="group/note relative"
+                    >
+                      {/* Thread line */}
+                      {!isLastVisible && (
+                        <div className="absolute bottom-0 left-[11px] top-0 w-px bg-foreground/10" />
+                      )}
+
+                      <div className="relative flex items-start gap-2 py-1">
                         <Avatar className="size-5 shrink-0">
                           <AvatarImage src={note.avatar} />
                           <AvatarFallback className="text-[9px]">
@@ -468,74 +477,106 @@ export function ReviewItemMSG({
                           </AvatarFallback>
                         </Avatar>
 
-                        <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-                          <p className="text-sm font-semibold">
-                            {note.username}
+                        <div className="min-w-0 flex-1">
+                          {/* Meta line */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-semibold leading-none">
+                              {note.username}
+                            </span>
 
                             {note.username === username &&
                               isAuthor && (
-                                <span className="ml-1 font-normal text-muted-foreground">
+                                <span className="font-normal text-muted-foreground">
                                   (Author)
                                 </span>
                               )}
-                          </p>
 
-                          <p className="text-sm">
+                            <span className="text-[11px] text-muted-foreground">
+                              {isRoot ? "commented" : "replied"}
+                            </span>
+
+                            <span className="ml-auto text-[10px] text-muted-foreground">
+                              {timeAgo(date)}
+                            </span>
+
+                            <div className="opacity-0 transition-opacity group-hover/note:opacity-100">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    aria-label="Comment actions"
+                                  >
+                                    <Ellipsis size={14} />
+                                  </button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent
+                                  side="right"
+                                  align="start"
+                                  className="min-w-50"
+                                >
+                                  <DropdownMenuItem>
+                                    Copy Markdown
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuItem>
+                                    Quote Reply
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuItem>
+                                    Reference in new issue
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuSeparator />
+
+                                  <DropdownMenuItem>
+                                    Hide
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuItem>
+                                    Edit
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuSeparator />
+
+                                  <DropdownMenuItem variant="destructive">
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+
+                          {/* Message */}
+                          <p className="mt-0.5 text-sm leading-snug text-foreground/90">
                             {note.message}
                           </p>
                         </div>
-
-                        <div className="opacity-0 transition-opacity group-hover/note:opacity-100">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                type="button"
-                                className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                                aria-label="Comment actions"
-                              >
-                                <Ellipsis size={14} />
-                              </button>
-                            </DropdownMenuTrigger>
-
-                            <DropdownMenuContent
-                              side="right"
-                              align="start"
-                              className="min-w-50"
-                            >
-                              <DropdownMenuItem>
-                                Copy Markdown
-                              </DropdownMenuItem>
-
-                              <DropdownMenuItem>
-                                Quote Reply
-                              </DropdownMenuItem>
-
-                              <DropdownMenuItem>
-                                Reference in new issue
-                              </DropdownMenuItem>
-
-                              <DropdownMenuSeparator />
-
-                              <DropdownMenuItem>
-                                Hide
-                              </DropdownMenuItem>
-
-                              <DropdownMenuItem>
-                                Edit
-                              </DropdownMenuItem>
-
-                              <DropdownMenuSeparator />
-
-                              <DropdownMenuItem variant="destructive">
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
                       </div>
-                    )
-                  })}
-                </div>
+                    </div>
+                  )
+                })}
+
+                {/* Collapsed replies indicator */}
+                {!showAllComments && notes.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllComments(true)}
+                    className="flex items-center gap-1.5 py-0.5 pl-7 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <span>
+                      <span className="font-medium">
+                        {notes.length - 1}
+                      </span>{" "}
+                      {notes.length - 1 === 1
+                        ? "reply"
+                        : "replies"}{" "}
+                      hidden
+                    </span>
+                    <ChevronDown size={10} className="rotate-[-90deg]" />
+                  </button>
+                )}
               </div>
 
               {/* Reply */}
