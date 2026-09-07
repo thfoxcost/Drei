@@ -18,11 +18,13 @@ import {
 } from "@/components/ui/tabs";
 import Commits from "./content/commits";
 import {
+  CheckAndMergeItem,
   CommitItemMSG,
   ConversationSheet,
   ReviewItemMSG,
 } from "./content/conversation";
 import CommentItem from "./content/conversation";
+import { Separator } from "#/components/ui/separator";
 
 function PRdetail({ pull }: { pull: string }) {
   const stats = {
@@ -341,13 +343,15 @@ function PRdetail({ pull }: { pull: string }) {
                         />
                       );
                     })}
+
+                  <Separator className="ml-9 w-[200px]" />
+                  <CheckAndMergeItem mergeState="checking" />
                 </div>
               </div>
 
               <ConversationSheet />
             </div>
           </TabsContent>
-
           <TabsContent value="commits">
             <Commits />
           </TabsContent>

@@ -296,8 +296,8 @@ export function ReviewItemMSG({
             <div
               onClick={toggleExpanded}
               className={`truncate font-mono text-xs ${isDisabled
-                  ? "cursor-default opacity-50"
-                  : "cursor-pointer hover:text-blue-400 hover:underline"
+                ? "cursor-default opacity-50"
+                : "cursor-pointer hover:text-blue-400 hover:underline"
                 }`}
             >
               {filePath}
@@ -367,8 +367,8 @@ export function ReviewItemMSG({
         {isExpanded && (
           <div
             className={`overflow-x-auto rounded-b-sm border border-foreground/20 border-t-0 ${isDisabled
-                ? "select-none"
-                : ""
+              ? "select-none"
+              : ""
               }`}
           >
             {/* Disabled review area */}
@@ -494,11 +494,6 @@ export function ReviewItemMSG({
                             <span className="text-[11px] text-muted-foreground">
                               {isRoot ? "commented" : "replied"}
                             </span>
-
-                            <span className="ml-auto text-[10px] text-muted-foreground">
-                              {timeAgo(date)}
-                            </span>
-
                             <div className="opacity-0 transition-opacity group-hover/note:opacity-100">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -546,6 +541,11 @@ export function ReviewItemMSG({
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
+                            <span className="ml-auto text-[10px] text-muted-foreground">
+                              {timeAgo(date)}
+                            </span>
+
+
                           </div>
 
                           {/* Message */}
@@ -618,7 +618,160 @@ export function ReviewItemMSG({
 export function ConversationSheet() {
   return (
     <div className="w-120">
-      sd
+      this is conversation sheet
+    </div>
+  )
+}
+
+
+
+
+type MergeState = "checking" | "mergeable" | "conflicted"
+
+type CheckAndMergeItemProps = {
+  mergeState: MergeState
+}
+
+export function CheckAndMergeItem({
+  mergeState,
+}: CheckAndMergeItemProps) {
+  const isChecking = mergeState === "checking"
+  const isMergeable = mergeState === "mergeable"
+  const isConflicted = mergeState === "conflicted"
+
+  return (
+    <div className="ml-9 group flex w-full flex-row gap-4">
+      <div
+        className={`flex size-11 shrink-0 items-center justify-center rounded-lg p-2 ${
+          isMergeable
+            ? "bg-green-500/10"
+            : isConflicted
+              ? "bg-red-500/10"
+              : "bg-yellow-500/10"
+        }`}
+      >
+        {isConflicted ? (
+          <svg
+            className="size-5 text-foreground"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          >
+            <path d="M12 6h4a2 2 0 0 1 2 2v7M6 12v9M9 3L3 9m6 0L3 3" />
+            <circle cx="18" cy="18" r="3" />
+          </svg>
+        ) : (
+          <svg
+            className="size-5 text-foreground"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+          >
+            <path
+              fill="currentColor"
+              d="M384 224c-23.637 0-44.307 12.89-55.391 32H319c-42.464 0-79.99-17.904-111.535-53.214-20.356-22.787-33.493-48.869-37.856-58.218C183.301 132.822 192 115.413 192 96c0-35.29-28.71-64-64-64S64 60.71 64 96c0 23.637 12.89 44.307 32 55.391V360.61C76.89 371.693 64 392.363 64 416c0 35.29 28.71 64 64 64s64-28.71 64-64c0-23.637-12.89-44.307-32-55.391V245.692C203.553 294.307 258.468 320 319 320h9.609c11.084 19.11 31.754 32 55.391 32 35.29 0 64-28.71 64-64s-28.71-64-64-64zM128 64c17.673 0 32 14.327 32 32s-14.327 32-32 32-32-14.327-32-32 14.327-32 32-32zm0 384c-17.673 0-32-14.327-32-32s14.327-32 32-32 32 14.327 32 32-14.327 32-32 32zm256-128c-17.673 0-32-14.327-32-32s14.327-32 32-32 32 14.327 32 32-14.327 32-32 32z"
+            />
+          </svg>
+        )}
+      </div>
+
+      <div
+        className={`flex flex-col overflow-hidden rounded-md border ${
+          isMergeable
+            ? "border-green-500/40"
+            : isConflicted
+              ? "border-red-500/40"
+              : "border-yellow-500/40"
+        }`}
+      >
+        <div className="flex items-center gap-2 p-4 w-[860px]">
+          {isChecking ? (
+            <svg
+              className="size-10 shrink-0 text-yellow-500"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="3"
+              />
+            </svg>
+          ) : isMergeable ? (
+            <svg
+              className="size-11 shrink-0 text-green-500"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+            >
+              <path
+                fill="currentColor"
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12zm13.707-1.293a1 1 0 0 0-1.414-1.414L11 12.586l-1.293-1.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z"
+              />
+            </svg>
+          ) : (
+            <svg
+              className="size-10 shrink-0 text-red-500"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+            >
+              <path
+                fill="currentColor"
+                d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2m3.535 6.465a1 1 0 0 0-1.414 0L12 10.585l-2.121-2.12a1 1 0 1 0-1.414 1.414L10.585 12l-2.12 2.121a1 1 0 1 0 1.414 1.414L12 13.415l2.121 2.12a1 1 0 1 0 1.414-1.414L13.415 12l2.12-2.121a1 1 0 0 0 0-1.414"
+              />
+            </svg>
+          )}
+
+          <div className="flex flex-col gap-0.5">
+            <span className="text-base font-semibold">
+              {isChecking
+                ? "Checking mergeability"
+                : isMergeable
+                  ? "No conflicts with base branch"
+                  : "Conflicts with base branch"}
+            </span>
+
+            <span
+              className={`text-sm ${
+                isConflicted ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {isChecking
+                ? "Checking whether this pull request can be merged."
+                : isMergeable
+                  ? "Merging can be performed automatically."
+                  : "This pull request cannot be merged until the conflicts are resolved."}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-row items-center bg-accent/60 p-3">
+          <Button
+            variant="default"
+            disabled={!isMergeable}
+            className={
+              isMergeable
+                ? "w-fit bg-green-600 text-white hover:bg-green-700"
+                : isConflicted
+                  ? "w-fit bg-red-600 text-white"
+                  : "w-fit bg-yellow-600 text-white"
+            }
+          >
+            Merge pull request
+          </Button>
+
+          <span className="ml-3 text-xs text-muted-foreground">
+            You can also merge this with the command line.
+          </span>
+        </div>
+      </div>
     </div>
   )
 }
