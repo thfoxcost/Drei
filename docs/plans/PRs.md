@@ -341,13 +341,13 @@ Apply these across all screens:
 ## Summary — Build Sequence
 
 ```
-[X] 0. A New PR indicator -> item + button from shadnc (i added this manaully)
+[X] A New PR indicator -> item + button from shadnc (i added this manaully)
 1. New PR page        → branch picker + form
-[X] 2. PR list page       → tabs + search + list
-3. PR detail shell    → header + tab bar
-4. Conversation tab   → description + comments + events
+[X] PR list page       → tabs + search + list
+[X] PR detail shell    → header + tab bar
+[x] Conversation tab   → description + comments + events
 [X] Commits tab        → commit list
 6. File Changes tab   → diff viewer
-7. Merge button       → merge flow
-8. Empty/loading/error → polish across all screens
+[X] Merge button       → merge flow
+[x] Empty/loading/error → polish across all screens
 ```
