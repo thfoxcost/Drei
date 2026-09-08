@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Pen,
 } from "lucide-react";
+import { useState } from "react";
 import {
   Tabs,
   TabsContent,
@@ -25,8 +26,11 @@ import {
   ReviewItemMSG,
 } from "./content/conversation";
 import CommentItem from "./content/conversation";
+import Changedfiles from "./content/changed-files";
 
 function PRdetail({ pull }: { pull: string }) {
+  const [activeTab, setActiveTab] = useState("conversation");
+
   const stats = {
     conversation: 8,
     commits: 4,
@@ -54,6 +58,7 @@ function PRdetail({ pull }: { pull: string }) {
       message: "feat: add pull request tabs and statistics",
       hash: "b72c410",
     },
+
     {
       type: "commit" as const,
       date: "2026-08-29T09:20:00",
@@ -88,287 +93,325 @@ function PRdetail({ pull }: { pull: string }) {
 
   const maxSquares = 5;
 
-  const greenSquares = Math.min(stats.additions, maxSquares);
+  const greenSquares = Math.min(
+    stats.additions,
+    maxSquares,
+  );
 
   const redSquares = Math.min(
     stats.deletions,
     maxSquares - greenSquares,
   );
 
-  const emptySquares = maxSquares - greenSquares - redSquares;
+  const emptySquares =
+    maxSquares - greenSquares - redSquares;
 
   return (
-    <div>
-      <h1 className="flex min-w-0 items-baseline gap-1 truncate text-3xl font-medium tracking-tight">
-        <span className="min-w-0 truncate">
-          feat: implement pull requests feature with UI components
-        </span>
+    <div
+      className={
+        activeTab === "changes"
+          ? "mx-5 mb-10"
+          : "mx-30 mb-10"
+      }
+    >
+      <div className="pt-1">
+        <h1 className="flex min-w-0 items-baseline gap-1 truncate text-3xl font-medium tracking-tight">
+          <span className="min-w-0 truncate">
+            feat: implement pull requests feature with UI components
+          </span>
 
-        <span className="shrink-0 font-light text-muted-foreground">
-          #{pull}
-        </span>
+          <span className="shrink-0 font-light text-muted-foreground">
+            #{pull}
+          </span>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          <Button variant="outline">
-            <svg
-              className="text-green-500"
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-            >
-              <g fill="none">
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12zm13.707-1.293a1 1 0 0 0-1.414-1.414L11 12.586l-1.293-1.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z"
-                  fill="currentColor"
-                />
-              </g>
-            </svg>
-            Able to merge
-          </Button>
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <Button variant="outline">
+              <svg
+                className="text-green-500"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+              >
+                <g fill="none">
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12zm13.707-1.293a1 1 0 0 0-1.414-1.414L11 12.586l-1.293-1.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z"
+                    fill="currentColor"
+                  />
+                </g>
+              </svg>
 
-          <Button variant="outline">
-            <Pen />
+              Able to merge
+            </Button>
+
+            <Button variant="outline">
+              <Pen />
+            </Button>
+          </div>
+        </h1>
+
+        <div className="mt-2 flex items-center gap-2">
+          <Badge
+            variant="secondary"
+            className="h-7 gap-1.5 bg-green-600 text-sm text-background"
+          >
+            <GitPullRequest className="size-4 shrink-0" />
+            <span className="font-bold">Open</span>
+          </Badge>
+
+          <span className="text-sm text-muted-foreground">
+            <span className="font-semibold underline">
+              thefoxcost
+            </span>{" "}
+            wants to merge 2 commits into{" "}
+            <ReuiBadge variant="save-info">main</ReuiBadge>{" "}
+            from{" "}
+            <ReuiBadge variant="save-info">
+              feat/pulls
+            </ReuiBadge>
+          </span>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground"
+          >
+            <Copy />
           </Button>
         </div>
-      </h1>
 
-      <div className="mt-2 flex items-center gap-2">
-        <Badge
-          variant="secondary"
-          className="h-7 gap-1.5 bg-green-600 text-sm"
-        >
-          <GitPullRequest className="size-4 shrink-0" />
-          <span className="font-bold">Open</span>
-        </Badge>
-
-        <span className="text-sm text-muted-foreground">
-          <span className="font-semibold underline">thefoxcost</span>{" "}
-          wants to merge 2 commits into{" "}
-          <ReuiBadge variant="save-info">main</ReuiBadge> from{" "}
-          <ReuiBadge variant="save-info">feat/pulls</ReuiBadge>
-        </span>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground"
-        >
-          <Copy />
-        </Button>
-      </div>
-
-      <div className="mt-6">
-        <Tabs defaultValue="conversation" className="gap-4">
-          <div className="flex items-center justify-between border-b">
-            <TabsList className="justify-start rounded-none bg-transparent p-0">
-              <TabsTrigger
-                value="conversation"
-                className="
-                  data-active:border-b-background!
-                  data-active:border-border
-                  bg-transparent!
-                  shadow-none!
-                  data-active:-mb-0.75
-                  data-active:rounded-b-none
-                  data-active:border-b-2
-                  gap-1.5
-                "
-              >
-                <MessageSquare className="size-4" />
-                Conversation
-                <Badge
-                  variant="secondary"
-                  className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
+        <div className="mt-6">
+          <Tabs
+            defaultValue="conversation"
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="gap-4"
+          >
+            <div className="flex items-center justify-between border-b">
+              <TabsList className="justify-start rounded-none bg-transparent p-0">
+                <TabsTrigger
+                  value="conversation"
+                  className="
+                    data-active:border-b-background!
+                    data-active:border-border
+                    bg-transparent!
+                    shadow-none!
+                    data-active:-mb-0.75
+                    data-active:rounded-b-none
+                    data-active:border-b-2
+                    gap-1.5
+                  "
                 >
-                  {stats.conversation}
-                </Badge>
-              </TabsTrigger>
+                  <MessageSquare className="size-4" />
+                  Conversation
 
-              <TabsTrigger
-                value="commits"
-                className="
-                  data-active:border-b-background!
-                  data-active:border-border
-                  bg-transparent!
-                  shadow-none!
-                  data-active:-mb-0.75
-                  data-active:rounded-b-none
-                  data-active:border-b-2
-                  gap-1.5
-                "
-              >
-                <GitCommit className="size-4" />
-                Commits
-                <Badge
-                  variant="secondary"
-                  className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
+                  <Badge
+                    variant="secondary"
+                    className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
+                  >
+                    {stats.conversation}
+                  </Badge>
+                </TabsTrigger>
+
+                <TabsTrigger
+                  value="commits"
+                  className="
+                    data-active:border-b-background!
+                    data-active:border-border
+                    bg-transparent!
+                    shadow-none!
+                    data-active:-mb-0.75
+                    data-active:rounded-b-none
+                    data-active:border-b-2
+                    gap-1.5
+                  "
                 >
-                  {stats.commits}
-                </Badge>
-              </TabsTrigger>
+                  <GitCommit className="size-4" />
+                  Commits
 
-              <TabsTrigger
-                disabled
-                value="checks"
-                className="
-                  data-active:border-b-background!
-                  data-active:border-border
-                  bg-transparent!
-                  shadow-none!
-                  data-active:-mb-0.75
-                  data-active:rounded-b-none
-                  data-active:border-b-2
-                  gap-1.5
-                "
-              >
-                <ListChecks className="size-4" />
-                Checks
-                <Badge
-                  variant="secondary"
-                  className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
+                  <Badge
+                    variant="secondary"
+                    className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
+                  >
+                    {stats.commits}
+                  </Badge>
+                </TabsTrigger>
+
+                <TabsTrigger
+                  disabled
+                  value="checks"
+                  className="
+                    data-active:border-b-background!
+                    data-active:border-border
+                    bg-transparent!
+                    shadow-none!
+                    data-active:-mb-0.75
+                    data-active:rounded-b-none
+                    data-active:border-b-2
+                    gap-1.5
+                  "
                 >
-                  {stats.checks}
-                </Badge>
-              </TabsTrigger>
+                  <ListChecks className="size-4" />
+                  Checks
 
-              <TabsTrigger
-                value="changes"
-                className="
-                  data-active:border-b-background!
-                  data-active:border-border
-                  bg-transparent!
-                  shadow-none!
-                  data-active:-mb-0.75
-                  data-active:rounded-b-none
-                  data-active:border-b-2
-                  gap-1.5
-                "
-              >
-                <FileDiff className="size-4" />
-                Files changed
-                <Badge
-                  variant="secondary"
-                  className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
+                  <Badge
+                    variant="secondary"
+                    className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
+                  >
+                    {stats.checks}
+                  </Badge>
+                </TabsTrigger>
+
+                <TabsTrigger
+                  value="changes"
+                  className="
+                    data-active:border-b-background!
+                    data-active:border-border
+                    bg-transparent!
+                    shadow-none!
+                    data-active:-mb-0.75
+                    data-active:rounded-b-none
+                    data-active:border-b-2
+                    gap-1.5
+                  "
                 >
-                  {stats.filesChanged}
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
+                  <FileDiff className="size-4" />
+                  Files changed
 
-            <div className="flex items-center gap-1.5 pb-2 text-xs">
-              {stats.additions > 0 && (
-                <span className="text-green-600 dark:text-green-500">
-                  +{stats.additions}
-                </span>
-              )}
+                  <Badge
+                    variant="secondary"
+                    className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
+                  >
+                    {stats.filesChanged}
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
 
-              {stats.deletions > 0 && (
-                <span className="text-red-600 dark:text-red-500">
-                  -{stats.deletions}
-                </span>
-              )}
+              <div className="flex items-center gap-1.5 pb-2 text-xs">
+                {stats.additions > 0 && (
+                  <span className="text-green-600 dark:text-green-500">
+                    +{stats.additions}
+                  </span>
+                )}
 
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: greenSquares }).map((_, index) => (
-                  <span
-                    key={`green-${index}`}
-                    className="h-2.5 w-2.5 bg-green-500"
-                  />
-                ))}
+                {stats.deletions > 0 && (
+                  <span className="text-red-600 dark:text-red-500">
+                    -{stats.deletions}
+                  </span>
+                )}
 
-                {Array.from({ length: redSquares }).map((_, index) => (
-                  <span
-                    key={`red-${index}`}
-                    className="h-2.5 w-2.5 bg-red-500"
-                  />
-                ))}
+                <div className="flex items-center gap-0.5">
+                  {Array.from({
+                    length: greenSquares,
+                  }).map((_, index) => (
+                    <span
+                      key={`green-${index}`}
+                      className="h-2.5 w-2.5 bg-green-500"
+                    />
+                  ))}
 
-                {Array.from({ length: emptySquares }).map((_, index) => (
-                  <span
-                    key={`empty-${index}`}
-                    className="h-2.5 w-2.5 bg-muted"
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
+                  {Array.from({
+                    length: redSquares,
+                  }).map((_, index) => (
+                    <span
+                      key={`red-${index}`}
+                      className="h-2.5 w-2.5 bg-red-500"
+                    />
+                  ))}
 
-          <TabsContent value="conversation">
-            <div className="flex w-full flex-row gap-4">
-              <div className="flex w-full flex-col gap-4">
-                <div className="flex w-full flex-col gap-4">
-                  {[...conversation]
-                    .sort(
-                      (a, b) =>
-                        new Date(a.date).getTime() -
-                        new Date(b.date).getTime(),
-                    )
-                    .map((item, index) => {
-                      if (item.type === "comment") {
-                        return (
-                          <CommentItem
-                            key={`${item.type}-${index}`}
-                            username={item.username}
-                            avatarLink={item.avatarLink}
-                            comment={item.comment}
-                            date={item.date}
-                          />
-                        );
-                      }
-
-                      if (item.type === "review") {
-                        return (
-                          <ReviewItemMSG
-                            key={`${item.type}-${index}`}
-                            username={item.username}
-                            avatarLink={item.avatarLink}
-                            date={item.date}
-                            filePath={item.filePath}
-                            isOutdated={item.isOutdated}
-                          />
-                        );
-                      }
-
-                      return (
-                        <CommitItemMSG
-                          key={`${item.type}-${index}`}
-                          username={item.username}
-                          avatarLink={item.avatarLink}
-                          message={item.message}
-                          hash={item.hash}
-                          date={item.date}
-                        />
-                      );
-                    })}
-                  <div className="border-y ml-9" />
-                  <CheckAndMergeItem mergeState="conflicted" />
-                  <div className="border-y ml-9" />
-                  <CommentEditor />
+                  {Array.from({
+                    length: emptySquares,
+                  }).map((_, index) => (
+                    <span
+                      key={`empty-${index}`}
+                      className="h-2.5 w-2.5 bg-muted"
+                    />
+                  ))}
                 </div>
               </div>
-
-              <ConversationSheet />
             </div>
-          </TabsContent>
-          <TabsContent value="commits">
-            <Commits />
-          </TabsContent>
 
-          <TabsContent value="checks">
-            <p className="text-sm text-muted-foreground">
-              Checks for this pull request go here.
-            </p>
-          </TabsContent>
+            <TabsContent value="conversation">
+              <div className="flex w-full flex-row gap-4">
+                <div className="flex w-full flex-col gap-4">
+                  <div className="flex w-full flex-col gap-4">
+                    {[...conversation]
+                      .sort(
+                        (a, b) =>
+                          new Date(a.date).getTime() -
+                          new Date(b.date).getTime(),
+                      )
+                      .map((item, index) => {
+                        if (item.type === "comment") {
+                          return (
+                            <CommentItem
+                              key={`${item.type}-${index}`}
+                              username={item.username}
+                              avatarLink={item.avatarLink}
+                              comment={item.comment}
+                              date={item.date}
+                            />
+                          );
+                        }
 
-          <TabsContent value="changes">
-            <p className="text-sm text-muted-foreground">
-              Changes for this pull request go here.
-            </p>
-          </TabsContent>
-        </Tabs>
+                        if (item.type === "review") {
+                          return (
+                            <ReviewItemMSG
+                              key={`${item.type}-${index}`}
+                              username={item.username}
+                              avatarLink={item.avatarLink}
+                              date={item.date}
+                              filePath={item.filePath}
+                              isOutdated={item.isOutdated}
+                            />
+                          );
+                        }
+
+                        return (
+                          <CommitItemMSG
+                            key={`${item.type}-${index}`}
+                            username={item.username}
+                            avatarLink={item.avatarLink}
+                            message={item.message}
+                            hash={item.hash}
+                            date={item.date}
+                          />
+                        );
+                      })}
+
+                    <div className="ml-9 border-y" />
+
+                    <CheckAndMergeItem
+                      mergeState="conflicted"
+                    />
+
+                    <div className="ml-9 border-y" />
+
+                    <CommentEditor />
+                  </div>
+                </div>
+
+                <ConversationSheet />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="commits">
+              <Commits />
+            </TabsContent>
+
+            <TabsContent value="checks">
+              <p className="text-sm text-muted-foreground">
+                Checks for this pull request go here.
+              </p>
+            </TabsContent>
+
+            <TabsContent value="changes">
+              <Changedfiles />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
