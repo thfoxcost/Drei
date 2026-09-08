@@ -1,7 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
-	CircleCheck,
-	CircleDot,
 	GitMerge,
 	GitPullRequest,
 	Plus,
