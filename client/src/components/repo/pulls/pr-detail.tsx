@@ -19,12 +19,12 @@ import {
 import Commits from "./content/commits";
 import {
   CheckAndMergeItem,
+  CommentEditor,
   CommitItemMSG,
   ConversationSheet,
   ReviewItemMSG,
 } from "./content/conversation";
 import CommentItem from "./content/conversation";
-import { Separator } from "#/components/ui/separator";
 
 function PRdetail({ pull }: { pull: string }) {
   const stats = {
@@ -343,9 +343,10 @@ function PRdetail({ pull }: { pull: string }) {
                         />
                       );
                     })}
-
-                  <Separator className="ml-9 w-[200px]" />
-                  <CheckAndMergeItem mergeState="checking" />
+                  <div className="border-y ml-9" />
+                  <CheckAndMergeItem mergeState="conflicted" />
+                  <div className="border-y ml-9" />
+                  <CommentEditor />
                 </div>
               </div>
 
