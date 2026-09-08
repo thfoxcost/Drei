@@ -162,7 +162,7 @@ function Changedfiles() {
                     </TooltipTrigger>
 
                     <TooltipContent>
-                        <p>Reviewed progress</p>
+                        <p>Viewing progress</p>
                     </TooltipContent>
                 </Tooltip>
                 <DropdownMenu>
