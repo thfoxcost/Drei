@@ -157,7 +157,7 @@ function MarkdownEditor({
 				</TabsContent>
 
 				<TabsContent value="preview" className="m-0">
-					<div className="max-h-[420px] min-h-[420px] overflow-auto px-4 py-3">
+					<div className="max-h-[420px] overflow-auto px-4 py-3">
 						{value.trim() ? (
 							<Markdown content={value} />
 						) : (

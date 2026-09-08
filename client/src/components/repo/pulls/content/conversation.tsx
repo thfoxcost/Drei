@@ -1,3 +1,14 @@
+
+
+import { ImagePlus } from "lucide-react";
+import { Markdown } from "#/components/repo/issues/markdown";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "#/components/ui/tabs";
+import { Textarea } from "#/components/ui/textarea";
 import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar"
 import {
@@ -615,15 +626,6 @@ export function ReviewItemMSG({
   )
 }
 
-export function ConversationSheet() {
-  return (
-    <div className="w-120">
-      this is conversation sheet
-    </div>
-  )
-}
-
-
 
 
 type MergeState = "checking" | "mergeable" | "conflicted"
@@ -642,13 +644,12 @@ export function CheckAndMergeItem({
   return (
     <div className="ml-9 group flex w-full flex-row gap-4">
       <div
-        className={`flex size-11 shrink-0 items-center justify-center rounded-lg p-2 ${
-          isMergeable
-            ? "bg-green-500/10"
-            : isConflicted
-              ? "bg-red-500/10"
-              : "bg-yellow-500/10"
-        }`}
+        className={`flex size-11 shrink-0 items-center justify-center rounded-lg p-2 ${isMergeable
+          ? "bg-green-500/10"
+          : isConflicted
+            ? "bg-red-500/10"
+            : "bg-yellow-500/10"
+          }`}
       >
         {isConflicted ? (
           <svg
@@ -679,15 +680,14 @@ export function CheckAndMergeItem({
       </div>
 
       <div
-        className={`flex flex-col overflow-hidden rounded-md border ${
-          isMergeable
-            ? "border-green-500/40"
-            : isConflicted
-              ? "border-red-500/40"
-              : "border-yellow-500/40"
-        }`}
+        className={`flex flex-col overflow-hidden rounded-md border ${isMergeable
+          ? "border-green-500/40"
+          : isConflicted
+            ? "border-red-500/40"
+            : "border-yellow-500/40"
+          }`}
       >
-        <div className="flex items-center gap-2 p-4 w-[860px]">
+        <div className="flex items-center gap-2 p-4 w-[880px]">
           {isChecking ? (
             <svg
               className="size-10 shrink-0 text-yellow-500"
@@ -739,9 +739,8 @@ export function CheckAndMergeItem({
             </span>
 
             <span
-              className={`text-sm ${
-                isConflicted ? "text-foreground" : "text-muted-foreground"
-              }`}
+              className={`text-sm ${isConflicted ? "text-foreground" : "text-muted-foreground"
+                }`}
             >
               {isChecking
                 ? "Checking whether this pull request can be merged."
@@ -774,4 +773,130 @@ export function CheckAndMergeItem({
       </div>
     </div>
   )
+}
+
+
+export function ConversationSheet() {
+  return (
+    <div className="w-[500px]">ds</div>
+  )
+}
+
+
+
+type CommentEditorProps = {
+  placeholder?: string;
+  disabled?: boolean;
+};
+
+export function CommentEditor({
+  placeholder = "Leave a comment...",
+  disabled = false,
+}: CommentEditorProps) {
+  const [value, setValue] = useState("");
+  const [tab, setTab] = useState<"write" | "preview">("write");
+
+  return (
+    <div className="group ml-9 flex w-full flex-col gap-3">
+
+      <div className="flex w-full flex-row gap-4">
+        <Avatar className="size-9 shrink-0">
+          <AvatarImage src="https://github.com/shadcn.png" />
+          <AvatarFallback>TH</AvatarFallback>
+        </Avatar>
+
+        <div className="flex w-full max-w-[890px] flex-col gap-1">
+          <h1 className="text-base font-semibold">Add a comment</h1>
+          <div className="w-full overflow-hidden rounded-lg border">
+            <Tabs
+              value={tab}
+              onValueChange={(value) =>
+                setTab(value as "write" | "preview")
+              }
+            >
+              <div className="flex items-center justify-between gap-2 border-b bg-muted/10 pr-1.5">
+                <TabsList className="m-1 h-7 bg-transparent">
+                  <TabsTrigger value="write" className="px-2.5 text-sm">
+                    Write
+                  </TabsTrigger>
+
+                  <TabsTrigger value="preview" className="px-2.5 text-sm">
+                    Preview
+                  </TabsTrigger>
+                </TabsList>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={disabled}
+                  className="text-muted-foreground"
+                >
+                  <ImagePlus className="size-4" />
+                  <span>Attach image</span>
+                </Button>
+              </div>
+
+              <TabsContent value="write" className="m-0 p-0">
+                <Textarea
+                  rows={6}
+                  className="max-h-auto resize-none rounded-none border-0 bg-transparent focus-visible:ring-0 dark:bg-transparent"
+                  placeholder={placeholder}
+                  value={value}
+                  onChange={(event) => setValue(event.target.value)}
+                  disabled={disabled}
+                />
+              </TabsContent>
+
+              <TabsContent
+                value="preview"
+                className="m-0 overflow-hidden"
+              >
+                <div className="max-h-auto overflow-auto px-4 py-3">
+                  {value.trim() ? (
+                    <Markdown content={value} />
+                  ) : (
+                    <p className="text-sm italic text-muted-foreground">
+                      Nothing to preview.
+                    </p>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 mt-2">
+            <Button
+              type="button"
+              variant="outline"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="text-red-500"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+              >
+                <circle cx="6" cy="6" r="3" />
+                <path d="M6 9v12M21 3l-6 6m6 0l-6-6m3 8.5V15" />
+                <circle cx="18" cy="18" r="3" />
+              </svg>
+
+              {value.trim() ? "Close with comment" : "Close Pull Request"}
+            </Button>
+            <Button
+              type="button"
+              disabled={disabled || !value.trim()}
+            >
+              Comment
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
