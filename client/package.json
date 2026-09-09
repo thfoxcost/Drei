@@ -23,6 +23,7 @@
     "@radix-ui/react-slot": "^1.3.0",
     "@radix-ui/react-use-controllable-state": "^1.2.6",
     "@rexa-developer/tiks": "^0.3.0",
+    "@shadcn/react": "^0.3.1",
     "@shikijs/transformers": "^4.4.3",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",

@@ -1,12 +1,15 @@
+"use client"
+
 import * as React from "react"
+import { toast } from "sonner"
+
+import { Separator } from "#/components/ui/separator"
 import {
     Avatar,
     AvatarFallback,
     AvatarImage,
 } from "#/components/ui/avatar"
-import {
-    Checkbox,
-} from "#/components/ui/checkbox"
+import { Checkbox } from "#/components/ui/checkbox"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,13 +24,15 @@ import {
 } from "#/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { Input } from "#/components/ui/input"
+import { Markdown } from "#/components/repo/issues/markdown"
+
 import {
     Diff,
     Download,
     Ellipsis,
-    FileCode,
     Folder,
     GitCommitHorizontal,
+    ImagePlus,
     ListChevronsDownUp,
     ListChevronsUpDown,
     PanelRightOpen,
@@ -36,6 +41,7 @@ import {
     SquareMinus,
     SquarePlus,
 } from "lucide-react"
+
 import {
     type TreeDataItem,
     TreeView,
@@ -45,47 +51,86 @@ import CodeCommitBlock, {
     type FileDiff,
 } from "../../commits/code-commit"
 
+import {
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "#/components/ui/sheet"
+
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "#/components/ui/tabs"
+
+import { Textarea } from "#/components/ui/textarea"
+
+import {
+    Questionnaire,
+    QuestionnaireChoice,
+    QuestionnaireChoices,
+    QuestionnaireError,
+    QuestionnaireItem,
+} from "@/components/ui/questionnaire"
+
+/*
+|--------------------------------------------------------------------------
+| Commits
+|--------------------------------------------------------------------------
+*/
+
 const commits = [
     {
         author: "thefoxcost",
         avatar: "https://github.com/shadcn.png",
         fallback: "CN",
-        message: "Fix commit page layout and improve changed files UI",
+        message:
+            "Fix commit page layout and improve changed files UI",
         hash: "c33e686",
     },
     {
         author: "vercel",
         avatar: "https://github.com/vercel.png",
         fallback: "VC",
-        message: "Update repository navigation and sidebar behavior",
+        message:
+            "Update repository navigation and sidebar behavior",
         hash: "a82f19d",
     },
     {
         author: "torvalds",
         avatar: "https://github.com/torvalds.png",
         fallback: "LT",
-        message: "Refactor commit diff rendering",
+        message:
+            "Refactor commit diff rendering",
         hash: "7be42c1",
     },
     {
         author: "gaearon",
         avatar: "https://github.com/gaearon.png",
         fallback: "GA",
-        message: "Improve component rendering performance",
+        message:
+            "Improve component rendering performance",
         hash: "f19d3a8",
     },
     {
         author: "yyx990803",
         avatar: "https://github.com/yyx990803.png",
         fallback: "YY",
-        message: "Update dependencies and clean up unused imports",
+        message:
+            "Update dependencies and clean up unused imports",
         hash: "42dc7e5",
     },
     {
         author: "sindresorhus",
         avatar: "https://github.com/sindresorhus.png",
         fallback: "SO",
-        message: "Add missing tests for commit components",
+        message:
+            "Add missing tests for commit components",
         hash: "91ac4f2",
     },
 ]
@@ -104,7 +149,8 @@ const fileDiffs: FileDiff[] = [
         deletions: 8,
         hunks: [
             {
-                header: "@@ -42,12 +42,25 @@ function CodeCommitBlock",
+                header:
+                    "@@ -42,12 +42,25 @@ function CodeCommitBlock",
                 lines: [
                     {
                         type: "unchanged",
@@ -866,7 +912,7 @@ const filenameToIcon: Record<string, string> = {
     "README.md": "readme.svg",
     "readme.md": "readme.svg",
     "CHANGELOG.md": "changelog.svg",
-    "LICENSE": "key.svg",
+    LICENSE: "key.svg",
 }
 
 function getFileIconName(path: string): string {
@@ -883,16 +929,16 @@ function getFileIconName(path: string): string {
         return "file.svg"
     }
 
-    const ext = fileName
-        .slice(dotIndex + 1)
-        .toLowerCase()
+    const ext = fileName.slice(dotIndex + 1).toLowerCase()
 
     return extensionToIcon[ext] ?? "file.svg"
 }
 
 function makeFileIconComponent(
     svgName: string,
-): React.ComponentType<{ className?: string }> {
+): React.ComponentType<{
+    className?: string
+}> {
     const Component = ({
         className,
     }: {
@@ -908,7 +954,9 @@ function makeFileIconComponent(
                 src={`/icons/${svgName}`}
                 alt=""
                 className={`h-4.5 w-4.5 ${filtered}`}
-                style={{ filter: "grayscale(1)" }}
+                style={{
+                    filter: "grayscale(1)",
+                }}
             />
         )
     }
@@ -930,8 +978,14 @@ type ChangeStatus =
     | "removed"
 
 function getStatusIcon(status: ChangeStatus) {
-    if (status === "added") return SquarePlus
-    if (status === "changed") return SquareDot
+    if (status === "added") {
+        return SquarePlus
+    }
+
+    if (status === "changed") {
+        return SquareDot
+    }
+
     return SquareMinus
 }
 
@@ -954,14 +1008,21 @@ function getStatusColor(status: ChangeStatus) {
 */
 
 function filePathToId(path: string) {
-    return `diff-${path.replace(/[^a-zA-Z0-9]/g, "-")}`
+    return `diff-${path.replace(
+        /[^a-zA-Z0-9]/g,
+        "-",
+    )}`
 }
 
-function getChangeStatus(
-    action: string,
-): ChangeStatus {
-    if (action === "added") return "added"
-    if (action === "removed") return "removed"
+function getChangeStatus(action: string): ChangeStatus {
+    if (action === "added") {
+        return "added"
+    }
+
+    if (action === "removed") {
+        return "removed"
+    }
+
     return "changed"
 }
 
@@ -984,6 +1045,7 @@ function CircularProgress({
 }: CircularProgressProps) {
     const radius = (size - strokeWidth) / 2
     const circumference = 2 * Math.PI * radius
+
     const offset =
         circumference -
         (value / 100) * circumference
@@ -1013,7 +1075,7 @@ function CircularProgress({
                 strokeDasharray={circumference}
                 strokeDashoffset={offset}
                 strokeLinecap="round"
-                className="stroke-green-600 dark:stroke-green-500 transition-all duration-300"
+                className="stroke-green-600 transition-all duration-300 dark:stroke-green-500"
             />
         </svg>
     )
@@ -1034,7 +1096,9 @@ function FileRowLabel({
     fileName: string
     status: ChangeStatus
     checked: boolean
-    onCheckedChange: (checked: boolean) => void
+    onCheckedChange: (
+        checked: boolean,
+    ) => void
 }) {
     const StatusIcon = getStatusIcon(status)
 
@@ -1053,11 +1117,10 @@ function FileRowLabel({
             />
 
             <span
-                className={`min-w-0 flex-1 truncate ${
-                    checked
-                        ? "text-muted-foreground"
-                        : ""
-                }`}
+                className={`min-w-0 flex-1 truncate ${checked
+                    ? "text-muted-foreground"
+                    : ""
+                    }`}
             >
                 {fileName}
             </span>
@@ -1164,31 +1227,98 @@ function buildFileTree(
 
 /*
 |--------------------------------------------------------------------------
+| Review questionnaire
+|--------------------------------------------------------------------------
+*/
+
+const reviewQuestionnaireItems = [
+    {
+        choices: [
+            {
+                description:
+                    "Leave feedback without approving or blocking the pull request.",
+                label: "Comment",
+                value: "comment",
+            },
+            {
+                description:
+                    "Approve the pull request when everything looks good.",
+                label: "Approve",
+                value: "approve",
+            },
+            {
+                description:
+                    "Block the pull request until the issues are fixed.",
+                label: "Request changes",
+                value: "request_changes",
+            },
+        ],
+        description:
+            "Choose what action you want to take on this review.",
+        name: "review-action",
+        required: true,
+        title: "What do you want to do with this review?",
+    },
+] as const
+
+/*
+|--------------------------------------------------------------------------
 | Changed files
 |--------------------------------------------------------------------------
 */
 
 function Changedfiles() {
+    /*
+     * Dumb state for now.
+     *
+     * true  = current user is the PR author
+     * false = current user is a reviewer
+     *
+     * Later this can come from your actual auth / PR data.
+     */
+    const isAuthor = false
+
     const [search, setSearch] =
         React.useState("")
 
-    const [showFileTree, setShowFileTree] =
-        React.useState(true)
+    const [
+        showFileTree,
+        setShowFileTree,
+    ] = React.useState(true)
 
-    const [viewedFiles, setViewedFiles] =
-        React.useState<Set<string>>(
-            new Set(),
-        )
+    const [
+        viewedFiles,
+        setViewedFiles,
+    ] = React.useState<Set<string>>(
+        new Set(),
+    )
 
-    const [allExpanded, setAllExpanded] =
-        React.useState(true)
+    const [
+        allExpanded,
+        setAllExpanded,
+    ] = React.useState(true)
 
-    const [expandGeneration, setExpandGeneration] =
-        React.useState(0)
+    const [
+        expandGeneration,
+        setExpandGeneration,
+    ] = React.useState(0)
+
+    const [
+        reviewComment,
+        setReviewComment,
+    ] = React.useState("")
+
+    const [
+        reviewTab,
+        setReviewTab,
+    ] = React.useState<
+        "write" | "preview"
+    >("write")
 
     /*
-     * Mark file as viewed / unviewed
+     * Mark file as viewed
      */
+
     const handleViewedChange = (
         path: string,
         checked: boolean,
@@ -1209,13 +1339,16 @@ function Changedfiles() {
     /*
      * Scroll to diff
      */
+
     const scrollToDiff = (path: string) => {
         const element =
             document.getElementById(
                 filePathToId(path),
             )
 
-        if (!element) return
+        if (!element) {
+            return
+        }
 
         element.scrollIntoView({
             behavior: "smooth",
@@ -1240,38 +1373,45 @@ function Changedfiles() {
     /*
      * Search files
      */
-    const filteredFiles = React.useMemo(() => {
-        const value = search
-            .trim()
-            .toLowerCase()
 
-        if (!value) {
-            return fileDiffs
-        }
-
-        return fileDiffs.filter((file) =>
-            file.path
+    const filteredFiles =
+        React.useMemo(() => {
+            const value = search
+                .trim()
                 .toLowerCase()
-                .includes(value),
-        )
-    }, [search])
+
+            if (!value) {
+                return fileDiffs
+            }
+
+            return fileDiffs.filter((file) =>
+                file.path
+                    .toLowerCase()
+                    .includes(value),
+            )
+        }, [search])
 
     /*
      * Progress
      */
+
     const totalFiles = fileDiffs.length
+
     const viewedCount = viewedFiles.size
 
     const progress =
         totalFiles === 0
             ? 0
-            : (viewedCount / totalFiles) * 100
+            : (viewedCount / totalFiles) *
+            100
 
     /*
      * Expand / collapse
      */
+
     const expandAll = () => {
         setAllExpanded(true)
+
         setExpandGeneration(
             (value) => value + 1,
         )
@@ -1279,6 +1419,7 @@ function Changedfiles() {
 
     const collapseAll = () => {
         setAllExpanded(false)
+
         setExpandGeneration(
             (value) => value + 1,
         )
@@ -1287,6 +1428,7 @@ function Changedfiles() {
     /*
      * Download diff
      */
+
     const downloadDiff = () => {
         let content = ""
 
@@ -1304,8 +1446,8 @@ function Changedfiles() {
                             ? "+"
                             : line.type ===
                                 "removed"
-                              ? "-"
-                              : " "
+                                ? "-"
+                                : " "
 
                     content += `${prefix}${line.content}\n`
                 }
@@ -1326,16 +1468,56 @@ function Changedfiles() {
 
         anchor.href = url
         anchor.download = "commit.diff"
+
         anchor.click()
 
         URL.revokeObjectURL(url)
     }
 
+    /*
+     * Submit review
+     */
+
+    const handleReviewSubmit = (
+        event: React.FormEvent<HTMLFormElement>,
+    ) => {
+        event.preventDefault()
+
+        const formData =
+            new FormData(
+                event.currentTarget,
+            )
+
+        const action =
+            formData.get("review-action")
+
+        const comment =
+            reviewComment.trim()
+
+        if (!action) {
+            toast.error(
+                "Please choose a review action.",
+            )
+
+            return
+        }
+
+        toast("Review submitted", {
+            description: [
+                `Action: ${action}`,
+                `Comment: ${comment || "None"
+                }`,
+            ].join(" · "),
+        })
+    }
+
     return (
         <div className="w-full">
             {/* Toolbar */}
+
             <div className="flex w-full items-center justify-between bg-background">
                 {/* Left */}
+
                 <div className="flex items-center gap-1">
                     <Button
                         variant="ghost"
@@ -1348,11 +1530,10 @@ function Changedfiles() {
                         }
                     >
                         <PanelRightOpen
-                            className={`size-4 transition-transform ${
-                                showFileTree
-                                    ? ""
-                                    : "rotate-180"
-                            }`}
+                            className={`size-4 transition-transform ${showFileTree
+                                ? ""
+                                : "rotate-180"
+                                }`}
                         />
 
                         <span className="sr-only">
@@ -1372,7 +1553,10 @@ function Changedfiles() {
                             with{" "}
                             <span className="font-semibold text-green-600 dark:text-green-500">
                                 {fileDiffs.reduce(
-                                    (total, file) =>
+                                    (
+                                        total,
+                                        file,
+                                    ) =>
                                         total +
                                         file.additions,
                                     0,
@@ -1382,7 +1566,10 @@ function Changedfiles() {
                             and{" "}
                             <span className="font-semibold text-red-600 dark:text-red-500">
                                 {fileDiffs.reduce(
-                                    (total, file) =>
+                                    (
+                                        total,
+                                        file,
+                                    ) =>
                                         total +
                                         file.deletions,
                                     0,
@@ -1394,19 +1581,26 @@ function Changedfiles() {
                 </div>
 
                 {/* Right */}
+
                 <div className="flex items-center gap-2">
                     {/* Viewing progress */}
+
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <div className="flex cursor-default items-center gap-1.5">
                                 <CircularProgress
-                                    value={progress}
+                                    value={
+                                        progress
+                                    }
                                     size={16}
-                                    strokeWidth={2}
+                                    strokeWidth={
+                                        2
+                                    }
                                 />
 
                                 <span className="text-xs text-muted-foreground">
-                                    {viewedCount} of{" "}
+                                    {viewedCount}{" "}
+                                    of{" "}
                                     {totalFiles}
                                 </span>
                             </div>
@@ -1414,16 +1608,22 @@ function Changedfiles() {
 
                         <TooltipContent>
                             <p>
-                                {viewedCount} of{" "}
-                                {totalFiles} files
-                                viewed
+                                {viewedCount}{" "}
+                                of{" "}
+                                {totalFiles}{" "}
+                                files viewed
                             </p>
                         </TooltipContent>
                     </Tooltip>
 
+                    <Separator orientation="vertical" />
+
                     {/* More */}
+
                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger
+                            asChild
+                        >
                             <Button
                                 variant="outline"
                                 size="icon"
@@ -1450,7 +1650,9 @@ function Changedfiles() {
                             </DropdownMenuItem>
 
                             <DropdownMenuItem
-                                onClick={expandAll}
+                                onClick={
+                                    expandAll
+                                }
                             >
                                 <ListChevronsUpDown className="mr-2 size-4" />
                                 Expand all files
@@ -1472,7 +1674,9 @@ function Changedfiles() {
                                     setViewedFiles(
                                         new Set(
                                             fileDiffs.map(
-                                                (file) =>
+                                                (
+                                                    file,
+                                                ) =>
                                                     file.path,
                                             ),
                                         ),
@@ -1495,8 +1699,11 @@ function Changedfiles() {
                     </DropdownMenu>
 
                     {/* Commits */}
+
                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger
+                            asChild
+                        >
                             <Button
                                 variant="outline"
                                 size="icon"
@@ -1515,7 +1722,9 @@ function Changedfiles() {
                                 </span>
 
                                 <span className="text-xs text-muted-foreground">
-                                    {commits.length}{" "}
+                                    {
+                                        commits.length
+                                    }{" "}
                                     commits
                                 </span>
                             </DropdownMenuItem>
@@ -1523,7 +1732,10 @@ function Changedfiles() {
                             <DropdownMenuSeparator />
 
                             {commits.map(
-                                (commit, index) => (
+                                (
+                                    commit,
+                                    index,
+                                ) => (
                                     <React.Fragment
                                         key={
                                             commit.hash
@@ -1568,47 +1780,270 @@ function Changedfiles() {
 
                                         {index <
                                             commits.length -
-                                                1 && (
-                                            <DropdownMenuSeparator />
-                                        )}
+                                            1 && (
+                                                <DropdownMenuSeparator />
+                                            )}
                                     </React.Fragment>
                                 ),
                             )}
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    <Button className="bg-green-600 text-white hover:bg-green-700">
-                        Submit review
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button className="bg-green-600 text-white hover:bg-green-700">
+                                Submit review
+                            </Button>
+                        </SheetTrigger>
 
-                        <svg
-                            className="size-1.5"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 616 614"
+                        <SheetContent
+                            side="left"
+                            className="flex w-full flex-col gap-0 p-0 min-w-[450px]"
                         >
-                            <path
-                                fill="currentColor"
-                                d="m602.442 200l-253 317c-24 29-61 29-84 0l-253-317c-24-30-12-53 25-53h540c38 0 49 23 25 53"
-                            />
-                        </svg>
-                    </Button>
+                            <form
+                                className="flex min-h-0 flex-1 flex-col"
+                                onSubmit={
+                                    handleReviewSubmit
+                                }
+                            >
+                                {/* Header */}
+
+                                <SheetHeader className="border-b px-4 py-3">
+                                    <SheetTitle className="text-base font-bold">
+                                        Finish your review
+                                    </SheetTitle>
+
+                                    <SheetDescription className="text-xs text-muted-foreground">
+                                        Add a final comment and choose an action for this review.
+                                    </SheetDescription>
+                                </SheetHeader>
+
+                                {/* Body */}
+
+                                <div className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
+                                    {/* Comment */}
+
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex flex-col text-muted-foreground">
+                                            <span className="text-sm font-medium text-foreground">
+                                                Review comment
+                                            </span>
+
+                                            <span className="flex items-center gap-1 text-xs">
+                                                <span>
+                                                    Markdown is supported for formatting your review comment.                                                </span>
+                                            </span>
+                                        </div>
+                                        <div className="w-full overflow-hidden rounded-lg border">
+                                            <Tabs
+                                                value={
+                                                    reviewTab
+                                                }
+                                                onValueChange={(
+                                                    value,
+                                                ) =>
+                                                    setReviewTab(
+                                                        value as
+                                                        | "write"
+                                                        | "preview",
+                                                    )
+                                                }
+                                            >
+                                                <div className="flex items-center justify-between gap-2 border-b bg-muted/10 pr-1.5">
+                                                    <TabsList className="m-1 h-7 bg-transparent">
+                                                        <TabsTrigger
+                                                            value="write"
+                                                            className="px-2.5 text-sm"
+                                                        >
+                                                            Write
+                                                        </TabsTrigger>
+
+                                                        <TabsTrigger
+                                                            value="preview"
+                                                            className="px-2.5 text-sm"
+                                                        >
+                                                            Preview
+                                                        </TabsTrigger>
+                                                    </TabsList>
+
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        className="h-8 gap-1.5 px-2 text-xs text-muted-foreground"
+                                                    >
+                                                        <ImagePlus className="size-4" />
+
+                                                        <span>
+                                                            Attach
+                                                            image
+                                                        </span>
+                                                    </Button>
+                                                </div>
+
+                                                <TabsContent
+                                                    value="write"
+                                                    className="m-0 p-0"
+                                                >
+                                                    <Textarea
+                                                        rows={
+                                                            10
+                                                        }
+                                                        className="h-[345px] resize-none rounded-none border-0 bg-transparent focus-visible:ring-0 dark:bg-transparent"
+                                                        placeholder="Leave a comment..."
+                                                        value={
+                                                            reviewComment
+                                                        }
+                                                        onChange={(
+                                                            event,
+                                                        ) =>
+                                                            setReviewComment(
+                                                                event
+                                                                    .target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                    />
+                                                </TabsContent>
+
+                                                <TabsContent
+                                                    value="preview"
+                                                    className="m-0 overflow-hidden"
+                                                >
+                                                    <div className="h-[345px] overflow-auto px-4 py-3">
+                                                        {reviewComment.trim() ? (
+                                                            <Markdown
+                                                                content={
+                                                                    reviewComment
+                                                                }
+                                                            />
+                                                        ) : (
+                                                            <p className="text-sm italic text-muted-foreground">
+                                                                Nothing
+                                                                to
+                                                                preview.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </TabsContent>
+                                            </Tabs>
+                                        </div>
+                                    </div>
+
+                                    {/* Review action */}
+
+                                    <Questionnaire
+                                        items={
+                                            reviewQuestionnaireItems
+                                        }
+                                        defaultItem="review-action"
+                                        className="w-full"
+                                        onSubmit={() => { }}
+                                    >
+                                        <QuestionnaireItem
+                                            name="review-action"
+                                            required
+                                        >
+                                            <QuestionnaireChoices>
+                                                <QuestionnaireChoice value="comment">
+                                                    <span className="font-medium">
+                                                        Comment
+                                                    </span>
+
+                                                    <span className="text-[12px] text-muted-foreground">
+                                                        Submit general feedback without explicit approval.
+                                                    </span>
+                                                </QuestionnaireChoice>
+
+                                                {/* Approve */}
+
+                                                <QuestionnaireChoice
+                                                    value="approve"
+                                                    disabled={
+                                                        isAuthor
+                                                    }
+                                                >
+                                                    <span className="font-medium">
+                                                        Approve
+                                                    </span>
+
+                                                    <span className="text-[12px] text-muted-foreground">
+                                                        Approve and merge these changes.
+                                                    </span>
+                                                </QuestionnaireChoice>
+
+                                                {/* Request changes */}
+
+                                                <QuestionnaireChoice
+                                                    value="request_changes"
+                                                    disabled={
+                                                        isAuthor
+                                                    }
+                                                >
+                                                    <span className="font-medium">
+                                                        Request changes
+                                                    </span>
+
+                                                    <span className="text-[12px] text-muted-foreground">
+                                                        Submit feedback suggesting changes.
+                                                    </span>
+                                                </QuestionnaireChoice>
+                                            </QuestionnaireChoices>
+
+                                            <QuestionnaireError />
+                                        </QuestionnaireItem>
+                                    </Questionnaire>
+                                </div>
+
+                                {/* Footer */}
+
+                                <div className="border-t p-4">
+                                    <div className="flex items-center justify-end gap-2">
+                                        <SheetClose
+                                            asChild
+                                        >
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                            >
+                                                Cancel
+                                            </Button>
+                                        </SheetClose>
+
+                                        <Button
+                                            type="submit"
+                                            className="bg-green-600 text-white hover:bg-green-700"
+                                        >
+                                            Submit review
+                                        </Button>
+                                    </div>
+                                </div>
+                            </form>
+                        </SheetContent>
+                    </Sheet>
                 </div>
             </div>
 
             {/* Main */}
+
             <div className="flex min-w-0">
                 {/* File tree */}
+
                 {showFileTree && (
                     <>
                         <div className="sticky top-0 ml-4 flex h-[calc(100vh-4rem)] w-[280px] shrink-0 flex-col pr-3">
                             {/* Search */}
+
                             <div className="relative mt-3">
                                 <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
                                 <Input
                                     value={search}
-                                    onChange={(event) =>
+                                    onChange={(
+                                        event,
+                                    ) =>
                                         setSearch(
-                                            event.target
+                                            event
+                                                .target
                                                 .value,
                                         )
                                     }
@@ -1618,6 +2053,7 @@ function Changedfiles() {
                             </div>
 
                             {/* Tree */}
+
                             <div className="min-h-0 flex-1 overflow-y-auto">
                                 <TreeView
                                     data={buildFileTree(
@@ -1637,20 +2073,25 @@ function Changedfiles() {
                 )}
 
                 {/* Diffs */}
+
                 <div className="min-w-0 flex-1 pl-3">
-                    {fileDiffs.map((diff) => (
-                        <CodeCommitBlock
-                            key={diff.path}
-                            diff={diff}
-                            expanded={allExpanded}
-                            expandGeneration={
-                                expandGeneration
-                            }
-                            diffId={filePathToId(
-                                diff.path,
-                            )}
-                        />
-                    ))}
+                    {fileDiffs.map(
+                        (diff) => (
+                            <CodeCommitBlock
+                                key={diff.path}
+                                diff={diff}
+                                expanded={
+                                    allExpanded
+                                }
+                                expandGeneration={
+                                    expandGeneration
+                                }
+                                diffId={filePathToId(
+                                    diff.path,
+                                )}
+                            />
+                        ),
+                    )}
                 </div>
             </div>
         </div>
