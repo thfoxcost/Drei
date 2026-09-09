@@ -347,7 +347,7 @@ Apply these across all screens:
 [X] PR detail shell    → header + tab bar
 [x] Conversation tab   → description + comments + events
 [X] Commits tab        → commit list
-6. File Changes tab   → diff viewer
+[X] File Changes tab   → diff viewer
 [X] Merge button       → merge flow
 [x] Empty/loading/error → polish across all screens
 ```

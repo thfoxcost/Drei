@@ -177,7 +177,6 @@ export default function PullRequests({
 							to: `/${owner}/${repo}/pulls/new`,
 						})
 					}
-					disabled
 				>
 					<Plus className="size-4" />
 					New Pull Request
