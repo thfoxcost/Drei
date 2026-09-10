@@ -25,6 +25,7 @@ import { Route as UsernameRepoRouteRouteImport } from './routes/$username/$repo/
 import { Route as UsernameRepoIndexRouteImport } from './routes/$username/$repo/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as UsernameRepoForksRouteImport } from './routes/$username/$repo/forks'
+import { Route as UsernameRepoCompareRouteImport } from './routes/$username/$repo/compare'
 import { Route as UsernameRepoCommitsRouteImport } from './routes/$username/$repo/commits'
 import { Route as UsernameRepoCodeRouteImport } from './routes/$username/$repo/code'
 import { Route as UsernameRepoSettingsRouteRouteImport } from './routes/$username/$repo/settings/route'
@@ -32,7 +33,6 @@ import { Route as UsernameRepoIssuesRouteRouteImport } from './routes/$username/
 import { Route as UsernameRepoPullsIndexRouteImport } from './routes/$username/$repo/pulls/index'
 import { Route as UsernameRepoIssuesIndexRouteImport } from './routes/$username/$repo/issues/index'
 import { Route as UsernameRepoTreeBranchRouteImport } from './routes/$username/$repo/tree/$branch'
-import { Route as UsernameRepoPullsNewRouteImport } from './routes/$username/$repo/pulls/new'
 import { Route as UsernameRepoPullsPullRouteImport } from './routes/$username/$repo/pulls/$pull'
 import { Route as UsernameRepoIssuesNewRouteImport } from './routes/$username/$repo/issues/new'
 import { Route as UsernameRepoIssuesIssueRouteImport } from './routes/$username/$repo/issues/$issue'
@@ -120,6 +120,11 @@ const UsernameRepoForksRoute = UsernameRepoForksRouteImport.update({
   path: '/forks',
   getParentRoute: () => UsernameRepoRouteRoute,
 } as any)
+const UsernameRepoCompareRoute = UsernameRepoCompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
+  getParentRoute: () => UsernameRepoRouteRoute,
+} as any)
 const UsernameRepoCommitsRoute = UsernameRepoCommitsRouteImport.update({
   id: '/commits',
   path: '/commits',
@@ -154,11 +159,6 @@ const UsernameRepoIssuesIndexRoute = UsernameRepoIssuesIndexRouteImport.update({
 const UsernameRepoTreeBranchRoute = UsernameRepoTreeBranchRouteImport.update({
   id: '/tree/$branch',
   path: '/tree/$branch',
-  getParentRoute: () => UsernameRepoRouteRoute,
-} as any)
-const UsernameRepoPullsNewRoute = UsernameRepoPullsNewRouteImport.update({
-  id: '/pulls/new',
-  path: '/pulls/new',
   getParentRoute: () => UsernameRepoRouteRoute,
 } as any)
 const UsernameRepoPullsPullRoute = UsernameRepoPullsPullRouteImport.update({
@@ -222,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
+  '/$username/$repo/compare': typeof UsernameRepoCompareRoute
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo/': typeof UsernameRepoIndexRoute
@@ -230,7 +231,6 @@ export interface FileRoutesByFullPath {
   '/$username/$repo/issues/$issue': typeof UsernameRepoIssuesIssueRoute
   '/$username/$repo/issues/new': typeof UsernameRepoIssuesNewRoute
   '/$username/$repo/pulls/$pull': typeof UsernameRepoPullsPullRoute
-  '/$username/$repo/pulls/new': typeof UsernameRepoPullsNewRoute
   '/$username/$repo/tree/$branch': typeof UsernameRepoTreeBranchRouteWithChildren
   '/$username/$repo/issues/': typeof UsernameRepoIssuesIndexRoute
   '/$username/$repo/pulls/': typeof UsernameRepoPullsIndexRoute
@@ -252,6 +252,7 @@ export interface FileRoutesByTo {
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
+  '/$username/$repo/compare': typeof UsernameRepoCompareRoute
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo': typeof UsernameRepoIndexRoute
@@ -260,7 +261,6 @@ export interface FileRoutesByTo {
   '/$username/$repo/issues/$issue': typeof UsernameRepoIssuesIssueRoute
   '/$username/$repo/issues/new': typeof UsernameRepoIssuesNewRoute
   '/$username/$repo/pulls/$pull': typeof UsernameRepoPullsPullRoute
-  '/$username/$repo/pulls/new': typeof UsernameRepoPullsNewRoute
   '/$username/$repo/issues': typeof UsernameRepoIssuesIndexRoute
   '/$username/$repo/pulls': typeof UsernameRepoPullsIndexRoute
   '/$username/$repo/blob/$branch/$': typeof UsernameRepoBlobBranchSplatRoute
@@ -286,6 +286,7 @@ export interface FileRoutesById {
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
+  '/$username/$repo/compare': typeof UsernameRepoCompareRoute
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo/': typeof UsernameRepoIndexRoute
@@ -294,7 +295,6 @@ export interface FileRoutesById {
   '/$username/$repo/issues/$issue': typeof UsernameRepoIssuesIssueRoute
   '/$username/$repo/issues/new': typeof UsernameRepoIssuesNewRoute
   '/$username/$repo/pulls/$pull': typeof UsernameRepoPullsPullRoute
-  '/$username/$repo/pulls/new': typeof UsernameRepoPullsNewRoute
   '/$username/$repo/tree/$branch': typeof UsernameRepoTreeBranchRouteWithChildren
   '/$username/$repo/issues/': typeof UsernameRepoIssuesIndexRoute
   '/$username/$repo/pulls/': typeof UsernameRepoPullsIndexRoute
@@ -320,6 +320,7 @@ export interface FileRouteTypes {
     | '/$username/$repo/settings'
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
+    | '/$username/$repo/compare'
     | '/$username/$repo/forks'
     | '/api/auth/$'
     | '/$username/$repo/'
@@ -328,7 +329,6 @@ export interface FileRouteTypes {
     | '/$username/$repo/issues/$issue'
     | '/$username/$repo/issues/new'
     | '/$username/$repo/pulls/$pull'
-    | '/$username/$repo/pulls/new'
     | '/$username/$repo/tree/$branch'
     | '/$username/$repo/issues/'
     | '/$username/$repo/pulls/'
@@ -350,6 +350,7 @@ export interface FileRouteTypes {
     | '/$username/$repo/settings'
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
+    | '/$username/$repo/compare'
     | '/$username/$repo/forks'
     | '/api/auth/$'
     | '/$username/$repo'
@@ -358,7 +359,6 @@ export interface FileRouteTypes {
     | '/$username/$repo/issues/$issue'
     | '/$username/$repo/issues/new'
     | '/$username/$repo/pulls/$pull'
-    | '/$username/$repo/pulls/new'
     | '/$username/$repo/issues'
     | '/$username/$repo/pulls'
     | '/$username/$repo/blob/$branch/$'
@@ -383,6 +383,7 @@ export interface FileRouteTypes {
     | '/$username/$repo/settings'
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
+    | '/$username/$repo/compare'
     | '/$username/$repo/forks'
     | '/api/auth/$'
     | '/$username/$repo/'
@@ -391,7 +392,6 @@ export interface FileRouteTypes {
     | '/$username/$repo/issues/$issue'
     | '/$username/$repo/issues/new'
     | '/$username/$repo/pulls/$pull'
-    | '/$username/$repo/pulls/new'
     | '/$username/$repo/tree/$branch'
     | '/$username/$repo/issues/'
     | '/$username/$repo/pulls/'
@@ -524,6 +524,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsernameRepoForksRouteImport
       parentRoute: typeof UsernameRepoRouteRoute
     }
+    '/$username/$repo/compare': {
+      id: '/$username/$repo/compare'
+      path: '/compare'
+      fullPath: '/$username/$repo/compare'
+      preLoaderRoute: typeof UsernameRepoCompareRouteImport
+      parentRoute: typeof UsernameRepoRouteRoute
+    }
     '/$username/$repo/commits': {
       id: '/$username/$repo/commits'
       path: '/commits'
@@ -571,13 +578,6 @@ declare module '@tanstack/react-router' {
       path: '/tree/$branch'
       fullPath: '/$username/$repo/tree/$branch'
       preLoaderRoute: typeof UsernameRepoTreeBranchRouteImport
-      parentRoute: typeof UsernameRepoRouteRoute
-    }
-    '/$username/$repo/pulls/new': {
-      id: '/$username/$repo/pulls/new'
-      path: '/pulls/new'
-      fullPath: '/$username/$repo/pulls/new'
-      preLoaderRoute: typeof UsernameRepoPullsNewRouteImport
       parentRoute: typeof UsernameRepoRouteRoute
     }
     '/$username/$repo/pulls/$pull': {
@@ -719,11 +719,11 @@ interface UsernameRepoRouteRouteChildren {
   UsernameRepoSettingsRouteRoute: typeof UsernameRepoSettingsRouteRoute
   UsernameRepoCodeRoute: typeof UsernameRepoCodeRoute
   UsernameRepoCommitsRoute: typeof UsernameRepoCommitsRouteWithChildren
+  UsernameRepoCompareRoute: typeof UsernameRepoCompareRoute
   UsernameRepoForksRoute: typeof UsernameRepoForksRoute
   UsernameRepoIndexRoute: typeof UsernameRepoIndexRoute
   UsernameRepoBranchBranchNameRoute: typeof UsernameRepoBranchBranchNameRoute
   UsernameRepoPullsPullRoute: typeof UsernameRepoPullsPullRoute
-  UsernameRepoPullsNewRoute: typeof UsernameRepoPullsNewRoute
   UsernameRepoTreeBranchRoute: typeof UsernameRepoTreeBranchRouteWithChildren
   UsernameRepoPullsIndexRoute: typeof UsernameRepoPullsIndexRoute
   UsernameRepoBlobBranchSplatRoute: typeof UsernameRepoBlobBranchSplatRoute
@@ -734,11 +734,11 @@ const UsernameRepoRouteRouteChildren: UsernameRepoRouteRouteChildren = {
   UsernameRepoSettingsRouteRoute: UsernameRepoSettingsRouteRoute,
   UsernameRepoCodeRoute: UsernameRepoCodeRoute,
   UsernameRepoCommitsRoute: UsernameRepoCommitsRouteWithChildren,
+  UsernameRepoCompareRoute: UsernameRepoCompareRoute,
   UsernameRepoForksRoute: UsernameRepoForksRoute,
   UsernameRepoIndexRoute: UsernameRepoIndexRoute,
   UsernameRepoBranchBranchNameRoute: UsernameRepoBranchBranchNameRoute,
   UsernameRepoPullsPullRoute: UsernameRepoPullsPullRoute,
-  UsernameRepoPullsNewRoute: UsernameRepoPullsNewRoute,
   UsernameRepoTreeBranchRoute: UsernameRepoTreeBranchRouteWithChildren,
   UsernameRepoPullsIndexRoute: UsernameRepoPullsIndexRoute,
   UsernameRepoBlobBranchSplatRoute: UsernameRepoBlobBranchSplatRoute,
