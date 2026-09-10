@@ -174,7 +174,7 @@ export default function PullRequests({
 				<Button
 					onClick={() =>
 						navigate({
-							to: `/${owner}/${repo}/pulls/new`,
+							to: `/${owner}/${repo}/compare`,
 						})
 					}
 				>
