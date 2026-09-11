@@ -1,6 +1,6 @@
 
 
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Settings } from "lucide-react";
 import { Markdown } from "#/components/repo/issues/markdown";
 import {
   Tabs,
@@ -35,6 +35,8 @@ import type {
 } from "./types/conversation"
 import { Input } from "#/components/ui/input"
 import { Button } from "#/components/ui/button"
+import { Separator } from "#/components/ui/separator";
+import { Switch } from "#/components/ui/switch";
 
 export default function CommentItem({
   username,
@@ -765,10 +767,92 @@ export function CheckAndMergeItem({
 
 export function ConversationSheet() {
   return (
-    <div className="w-[500px]">ds</div>
+    <div className="w-[400px]">
+      <div className="space-y-1">
+        <Button
+          variant="ghost"
+          className="flex w-full items-center justify-between px-2 text-muted-foreground"
+        >
+          <span className="text-[13px] font-semibold">Assignees</span>
+          <Settings className="size-4" />
+        </Button>
+
+        <span className="px-2 text-[13px] text-muted-foreground">
+          No one assigned
+        </span>
+      </div>
+
+      <Separator className="my-2" />
+
+      <div className="space-y-1">
+        <Button
+          variant="ghost"
+          className="flex w-full items-center justify-between px-2 text-muted-foreground"
+        >
+          <span className="text-[13px] font-semibold">Labels</span>
+          <Settings className="size-4" />
+        </Button>
+
+        <span className="px-2 text-[13px] text-muted-foreground">
+          No labels
+        </span>
+      </div>
+
+      <Separator className="my-2" />
+
+      <div className="space-y-1">
+        <Button
+          variant="ghost"
+          className="flex w-full items-center justify-between px-2 text-muted-foreground"
+        >
+          <span className="text-[13px] font-semibold">Reviewers</span>
+          <Settings className="size-4" />
+        </Button>
+
+        <span className="px-2 text-[13px] text-muted-foreground">
+          No reviewers
+        </span>
+      </div>
+
+      <Separator className="my-2" />
+
+      <div className="px-2">
+        <span className="text-[13px] font-medium">
+          3 participants
+        </span>
+
+        <div className="flex items-center gap-2 mt-2">
+          <Avatar className="size-7">
+            <AvatarImage src="https://github.com/shadcn.png" />
+            <AvatarFallback>CN</AvatarFallback>
+          </Avatar>
+
+          <Avatar className="size-7">
+            <AvatarImage src="https://avatars.githubusercontent.com/u/231587148?v=4" />
+            <AvatarFallback>CN</AvatarFallback>
+          </Avatar>
+
+          <Avatar className="size-7">
+            <AvatarImage src="https://avatars.githubusercontent.com/u/86357151?v=4" />
+            <AvatarFallback>CN</AvatarFallback>
+          </Avatar>
+        </div>
+      </div>
+      <Separator className="my-2" />
+      <div className="flex items-center justify-between px-2">
+        <div className="space-y-0.5">
+          <span className="text-[13px] font-semibold">
+            Notifications
+          </span>
+          <p className="text-[12px] text-muted-foreground">
+            Get notified about activity on this PR.
+          </p>
+        </div>
+        <Switch />
+      </div>
+    </div>
   )
 }
-
 
 
 type CommentEditorProps = {
