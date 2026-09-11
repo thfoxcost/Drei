@@ -69,7 +69,6 @@ export default function CommentItem({
             </span>
           </div>
 
-          {/* Comment actions */}
           <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -464,22 +463,13 @@ export function ReviewItemMSG({
                     return null
                   }
 
-                  const isRoot = index === 0
-                  const isLastVisible =
-                    index === notes.length - 1 || !showAllComments
-
                   return (
                     <div
                       key={index}
-                      className="group/note relative"
+                      className="group/note relative px-1"
                     >
-                      {/* Thread line */}
-                      {!isLastVisible && (
-                        <div className="absolute bottom-0 left-[11px] top-0 w-px bg-foreground/10" />
-                      )}
-
-                      <div className="relative flex items-start gap-2 py-1">
-                        <Avatar className="size-5 shrink-0">
+                      <div className="relative flex items-center gap-2 py-1">
+                        <Avatar className="size-6 shrink-0">
                           <AvatarImage src={note.avatar} />
                           <AvatarFallback className="text-[9px]">
                             {note.username
@@ -489,10 +479,9 @@ export function ReviewItemMSG({
                         </Avatar>
 
                         <div className="min-w-0 flex-1">
-                          {/* Meta line */}
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-semibold leading-none">
-                              {note.username}
+                            <span className="text-[13px] font-bold leading-none">
+                              {note.username.charAt(0).toUpperCase() + note.username.slice(1)}
                             </span>
 
                             {note.username === username &&
@@ -501,10 +490,6 @@ export function ReviewItemMSG({
                                   (Author)
                                 </span>
                               )}
-
-                            <span className="text-[11px] text-muted-foreground">
-                              {isRoot ? "commented" : "replied"}
-                            </span>
                             <div className="opacity-0 transition-opacity group-hover/note:opacity-100">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -552,15 +537,13 @@ export function ReviewItemMSG({
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
+
                             <span className="ml-auto text-[10px] text-muted-foreground">
                               {timeAgo(date)}
                             </span>
-
-
                           </div>
 
-                          {/* Message */}
-                          <p className="mt-0.5 text-sm leading-snug text-foreground/90">
+                          <p className="text-xs leading-snug text-foreground/90">
                             {note.message}
                           </p>
                         </div>
@@ -585,7 +568,11 @@ export function ReviewItemMSG({
                         : "replies"}{" "}
                       hidden
                     </span>
-                    <ChevronDown size={10} className="rotate-[-90deg]" />
+
+                    <ChevronDown
+                      size={10}
+                      className="rotate-[-90deg]"
+                    />
                   </button>
                 )}
               </div>
