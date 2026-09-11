@@ -25,17 +25,19 @@ import { Route as UsernameRepoRouteRouteImport } from './routes/$username/$repo/
 import { Route as UsernameRepoIndexRouteImport } from './routes/$username/$repo/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as UsernameRepoForksRouteImport } from './routes/$username/$repo/forks'
-import { Route as UsernameRepoCompareRouteImport } from './routes/$username/$repo/compare'
 import { Route as UsernameRepoCommitsRouteImport } from './routes/$username/$repo/commits'
 import { Route as UsernameRepoCodeRouteImport } from './routes/$username/$repo/code'
 import { Route as UsernameRepoSettingsRouteRouteImport } from './routes/$username/$repo/settings/route'
 import { Route as UsernameRepoIssuesRouteRouteImport } from './routes/$username/$repo/issues/route'
+import { Route as UsernameRepoCompareRouteRouteImport } from './routes/$username/$repo/compare/route'
 import { Route as UsernameRepoPullsIndexRouteImport } from './routes/$username/$repo/pulls/index'
 import { Route as UsernameRepoIssuesIndexRouteImport } from './routes/$username/$repo/issues/index'
+import { Route as UsernameRepoCompareIndexRouteImport } from './routes/$username/$repo/compare/index'
 import { Route as UsernameRepoTreeBranchRouteImport } from './routes/$username/$repo/tree/$branch'
 import { Route as UsernameRepoPullsPullRouteImport } from './routes/$username/$repo/pulls/$pull'
 import { Route as UsernameRepoIssuesNewRouteImport } from './routes/$username/$repo/issues/new'
 import { Route as UsernameRepoIssuesIssueRouteImport } from './routes/$username/$repo/issues/$issue'
+import { Route as UsernameRepoCompareSplatRouteImport } from './routes/$username/$repo/compare/$'
 import { Route as UsernameRepoCommitsHashRouteImport } from './routes/$username/$repo/commits.$hash'
 import { Route as UsernameRepoBranchBranchNameRouteImport } from './routes/$username/$repo/branch/$branchName'
 import { Route as UsernameRepoTreeBranchIndexRouteImport } from './routes/$username/$repo/tree/$branch/index'
@@ -120,11 +122,6 @@ const UsernameRepoForksRoute = UsernameRepoForksRouteImport.update({
   path: '/forks',
   getParentRoute: () => UsernameRepoRouteRoute,
 } as any)
-const UsernameRepoCompareRoute = UsernameRepoCompareRouteImport.update({
-  id: '/compare',
-  path: '/compare',
-  getParentRoute: () => UsernameRepoRouteRoute,
-} as any)
 const UsernameRepoCommitsRoute = UsernameRepoCommitsRouteImport.update({
   id: '/commits',
   path: '/commits',
@@ -146,6 +143,12 @@ const UsernameRepoIssuesRouteRoute = UsernameRepoIssuesRouteRouteImport.update({
   path: '/issues',
   getParentRoute: () => UsernameRepoRouteRoute,
 } as any)
+const UsernameRepoCompareRouteRoute =
+  UsernameRepoCompareRouteRouteImport.update({
+    id: '/compare',
+    path: '/compare',
+    getParentRoute: () => UsernameRepoRouteRoute,
+  } as any)
 const UsernameRepoPullsIndexRoute = UsernameRepoPullsIndexRouteImport.update({
   id: '/pulls/',
   path: '/pulls/',
@@ -156,6 +159,12 @@ const UsernameRepoIssuesIndexRoute = UsernameRepoIssuesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => UsernameRepoIssuesRouteRoute,
 } as any)
+const UsernameRepoCompareIndexRoute =
+  UsernameRepoCompareIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => UsernameRepoCompareRouteRoute,
+  } as any)
 const UsernameRepoTreeBranchRoute = UsernameRepoTreeBranchRouteImport.update({
   id: '/tree/$branch',
   path: '/tree/$branch',
@@ -176,6 +185,12 @@ const UsernameRepoIssuesIssueRoute = UsernameRepoIssuesIssueRouteImport.update({
   path: '/$issue',
   getParentRoute: () => UsernameRepoIssuesRouteRoute,
 } as any)
+const UsernameRepoCompareSplatRoute =
+  UsernameRepoCompareSplatRouteImport.update({
+    id: '/$',
+    path: '/$',
+    getParentRoute: () => UsernameRepoCompareRouteRoute,
+  } as any)
 const UsernameRepoCommitsHashRoute = UsernameRepoCommitsHashRouteImport.update({
   id: '/$hash',
   path: '/$hash',
@@ -218,20 +233,22 @@ export interface FileRoutesByFullPath {
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
   '/$username/': typeof UsernameIndexRoute
+  '/$username/$repo/compare': typeof UsernameRepoCompareRouteRouteWithChildren
   '/$username/$repo/issues': typeof UsernameRepoIssuesRouteRouteWithChildren
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
-  '/$username/$repo/compare': typeof UsernameRepoCompareRoute
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo/': typeof UsernameRepoIndexRoute
   '/$username/$repo/branch/$branchName': typeof UsernameRepoBranchBranchNameRoute
   '/$username/$repo/commits/$hash': typeof UsernameRepoCommitsHashRoute
+  '/$username/$repo/compare/$': typeof UsernameRepoCompareSplatRoute
   '/$username/$repo/issues/$issue': typeof UsernameRepoIssuesIssueRoute
   '/$username/$repo/issues/new': typeof UsernameRepoIssuesNewRoute
   '/$username/$repo/pulls/$pull': typeof UsernameRepoPullsPullRoute
   '/$username/$repo/tree/$branch': typeof UsernameRepoTreeBranchRouteWithChildren
+  '/$username/$repo/compare/': typeof UsernameRepoCompareIndexRoute
   '/$username/$repo/issues/': typeof UsernameRepoIssuesIndexRoute
   '/$username/$repo/pulls/': typeof UsernameRepoPullsIndexRoute
   '/$username/$repo/blob/$branch/$': typeof UsernameRepoBlobBranchSplatRoute
@@ -252,15 +269,16 @@ export interface FileRoutesByTo {
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
-  '/$username/$repo/compare': typeof UsernameRepoCompareRoute
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo': typeof UsernameRepoIndexRoute
   '/$username/$repo/branch/$branchName': typeof UsernameRepoBranchBranchNameRoute
   '/$username/$repo/commits/$hash': typeof UsernameRepoCommitsHashRoute
+  '/$username/$repo/compare/$': typeof UsernameRepoCompareSplatRoute
   '/$username/$repo/issues/$issue': typeof UsernameRepoIssuesIssueRoute
   '/$username/$repo/issues/new': typeof UsernameRepoIssuesNewRoute
   '/$username/$repo/pulls/$pull': typeof UsernameRepoPullsPullRoute
+  '/$username/$repo/compare': typeof UsernameRepoCompareIndexRoute
   '/$username/$repo/issues': typeof UsernameRepoIssuesIndexRoute
   '/$username/$repo/pulls': typeof UsernameRepoPullsIndexRoute
   '/$username/$repo/blob/$branch/$': typeof UsernameRepoBlobBranchSplatRoute
@@ -282,20 +300,22 @@ export interface FileRoutesById {
   '/_auth/signin': typeof AuthSigninRoute
   '/_auth/signup': typeof AuthSignupRoute
   '/$username/': typeof UsernameIndexRoute
+  '/$username/$repo/compare': typeof UsernameRepoCompareRouteRouteWithChildren
   '/$username/$repo/issues': typeof UsernameRepoIssuesRouteRouteWithChildren
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
-  '/$username/$repo/compare': typeof UsernameRepoCompareRoute
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo/': typeof UsernameRepoIndexRoute
   '/$username/$repo/branch/$branchName': typeof UsernameRepoBranchBranchNameRoute
   '/$username/$repo/commits/$hash': typeof UsernameRepoCommitsHashRoute
+  '/$username/$repo/compare/$': typeof UsernameRepoCompareSplatRoute
   '/$username/$repo/issues/$issue': typeof UsernameRepoIssuesIssueRoute
   '/$username/$repo/issues/new': typeof UsernameRepoIssuesNewRoute
   '/$username/$repo/pulls/$pull': typeof UsernameRepoPullsPullRoute
   '/$username/$repo/tree/$branch': typeof UsernameRepoTreeBranchRouteWithChildren
+  '/$username/$repo/compare/': typeof UsernameRepoCompareIndexRoute
   '/$username/$repo/issues/': typeof UsernameRepoIssuesIndexRoute
   '/$username/$repo/pulls/': typeof UsernameRepoPullsIndexRoute
   '/$username/$repo/blob/$branch/$': typeof UsernameRepoBlobBranchSplatRoute
@@ -316,20 +336,22 @@ export interface FileRouteTypes {
     | '/signin'
     | '/signup'
     | '/$username/'
+    | '/$username/$repo/compare'
     | '/$username/$repo/issues'
     | '/$username/$repo/settings'
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
-    | '/$username/$repo/compare'
     | '/$username/$repo/forks'
     | '/api/auth/$'
     | '/$username/$repo/'
     | '/$username/$repo/branch/$branchName'
     | '/$username/$repo/commits/$hash'
+    | '/$username/$repo/compare/$'
     | '/$username/$repo/issues/$issue'
     | '/$username/$repo/issues/new'
     | '/$username/$repo/pulls/$pull'
     | '/$username/$repo/tree/$branch'
+    | '/$username/$repo/compare/'
     | '/$username/$repo/issues/'
     | '/$username/$repo/pulls/'
     | '/$username/$repo/blob/$branch/$'
@@ -350,15 +372,16 @@ export interface FileRouteTypes {
     | '/$username/$repo/settings'
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
-    | '/$username/$repo/compare'
     | '/$username/$repo/forks'
     | '/api/auth/$'
     | '/$username/$repo'
     | '/$username/$repo/branch/$branchName'
     | '/$username/$repo/commits/$hash'
+    | '/$username/$repo/compare/$'
     | '/$username/$repo/issues/$issue'
     | '/$username/$repo/issues/new'
     | '/$username/$repo/pulls/$pull'
+    | '/$username/$repo/compare'
     | '/$username/$repo/issues'
     | '/$username/$repo/pulls'
     | '/$username/$repo/blob/$branch/$'
@@ -379,20 +402,22 @@ export interface FileRouteTypes {
     | '/_auth/signin'
     | '/_auth/signup'
     | '/$username/'
+    | '/$username/$repo/compare'
     | '/$username/$repo/issues'
     | '/$username/$repo/settings'
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
-    | '/$username/$repo/compare'
     | '/$username/$repo/forks'
     | '/api/auth/$'
     | '/$username/$repo/'
     | '/$username/$repo/branch/$branchName'
     | '/$username/$repo/commits/$hash'
+    | '/$username/$repo/compare/$'
     | '/$username/$repo/issues/$issue'
     | '/$username/$repo/issues/new'
     | '/$username/$repo/pulls/$pull'
     | '/$username/$repo/tree/$branch'
+    | '/$username/$repo/compare/'
     | '/$username/$repo/issues/'
     | '/$username/$repo/pulls/'
     | '/$username/$repo/blob/$branch/$'
@@ -524,13 +549,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsernameRepoForksRouteImport
       parentRoute: typeof UsernameRepoRouteRoute
     }
-    '/$username/$repo/compare': {
-      id: '/$username/$repo/compare'
-      path: '/compare'
-      fullPath: '/$username/$repo/compare'
-      preLoaderRoute: typeof UsernameRepoCompareRouteImport
-      parentRoute: typeof UsernameRepoRouteRoute
-    }
     '/$username/$repo/commits': {
       id: '/$username/$repo/commits'
       path: '/commits'
@@ -559,6 +577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsernameRepoIssuesRouteRouteImport
       parentRoute: typeof UsernameRepoRouteRoute
     }
+    '/$username/$repo/compare': {
+      id: '/$username/$repo/compare'
+      path: '/compare'
+      fullPath: '/$username/$repo/compare'
+      preLoaderRoute: typeof UsernameRepoCompareRouteRouteImport
+      parentRoute: typeof UsernameRepoRouteRoute
+    }
     '/$username/$repo/pulls/': {
       id: '/$username/$repo/pulls/'
       path: '/pulls'
@@ -572,6 +597,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$username/$repo/issues/'
       preLoaderRoute: typeof UsernameRepoIssuesIndexRouteImport
       parentRoute: typeof UsernameRepoIssuesRouteRoute
+    }
+    '/$username/$repo/compare/': {
+      id: '/$username/$repo/compare/'
+      path: '/'
+      fullPath: '/$username/$repo/compare/'
+      preLoaderRoute: typeof UsernameRepoCompareIndexRouteImport
+      parentRoute: typeof UsernameRepoCompareRouteRoute
     }
     '/$username/$repo/tree/$branch': {
       id: '/$username/$repo/tree/$branch'
@@ -600,6 +632,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$username/$repo/issues/$issue'
       preLoaderRoute: typeof UsernameRepoIssuesIssueRouteImport
       parentRoute: typeof UsernameRepoIssuesRouteRoute
+    }
+    '/$username/$repo/compare/$': {
+      id: '/$username/$repo/compare/$'
+      path: '/$'
+      fullPath: '/$username/$repo/compare/$'
+      preLoaderRoute: typeof UsernameRepoCompareSplatRouteImport
+      parentRoute: typeof UsernameRepoCompareRouteRoute
     }
     '/$username/$repo/commits/$hash': {
       id: '/$username/$repo/commits/$hash'
@@ -669,6 +708,22 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface UsernameRepoCompareRouteRouteChildren {
+  UsernameRepoCompareSplatRoute: typeof UsernameRepoCompareSplatRoute
+  UsernameRepoCompareIndexRoute: typeof UsernameRepoCompareIndexRoute
+}
+
+const UsernameRepoCompareRouteRouteChildren: UsernameRepoCompareRouteRouteChildren =
+  {
+    UsernameRepoCompareSplatRoute: UsernameRepoCompareSplatRoute,
+    UsernameRepoCompareIndexRoute: UsernameRepoCompareIndexRoute,
+  }
+
+const UsernameRepoCompareRouteRouteWithChildren =
+  UsernameRepoCompareRouteRoute._addFileChildren(
+    UsernameRepoCompareRouteRouteChildren,
+  )
+
 interface UsernameRepoIssuesRouteRouteChildren {
   UsernameRepoIssuesIssueRoute: typeof UsernameRepoIssuesIssueRoute
   UsernameRepoIssuesNewRoute: typeof UsernameRepoIssuesNewRoute
@@ -715,11 +770,11 @@ const UsernameRepoTreeBranchRouteWithChildren =
   )
 
 interface UsernameRepoRouteRouteChildren {
+  UsernameRepoCompareRouteRoute: typeof UsernameRepoCompareRouteRouteWithChildren
   UsernameRepoIssuesRouteRoute: typeof UsernameRepoIssuesRouteRouteWithChildren
   UsernameRepoSettingsRouteRoute: typeof UsernameRepoSettingsRouteRoute
   UsernameRepoCodeRoute: typeof UsernameRepoCodeRoute
   UsernameRepoCommitsRoute: typeof UsernameRepoCommitsRouteWithChildren
-  UsernameRepoCompareRoute: typeof UsernameRepoCompareRoute
   UsernameRepoForksRoute: typeof UsernameRepoForksRoute
   UsernameRepoIndexRoute: typeof UsernameRepoIndexRoute
   UsernameRepoBranchBranchNameRoute: typeof UsernameRepoBranchBranchNameRoute
@@ -730,11 +785,11 @@ interface UsernameRepoRouteRouteChildren {
 }
 
 const UsernameRepoRouteRouteChildren: UsernameRepoRouteRouteChildren = {
+  UsernameRepoCompareRouteRoute: UsernameRepoCompareRouteRouteWithChildren,
   UsernameRepoIssuesRouteRoute: UsernameRepoIssuesRouteRouteWithChildren,
   UsernameRepoSettingsRouteRoute: UsernameRepoSettingsRouteRoute,
   UsernameRepoCodeRoute: UsernameRepoCodeRoute,
   UsernameRepoCommitsRoute: UsernameRepoCommitsRouteWithChildren,
-  UsernameRepoCompareRoute: UsernameRepoCompareRoute,
   UsernameRepoForksRoute: UsernameRepoForksRoute,
   UsernameRepoIndexRoute: UsernameRepoIndexRoute,
   UsernameRepoBranchBranchNameRoute: UsernameRepoBranchBranchNameRoute,
