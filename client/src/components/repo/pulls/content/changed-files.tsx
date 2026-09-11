@@ -1075,7 +1075,7 @@ function CircularProgress({
                 strokeDasharray={circumference}
                 strokeDashoffset={offset}
                 strokeLinecap="round"
-                className="stroke-green-600 transition-all duration-300 dark:stroke-green-500"
+                className="stroke-fuchsia-600 transition-all duration-300 dark:stroke-fuchsia-500"
             />
         </svg>
     )

@@ -1,7 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router"
 import { useState } from "react"
 import {
-  AlertTriangleIcon,
   ArrowLeftRight,
   FileDiff,
   GitBranch,
@@ -11,13 +10,7 @@ import {
   SquarePlus,
   Users,
 } from "lucide-react"
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  AlertAction
-} from "@/components/ui/alert"
-import { InfoIcon } from "lucide-react"
+
 import {
   Combobox,
   ComboboxContent,
@@ -30,8 +23,6 @@ import Commits from "@/components/repo/pulls/content/commits"
 import CodeCommitBlock, {
   type FileDiff as CodeFileDiff,
 } from "@/components/repo/commits/code-commit"
-import { Button } from "@/components/ui/button"
-
 
 export const Route = createFileRoute("/$username/$repo/compare")({
   component: CompareComponent,
@@ -162,7 +153,6 @@ const fileDiffs: CodeFileDiff[] = [
       },
     ],
   },
-
   {
     path: "pull-request.tsx",
     action: "added",
@@ -266,7 +256,6 @@ const fileDiffs: CodeFileDiff[] = [
       },
     ],
   },
-
   {
     path: "old-review.tsx",
     action: "removed",
@@ -330,21 +319,6 @@ const fileDiffs: CodeFileDiff[] = [
   },
 ]
 
-function NoDifferences() {
-  return (
-    <Alert className="my-4 w-full border-yellow-300 bg-yellow-50 text-yellow-950 dark:border-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-100">
-      <AlertTriangleIcon className="text-yellow-600 dark:text-yellow-500" />
-
-      <AlertTitle>There are no differences</AlertTitle>
-
-      <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-        The base and compare branches are identical. Select different branches
-        to see the changes between them.
-      </AlertDescription>
-    </Alert>
-  )
-}
-
 function BranchCombobox({
   placeholder,
   disabled,
@@ -365,11 +339,7 @@ function BranchCombobox({
 
         <ComboboxList>
           {(branch) => (
-            <ComboboxItem
-              key={branch}
-              value={branch}
-              className="gap-3"
-            >
+            <ComboboxItem key={branch} value={branch} className="gap-3">
               <GitBranch className="size-4 shrink-0 text-muted-foreground" />
 
               <span className="truncate">
@@ -386,23 +356,15 @@ function BranchCombobox({
   )
 }
 
-function ChangedFilesItem({
-  file,
-}: {
-  file: ChangedFile
-}) {
+function ChangedFilesItem({ file }: { file: ChangedFile }) {
   const maxSquares = 5
   const total = file.additions + file.deletions
 
   const additionSquares =
-    total === 0
-      ? 0
-      : Math.round((file.additions / total) * maxSquares)
+    total === 0 ? 0 : Math.round((file.additions / total) * maxSquares)
 
   const deletionSquares =
-    total === 0
-      ? 0
-      : maxSquares - additionSquares
+    total === 0 ? 0 : maxSquares - additionSquares
 
   return (
     <div className="flex items-center gap-2 border-b px-3 py-2 last:border-b-0">
@@ -418,9 +380,7 @@ function ChangedFilesItem({
         <SquareMinus className="size-4 shrink-0 text-red-600 dark:text-red-500" />
       )}
 
-      <span className="min-w-0 flex-1 truncate">
-        {file.name}
-      </span>
+      <span className="min-w-0 flex-1 truncate">{file.name}</span>
 
       <span className="flex shrink-0 items-center gap-0.5">
         {Array.from({ length: additionSquares }).map((_, index) => (
@@ -455,28 +415,23 @@ function ChangedFilesItem({
   )
 }
 
-
-export function NewPRalert() {
-  return (
-    <Alert className="border-blue-500/50 bg-blue-500/10 text-blue-500 py-3">
-      <InfoIcon />
-      <AlertTitle>Discuss and review the changes in this comparison with others.</AlertTitle>
-
-      <AlertAction>
-        <Button
-          className="bg-green-600 text-white hover:bg-green-700"
-        >
-          Create pull request
-        </Button>
-      </AlertAction>
-    </Alert>
-  )
-}
-
-
-function CompareComponent() {
-  const [showWarning] = useState(false)
+export function CompareComponent() {
   const [showFiles, setShowFiles] = useState(false)
+
+  const pathname = useRouterState().location.pathname
+
+  const comparison = pathname.split("/compare/")[1]
+
+  const hasComparison =
+    !!comparison && comparison.includes("...")
+
+  const title = hasComparison
+    ? "Open a pull request"
+    : "Compare changes"
+
+  const description = hasComparison
+    ? "Review the changes between these two branches and open a pull request."
+    : "Choose two branches to see what’s changed or to start a new pull request."
 
   const stats = {
     commits: 3,
@@ -486,36 +441,17 @@ function CompareComponent() {
 
   return (
     <div>
-      <div className="mx-40 flex flex-col">
+      <div className="mx-20 flex flex-col">
         <span className="text-2xl font-medium">
-          Compare changes
+          {title}
         </span>
 
         <span className="text-sm text-muted-foreground">
-          Choose two branches to see what’s changed or to start a new
-          pull request.
+          {description}
         </span>
 
-        {showWarning && <NoDifferences />}
-
         <div className="mt-2 flex w-full items-center rounded-md border border-dashed bg-accent/20 p-2">
-          <svg
-            className="mr-3 size-4 shrink-0 text-muted-foreground"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-          >
-            <g
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.5"
-            >
-              <path d="M18 21a2 2 0 1 0 0-4a2 2 0 0 0 0 4M6 7a2 2 0 1 0-4-2a2 2 0 0 0 0 4m12 10V7s0-2-2-2h-3M6 7v10s0 2 2 2h3" />
-              <path d="M15 7.5L12.5 5L15 2.5m-6.5 14L11 19l-2.5 2.5" />
-            </g>
-          </svg>
-
+          <svg className="ml-1 mr-2 size-4 shrink-0 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16"><path fill="currentColor" d="M9.146 5.854a.5.5 0 1 0 .708-.708L8.707 4H10.5A1.5 1.5 0 0 1 12 5.5v4.55a2.5 2.5 0 1 0 1 0V5.5A2.5 2.5 0 0 0 10.5 3H8.707l1.147-1.146a.5.5 0 0 0-.708-.708l-2 2a.5.5 0 0 0 0 .708zM14 12.5a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0m-8-9a2.5 2.5 0 0 1-2 2.45v4.55A1.5 1.5 0 0 0 5.5 12h1.793l-1.147-1.146a.5.5 0 0 1 .708-.708l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 0 1-.708-.708L7.293 13H5.5A2.5 2.5 0 0 1 3 10.5V5.95A2.5 2.5 0 1 1 6 3.5m-1 0a1.5 1.5 0 1 0-3 0a1.5 1.5 0 0 0 3 0" /></svg>
           <div className="flex items-center gap-2">
             <div className="flex flex-col">
               <BranchCombobox placeholder="Choose base branch" />
@@ -586,7 +522,8 @@ function CompareComponent() {
           </span>
         </div>
 
-        <NewPRalert />
+        <Outlet />
+
         <div className="mt-2">
           <Commits />
         </div>
@@ -619,20 +556,14 @@ function CompareComponent() {
         {showFiles && (
           <div className="mt-3 rounded-md border">
             {changedFiles.map((file) => (
-              <ChangedFilesItem
-                key={file.name}
-                file={file}
-              />
+              <ChangedFilesItem key={file.name} file={file} />
             ))}
           </div>
         )}
 
-        <div className="mt-2 mb-5">
+        <div className="mb-5 mt-2">
           {fileDiffs.map((diff) => (
-            <CodeCommitBlock
-              key={diff.path}
-              diff={diff}
-            />
+            <CodeCommitBlock key={diff.path} diff={diff} />
           ))}
         </div>
       </div>
