@@ -6,9 +6,9 @@ import {
   FileDiff,
   GitBranch,
   GitCommit,
-  SquarePlus,
-  SquarePen,
+  SquareDot,
   SquareMinus,
+  SquarePlus,
   Users,
 } from "lucide-react"
 import {
@@ -25,6 +25,9 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox"
 import Commits from "@/components/repo/pulls/content/commits"
+import CodeCommitBlock, {
+  type FileDiff as CodeFileDiff,
+} from "@/components/repo/commits/code-commit"
 
 export const Route = createFileRoute("/$username/$repo/compare")({
   component: CompareComponent,
@@ -68,6 +71,261 @@ const changedFiles: ChangedFile[] = [
   },
 ]
 
+const fileDiffs: CodeFileDiff[] = [
+  {
+    path: "pr-detail.tsx",
+    action: "changed",
+    additions: 122,
+    deletions: 3,
+    hunks: [
+      {
+        header: "@@ -42,8 +42,127 @@",
+        lines: [
+          {
+            type: "unchanged",
+            oldLine: 42,
+            newLine: 42,
+            content: 'import { useState } from "react"',
+          },
+          {
+            type: "unchanged",
+            oldLine: 43,
+            newLine: 43,
+            content: 'import { Button } from "@/components/ui/button"',
+          },
+          {
+            type: "removed",
+            oldLine: 44,
+            newLine: null,
+            content: "const isOpen = false",
+          },
+          {
+            type: "removed",
+            oldLine: 45,
+            newLine: null,
+            content: "const showComments = true",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 44,
+            content: "const [isOpen, setIsOpen] = useState(false)",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 45,
+            content: "const [showComments, setShowComments] = useState(true)",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 46,
+            content:
+              "const [activeTab, setActiveTab] = useState('conversation')",
+          },
+          {
+            type: "unchanged",
+            oldLine: 46,
+            newLine: 47,
+            content: "return (",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 48,
+            content: "  <div className='flex flex-col'>",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 49,
+            content: "    <PullRequestHeader />",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 50,
+            content: "    <PullRequestTabs activeTab={activeTab} />",
+          },
+          {
+            type: "unchanged",
+            oldLine: 47,
+            newLine: 51,
+            content: "  </div>",
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    path: "pull-request.tsx",
+    action: "added",
+    additions: 86,
+    deletions: 0,
+    hunks: [
+      {
+        header: "@@ -0,0 +1,86 @@",
+        lines: [
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 1,
+            content: 'import { GitPullRequest } from "lucide-react"',
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 2,
+            content: 'import { Button } from "@/components/ui/button"',
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 3,
+            content: 'import { Badge } from "@/components/ui/badge"',
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 4,
+            content: "",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 5,
+            content: "export function PullRequest() {",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 6,
+            content: "  return (",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 7,
+            content: "    <div className='rounded-md border'>",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 8,
+            content: "      <div className='flex items-center gap-2 p-3'>",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 9,
+            content: "        <GitPullRequest className='size-4' />",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 10,
+            content: "        <span>Pull request</span>",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 11,
+            content: "        <Badge>Open</Badge>",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 12,
+            content: "      </div>",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 13,
+            content: "    </div>",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 14,
+            content: "  )",
+          },
+          {
+            type: "added",
+            oldLine: null,
+            newLine: 15,
+            content: "}",
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    path: "old-review.tsx",
+    action: "removed",
+    additions: 0,
+    deletions: 42,
+    hunks: [
+      {
+        header: "@@ -1,42 +0,0 @@",
+        lines: [
+          {
+            type: "removed",
+            oldLine: 1,
+            newLine: null,
+            content: 'import { ReviewComment } from "./review-comment"',
+          },
+          {
+            type: "removed",
+            oldLine: 2,
+            newLine: null,
+            content: 'import { Avatar } from "@/components/ui/avatar"',
+          },
+          {
+            type: "removed",
+            oldLine: 3,
+            newLine: null,
+            content: "",
+          },
+          {
+            type: "removed",
+            oldLine: 4,
+            newLine: null,
+            content: "export function OldReview() {",
+          },
+          {
+            type: "removed",
+            oldLine: 5,
+            newLine: null,
+            content: "  return (",
+          },
+          {
+            type: "removed",
+            oldLine: 6,
+            newLine: null,
+            content: "    <ReviewComment />",
+          },
+          {
+            type: "removed",
+            oldLine: 7,
+            newLine: null,
+            content: "  )",
+          },
+          {
+            type: "removed",
+            oldLine: 8,
+            newLine: null,
+            content: "}",
+          },
+        ],
+      },
+    ],
+  },
+]
+
 function NoDifferences() {
   return (
     <Alert className="my-4 w-full border-yellow-300 bg-yellow-50 text-yellow-950 dark:border-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-100">
@@ -99,9 +357,7 @@ function BranchCombobox({
       />
 
       <ComboboxContent>
-        <ComboboxEmpty>
-          No branches found.
-        </ComboboxEmpty>
+        <ComboboxEmpty>No branches found.</ComboboxEmpty>
 
         <ComboboxList>
           {(branch) => (
@@ -127,88 +383,70 @@ function BranchCombobox({
 }
 
 function ChangedFilesItem({
-  name,
-  status,
-  additions,
-  deletions,
-}: ChangedFile) {
-  const statusConfig = {
-    added: {
-      icon: SquarePlus,
-      iconClass: "text-green-600 dark:text-green-500",
-      squares: [
-        "bg-green-500",
-        "bg-green-500",
-        "bg-green-500",
-        "bg-green-500",
-        "bg-green-500",
-      ],
-    },
-    changed: {
-      icon: SquarePen,
-      iconClass: "text-yellow-600 dark:text-yellow-500",
-      squares: [
-        "bg-green-500",
-        "bg-green-500",
-        "bg-yellow-500",
-        "bg-yellow-500",
-        "bg-red-500",
-      ],
-    },
-    removed: {
-      icon: SquareMinus,
-      iconClass: "text-red-600 dark:text-red-500",
-      squares: [
-        "bg-red-500",
-        "bg-red-500",
-        "bg-red-500",
-        "bg-red-500",
-        "bg-red-500",
-      ],
-    },
-  }
+  file,
+}: {
+  file: ChangedFile
+}) {
+  const maxSquares = 5
+  const total = file.additions + file.deletions
 
-  const config = statusConfig[status]
-  const Icon = config.icon
+  const additionSquares =
+    total === 0
+      ? 0
+      : Math.round((file.additions / total) * maxSquares)
+
+  const deletionSquares =
+    total === 0
+      ? 0
+      : maxSquares - additionSquares
 
   return (
-    <div className="flex items-center justify-between border-b px-3 py-2 last:border-b-0">
-      <div className="flex items-center gap-2">
-        <Icon className={`size-4 ${config.iconClass}`} />
+    <div className="flex items-center gap-2 border-b px-3 py-2 last:border-b-0">
+      {file.status === "added" && (
+        <SquarePlus className="size-4 shrink-0 text-green-600 dark:text-green-500" />
+      )}
 
-        <span className="text-sm font-semibold">
-          {name}
-        </span>
-      </div>
+      {file.status === "changed" && (
+        <SquareDot className="size-4 shrink-0 text-muted-foreground" />
+      )}
 
-      <div className="flex items-center gap-2">
+      {file.status === "removed" && (
+        <SquareMinus className="size-4 shrink-0 text-red-600 dark:text-red-500" />
+      )}
 
+      <span className="min-w-0 flex-1 truncate">
+        {file.name}
+      </span>
 
-        <span className="text-xs">
-          {additions > 0 && (
-            <span className="font-medium text-green-600 dark:text-green-500">
-              +{additions}
-            </span>
-          )}
+      <span className="flex shrink-0 items-center gap-0.5">
+        {Array.from({ length: additionSquares }).map((_, index) => (
+          <span
+            key={`add-${index}`}
+            className="size-1 rounded-[1px] bg-green-500"
+          />
+        ))}
 
-          {additions > 0 && deletions > 0 && " "}
+        {Array.from({ length: deletionSquares }).map((_, index) => (
+          <span
+            key={`remove-${index}`}
+            className="size-1 rounded-[1px] bg-red-500"
+          />
+        ))}
+      </span>
 
-          {deletions > 0 && (
-            <span className="font-medium text-red-600 dark:text-red-500">
-              -{deletions}
-            </span>
-          )}
-        </span>
+      <span className="flex shrink-0 items-center gap-2 text-xs">
+        {file.additions > 0 && (
+          <span className="text-green-600 dark:text-green-500">
+            +{file.additions}
+          </span>
+        )}
 
-        <div className="flex items-center gap-0.5">
-          {config.squares.map((square, index) => (
-            <span
-              key={index}
-              className={`size-2 ${square}`}
-            />
-          ))}
-        </div>
-      </div>
+        {file.deletions > 0 && (
+          <span className="text-red-600 dark:text-red-500">
+            -{file.deletions}
+          </span>
+        )}
+      </span>
     </div>
   )
 }
@@ -219,7 +457,7 @@ function CompareComponent() {
 
   const stats = {
     commits: 3,
-    filesChanged: 2,
+    filesChanged: changedFiles.length,
     contributors: 1,
   }
 
@@ -250,24 +488,20 @@ function CompareComponent() {
               strokeLinejoin="round"
               strokeWidth="1.5"
             >
-              <path d="M18 21a2 2 0 1 0 0-4a2 2 0 0 0 0 4M6 7a2 2 0 1 0 0-4a2 2 0 0 0 0 4m12 10V7s0-2-2-2h-3M6 7v10s0 2 2 2h3" />
+              <path d="M18 21a2 2 0 1 0 0-4a2 2 0 0 0 0 4M6 7a2 2 0 1 0-4-2a2 2 0 0 0 0 4m12 10V7s0-2-2-2h-3M6 7v10s0 2 2 2h3" />
               <path d="M15 7.5L12.5 5L15 2.5m-6.5 14L11 19l-2.5 2.5" />
             </g>
           </svg>
 
           <div className="flex items-center gap-2">
             <div className="flex flex-col">
-              <BranchCombobox
-                placeholder="Choose base branch"
-              />
+              <BranchCombobox placeholder="Choose base branch" />
             </div>
 
             <ArrowLeftRight className="size-4 shrink-0 text-muted-foreground" />
 
             <div className="flex flex-col">
-              <BranchCombobox
-                placeholder="Choose compare branch"
-              />
+              <BranchCombobox placeholder="Choose compare branch" />
             </div>
           </div>
         </div>
@@ -345,29 +579,38 @@ function CompareComponent() {
               onClick={() => setShowFiles((value) => !value)}
               className="font-semibold hover:underline"
             >
-              2 changed files
+              {changedFiles.length} changed files
             </button>{" "}
             with{" "}
-            <span className="font-semibold">
-              63 additions
+            <span className="font-semibold text-green-600 dark:text-green-500">
+              +208 additions
             </span>{" "}
             and{" "}
-            <span className="font-semibold">
-              42 deletions
+            <span className="font-semibold text-red-600 dark:text-red-500">
+              -45 deletions
             </span>
           </span>
         </div>
 
         {showFiles && (
-          <div className="mt-3 overflow-hidden rounded-md border">
+          <div className="mt-3 rounded-md border">
             {changedFiles.map((file) => (
               <ChangedFilesItem
                 key={file.name}
-                {...file}
+                file={file}
               />
             ))}
           </div>
         )}
+
+        <div className="mt-2 mb-5">
+          {fileDiffs.map((diff) => (
+            <CodeCommitBlock
+              key={diff.path}
+              diff={diff}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )
