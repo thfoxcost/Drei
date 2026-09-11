@@ -15,7 +15,9 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
+  AlertAction
 } from "@/components/ui/alert"
+import { InfoIcon } from "lucide-react"
 import {
   Combobox,
   ComboboxContent,
@@ -28,6 +30,8 @@ import Commits from "@/components/repo/pulls/content/commits"
 import CodeCommitBlock, {
   type FileDiff as CodeFileDiff,
 } from "@/components/repo/commits/code-commit"
+import { Button } from "@/components/ui/button"
+
 
 export const Route = createFileRoute("/$username/$repo/compare")({
   component: CompareComponent,
@@ -451,6 +455,25 @@ function ChangedFilesItem({
   )
 }
 
+
+export function NewPRalert() {
+  return (
+    <Alert className="border-blue-500/50 bg-blue-500/10 text-blue-500 py-3">
+      <InfoIcon />
+      <AlertTitle>Discuss and review the changes in this comparison with others.</AlertTitle>
+
+      <AlertAction>
+        <Button
+          className="bg-green-600 text-white hover:bg-green-700"
+        >
+          Create pull request
+        </Button>
+      </AlertAction>
+    </Alert>
+  )
+}
+
+
 function CompareComponent() {
   const [showWarning] = useState(false)
   const [showFiles, setShowFiles] = useState(false)
@@ -563,6 +586,7 @@ function CompareComponent() {
           </span>
         </div>
 
+        <NewPRalert />
         <div className="mt-2">
           <Commits />
         </div>
