@@ -327,6 +327,98 @@ func Migrate() error {
 		return err
 	}
 
+	// Pull requests. Numbers are shared with issues per repository — the
+	// allocation query in CreateIssue / CreatePullRequest takes the MAX across
+	// both tables to prevent collisions.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pull_requests (
+			id BIGSERIAL PRIMARY KEY,
+			repo_id BIGINT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+			number INTEGER NOT NULL,
+			title TEXT NOT NULL,
+			description TEXT NOT NULL DEFAULT '',
+			state TEXT NOT NULL DEFAULT 'open',
+			author_id TEXT NOT NULL,
+			source_branch TEXT NOT NULL,
+			target_branch TEXT NOT NULL,
+			merge_commit_hash TEXT,
+			merged_at TIMESTAMPTZ,
+			merged_by TEXT,
+			closed_at TIMESTAMPTZ,
+			closed_by TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			UNIQUE(repo_id, number)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_requests_repo_state_idx
+		ON pull_requests (repo_id, state);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_requests_author_id_idx
+		ON pull_requests (author_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Pull request comments. mirrors issue_comments exactly.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pull_request_comments (
+			id BIGSERIAL PRIMARY KEY,
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			body TEXT NOT NULL,
+			created_by TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_request_comments_pull_request_id_idx
+		ON pull_request_comments (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Pull request events — activity timeline entries (opened, closed,
+	// merged, comment, reopened). metadata is a flexible JSONB payload.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pull_request_events (
+			id BIGSERIAL PRIMARY KEY,
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			type TEXT NOT NULL,
+			actor_id TEXT NOT NULL,
+			metadata JSONB,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_request_events_pull_request_id_idx
+		ON pull_request_events (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
 	// User appearance preferences: theme and language.
 	// Defaults ensure existing users get English without a backfill migration.
 	_, err = DB.Exec(context.Background(), `
