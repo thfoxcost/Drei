@@ -139,6 +139,11 @@ function Repo({ owner, repo, branch }: RepoProps) {
 										? repoData.lastCommit.message
 										: file.lastCommit.message
 								}
+								commitHash={
+									file.lastCommit.hash.trim() === ""
+										? repoData.lastCommit.hash
+										: file.lastCommit.hash
+								}
 								date={
 									file.lastCommit.date.trim() === ""
 										? repoData.lastCommit.date
