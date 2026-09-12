@@ -1,0 +1,898 @@
+package database
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+)
+
+// PullRequestUser is a resolved user record attached to a pull request.
+type PullRequestUser struct {
+	ID       string  `json:"id"`
+	Username string  `json:"username"`
+	Avatar   *string `json:"avatar"`
+}
+
+// PullRequestComment is a comment on a pull request with its author resolved.
+type PullRequestComment struct {
+	ID        int64            `json:"id"`
+	Body      string           `json:"body"`
+	CreatedBy PullRequestUser  `json:"createdBy"`
+	CreatedAt string           `json:"createdAt"`
+	UpdatedAt string           `json:"updatedAt"`
+}
+
+// PullRequestEvent is a timeline entry for a pull request.
+type PullRequestEvent struct {
+	ID        int64            `json:"id"`
+	Type      string           `json:"type"`
+	Actor     PullRequestUser  `json:"actor"`
+	Metadata  map[string]any   `json:"metadata,omitempty"`
+	CreatedAt string           `json:"createdAt"`
+}
+
+// PullRequest is the JSON shape returned to the frontend.
+type PullRequest struct {
+	ID              int64               `json:"id"`
+	Number          int                 `json:"number"`
+	Title           string              `json:"title"`
+	Description     string              `json:"description"`
+	State           string              `json:"state"`
+	Author          PullRequestUser     `json:"author"`
+	SourceBranch    string              `json:"sourceBranch"`
+	TargetBranch    string              `json:"targetBranch"`
+	MergeCommitHash *string             `json:"mergeCommitHash"`
+	MergedAt        *string             `json:"mergedAt"`
+	MergedBy        *PullRequestUser    `json:"mergedBy"`
+	ClosedAt        *string             `json:"closedAt"`
+	ClosedBy        *PullRequestUser    `json:"closedBy"`
+	CreatedAt       string              `json:"createdAt"`
+	UpdatedAt       string              `json:"updatedAt"`
+	CommentCount    int                 `json:"commentCount"`
+	Comments        []PullRequestComment `json:"comments,omitempty"`
+}
+
+// PullRequestFilter describes the optional filters and sort applied when
+// listing pull requests.
+type PullRequestFilter struct {
+	State    string
+	AuthorID string
+	Search   string
+	Sort     string
+}
+
+const prSelectColumns = `
+	pr.id,
+	pr.number,
+	pr.title,
+	COALESCE(pr.description, ''),
+	pr.state,
+	pr.author_id,
+	COALESCE(au.name, ''),
+	au.image,
+	pr.source_branch,
+	pr.target_branch,
+	pr.merge_commit_hash,
+	pr.merged_at,
+	pr.merged_by,
+	COALESCE(mu.name, ''),
+	mu.image,
+	pr.closed_at,
+	pr.closed_by,
+	COALESCE(cbu.name, ''),
+	cbu.image,
+	pr.created_at,
+	pr.updated_at,
+	COALESCE((
+		SELECT COUNT(*)
+		FROM pull_request_comments pc
+		WHERE pc.pull_request_id = pr.id
+	), 0)`
+
+const prFromClause = `
+	FROM pull_requests pr
+	LEFT JOIN "user" au ON au.id = pr.author_id
+	LEFT JOIN "user" mu ON mu.id = pr.merged_by
+	LEFT JOIN "user" cbu ON cbu.id = pr.closed_by`
+
+func scanPullRequest(row rowScanner) (PullRequest, error) {
+	var pr PullRequest
+
+	var (
+		mergedAt        *time.Time
+		mergedByID      *string
+		mergedByName    *string
+		mergedByAvatar  *string
+		closedAt        *time.Time
+		closedByID      *string
+		closedByName    *string
+		closedByAvatar  *string
+		createdAt       time.Time
+		updatedAt       time.Time
+		mergeCommitHash *string
+	)
+
+	err := row.Scan(
+		&pr.ID,
+		&pr.Number,
+		&pr.Title,
+		&pr.Description,
+		&pr.State,
+		&pr.Author.ID,
+		&pr.Author.Username,
+		&pr.Author.Avatar,
+		&pr.SourceBranch,
+		&pr.TargetBranch,
+		&mergeCommitHash,
+		&mergedAt,
+		&mergedByID,
+		&mergedByName,
+		&mergedByAvatar,
+		&closedAt,
+		&closedByID,
+		&closedByName,
+		&closedByAvatar,
+		&createdAt,
+		&updatedAt,
+		&pr.CommentCount,
+	)
+	if err != nil {
+		return PullRequest{}, err
+	}
+
+	pr.MergeCommitHash = mergeCommitHash
+	pr.CreatedAt = createdAt.Format(time.RFC3339)
+	pr.UpdatedAt = updatedAt.Format(time.RFC3339)
+
+	if mergedAt != nil {
+		formatted := mergedAt.Format(time.RFC3339)
+		pr.MergedAt = &formatted
+	}
+
+	if mergedByID != nil {
+		pr.MergedBy = &PullRequestUser{
+			ID:       *mergedByID,
+			Username: coalesceString(mergedByName),
+			Avatar:   mergedByAvatar,
+		}
+	}
+
+	if closedAt != nil {
+		formatted := closedAt.Format(time.RFC3339)
+		pr.ClosedAt = &formatted
+	}
+
+	if closedByID != nil {
+		pr.ClosedBy = &PullRequestUser{
+			ID:       *closedByID,
+			Username: coalesceString(closedByName),
+			Avatar:   closedByAvatar,
+		}
+	}
+
+	return pr, nil
+}
+
+// GetPullRequest returns a single pull request by its repository-scoped number.
+func GetPullRequest(repoID int64, number int) (*PullRequest, error) {
+	pr, err := scanPullRequest(DB.QueryRow(
+		context.Background(),
+		`SELECT `+prSelectColumns+`
+		`+prFromClause+`
+		WHERE pr.repo_id = $1 AND pr.number = $2`,
+		repoID,
+		number,
+	))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &pr, nil
+}
+
+// pullRequestWhere builds the WHERE clause and arguments for a filter, without
+// the state predicate.
+func pullRequestWhere(repoID int64, filter PullRequestFilter) (string, []any, int) {
+	query := " WHERE pr.repo_id = $1"
+	args := []any{repoID}
+	param := 2
+
+	if filter.AuthorID != "" {
+		query += fmt.Sprintf(" AND pr.author_id = $%d", param)
+		args = append(args, filter.AuthorID)
+		param++
+	}
+
+	if filter.Search != "" {
+		pattern := "%" + filter.Search + "%"
+		query += fmt.Sprintf(
+			" AND (pr.title ILIKE $%d OR pr.description ILIKE $%d OR pr.number::text = $%d)",
+			param, param+1, param+2,
+		)
+		args = append(args, pattern, pattern, filter.Search)
+		param += 3
+	}
+
+	return query, args, param
+}
+
+// appendPRStateAndSort appends the state predicate and ORDER BY clause for a
+// pull requests list query.
+func appendPRStateAndSort(query string, param int, args []any, filter PullRequestFilter) (string, []any) {
+	switch filter.State {
+	case "open":
+		query += fmt.Sprintf(" AND pr.state = 'open'")
+	case "closed":
+		query += fmt.Sprintf(" AND pr.state = 'closed'")
+	case "merged":
+		query += fmt.Sprintf(" AND pr.state = 'merged'")
+	}
+
+	switch filter.Sort {
+	case "oldest":
+		query += " ORDER BY pr.created_at ASC"
+	case "recently-updated":
+		query += " ORDER BY pr.updated_at DESC"
+	case "least-updated":
+		query += " ORDER BY pr.updated_at ASC"
+	case "most-commented":
+		query += " ORDER BY comment_count DESC, pr.id DESC"
+	case "least-commented":
+		query += " ORDER BY comment_count ASC, pr.id ASC"
+	case "source-branch":
+		query += " ORDER BY pr.source_branch ASC, pr.number DESC"
+	case "target-branch":
+		query += " ORDER BY pr.target_branch ASC, pr.number DESC"
+	default:
+		query += " ORDER BY pr.created_at DESC"
+	}
+
+	return query, args
+}
+
+// listPullRequests runs the shared pull requests list query.
+func listPullRequests(repoID int64, filter PullRequestFilter) ([]PullRequest, error) {
+	query := `SELECT ` + prSelectColumns + `
+		` + prFromClause
+	where, args, param := pullRequestWhere(repoID, filter)
+	query += where
+
+	query, args = appendPRStateAndSort(query, param, args, filter)
+
+	rows, err := DB.Query(context.Background(), query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var pullRequests []PullRequest
+
+	for rows.Next() {
+		pr, err := scanPullRequest(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		pullRequests = append(pullRequests, pr)
+	}
+
+	return pullRequests, rows.Err()
+}
+
+// ListPullRequests returns the pull requests of a repository, filtered and
+// sorted according to the given filter.
+func ListPullRequests(repoID int64, filter PullRequestFilter) ([]PullRequest, error) {
+	return listPullRequests(repoID, filter)
+}
+
+// CountPullRequests returns the open, closed, and merged pull request counts
+// for a repository after applying every non-state filter.
+func CountPullRequests(repoID int64, filter PullRequestFilter) (open, closed, merged int, err error) {
+	where, args, _ := pullRequestWhere(repoID, filter)
+
+	err = DB.QueryRow(
+		context.Background(),
+		`SELECT COUNT(*) FILTER (WHERE pr.state = 'open'),
+		       COUNT(*) FILTER (WHERE pr.state = 'closed'),
+		       COUNT(*) FILTER (WHERE pr.state = 'merged')
+		FROM pull_requests pr`+where,
+		args...,
+	).Scan(&open, &closed, &merged)
+
+	return open, closed, merged, err
+}
+
+// CreatePullRequest inserts a new open pull request, allocating the next
+// repository-scoped number atomically under a row lock on the repository.
+// An "opened" event is recorded in the same transaction.
+func CreatePullRequest(repoID int64, authorID, title, description, sourceBranch, targetBranch string) (PullRequest, error) {
+	ctx := context.Background()
+
+	tx, err := DB.Begin(ctx)
+	if err != nil {
+		return PullRequest{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Serialize issue/PR number allocation per repository.
+	_, err = tx.Exec(ctx, `SELECT id FROM repositories WHERE id = $1 FOR UPDATE`, repoID)
+	if err != nil {
+		return PullRequest{}, err
+	}
+
+	var number int
+
+	err = tx.QueryRow(
+		ctx,
+		`
+		SELECT COALESCE(MAX(n), 0) + 1 FROM (
+			SELECT MAX(number) AS n FROM issues       WHERE repo_id = $1
+			UNION ALL
+			SELECT MAX(number) AS n FROM pull_requests WHERE repo_id = $1
+		) combined
+		`,
+		repoID,
+	).Scan(&number)
+	if err != nil {
+		return PullRequest{}, err
+	}
+
+	var prID int64
+
+	err = tx.QueryRow(
+		ctx,
+		`
+		INSERT INTO pull_requests (repo_id, number, title, description, state, author_id, source_branch, target_branch)
+		VALUES ($1, $2, $3, $4, 'open', $5, $6, $7)
+		RETURNING id
+		`,
+		repoID,
+		number,
+		title,
+		description,
+		authorID,
+		sourceBranch,
+		targetBranch,
+	).Scan(&prID)
+	if err != nil {
+		return PullRequest{}, err
+	}
+
+	metadata, _ := json.Marshal(map[string]any{
+		"source_branch": sourceBranch,
+		"target_branch": targetBranch,
+	})
+
+	_, err = tx.Exec(
+		ctx,
+		`INSERT INTO pull_request_events (pull_request_id, type, actor_id, metadata)
+		 VALUES ($1, 'opened', $2, $3)`,
+		prID,
+		authorID,
+		metadata,
+	)
+	if err != nil {
+		return PullRequest{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return PullRequest{}, err
+	}
+
+	created, err := GetPullRequest(repoID, number)
+	if err != nil {
+		return PullRequest{}, err
+	}
+
+	if created == nil {
+		return PullRequest{}, pgx.ErrNoRows
+	}
+
+	return *created, nil
+}
+
+// UpdatePullRequest updates the editable fields of a pull request.
+func UpdatePullRequest(repoID int64, number int, title, description string) error {
+	_, err := DB.Exec(
+		context.Background(),
+		`
+		UPDATE pull_requests
+		SET title = $3,
+		    description = $4,
+		    updated_at = NOW()
+		WHERE repo_id = $1 AND number = $2
+		`,
+		repoID,
+		number,
+		title,
+		description,
+	)
+
+	return err
+}
+
+// ClosePullRequest closes an open pull request without merging. Only open PRs
+// can be closed. A "state_change" event is recorded.
+func ClosePullRequest(repoID int64, number int, actorID string) error {
+	ctx := context.Background()
+
+	tx, err := DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	var prID int64
+
+	err = tx.QueryRow(
+		ctx,
+		`SELECT id FROM pull_requests WHERE repo_id = $1 AND number = $2`,
+		repoID,
+		number,
+	).Scan(&prID)
+	if err != nil {
+		return err
+	}
+
+	result, err := tx.Exec(
+		ctx,
+		`
+		UPDATE pull_requests
+		SET state = 'closed',
+		    closed_at = NOW(),
+		    closed_by = $3,
+		    updated_at = NOW()
+		WHERE repo_id = $1 AND number = $2 AND state = 'open'
+		`,
+		repoID,
+		number,
+		actorID,
+	)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("pull request #%d is not open", number)
+	}
+
+	metadata, _ := json.Marshal(map[string]any{
+		"old_state": "open",
+		"new_state": "closed",
+	})
+
+	_, err = tx.Exec(
+		ctx,
+		`INSERT INTO pull_request_events (pull_request_id, type, actor_id, metadata)
+		 VALUES ($1, 'state_change', $2, $3)`,
+		prID,
+		actorID,
+		metadata,
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+// MergePullRequest merges an open pull request. Only open PRs can be merged.
+// Sets the merge commit hash, merged_at, and merged_by fields. A "merged"
+// event is recorded.
+func MergePullRequest(repoID int64, number int, actorID, mergeCommitHash string) error {
+	ctx := context.Background()
+
+	tx, err := DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	var prID int64
+
+	err = tx.QueryRow(
+		ctx,
+		`SELECT id FROM pull_requests WHERE repo_id = $1 AND number = $2`,
+		repoID,
+		number,
+	).Scan(&prID)
+	if err != nil {
+		return err
+	}
+
+	result, err := tx.Exec(
+		ctx,
+		`
+		UPDATE pull_requests
+		SET state = 'merged',
+		    merge_commit_hash = $3,
+		    merged_at = NOW(),
+		    merged_by = $4,
+		    updated_at = NOW()
+		WHERE repo_id = $1 AND number = $2 AND state = 'open'
+		`,
+		repoID,
+		number,
+		mergeCommitHash,
+		actorID,
+	)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("pull request #%d is not open", number)
+	}
+
+	metadata, _ := json.Marshal(map[string]any{
+		"merge_commit_hash": mergeCommitHash,
+	})
+
+	_, err = tx.Exec(
+		ctx,
+		`INSERT INTO pull_request_events (pull_request_id, type, actor_id, metadata)
+		 VALUES ($1, 'merged', $2, $3)`,
+		prID,
+		actorID,
+		metadata,
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+// ReopenPullRequest reopens a closed (but not merged) pull request. Only
+// closed PRs can be reopened; merged PRs cannot. A "state_change" event is
+// recorded.
+func ReopenPullRequest(repoID int64, number int, actorID string) error {
+	ctx := context.Background()
+
+	tx, err := DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	var prID int64
+
+	err = tx.QueryRow(
+		ctx,
+		`SELECT id FROM pull_requests WHERE repo_id = $1 AND number = $2`,
+		repoID,
+		number,
+	).Scan(&prID)
+	if err != nil {
+		return err
+	}
+
+	result, err := tx.Exec(
+		ctx,
+		`
+		UPDATE pull_requests
+		SET state = 'open',
+		    closed_at = NULL,
+		    closed_by = NULL,
+		    updated_at = NOW()
+		WHERE repo_id = $1 AND number = $2 AND state = 'closed'
+		`,
+		repoID,
+		number,
+	)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("pull request #%d is not closed", number)
+	}
+
+	metadata, _ := json.Marshal(map[string]any{
+		"old_state": "closed",
+		"new_state": "open",
+	})
+
+	_, err = tx.Exec(
+		ctx,
+		`INSERT INTO pull_request_events (pull_request_id, type, actor_id, metadata)
+		 VALUES ($1, 'state_change', $2, $3)`,
+		prID,
+		actorID,
+		metadata,
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+// ListPullRequestComments returns the comments of a pull request in creation
+// order, with authors resolved against the "user" table.
+func ListPullRequestComments(repoID int64, number int) ([]PullRequestComment, error) {
+	rows, err := DB.Query(
+		context.Background(),
+		`
+		SELECT pc.id, pc.body, pc.created_by, COALESCE(u.name, ''), u.image, pc.created_at, pc.updated_at
+		FROM pull_request_comments pc
+		JOIN pull_requests pr ON pr.id = pc.pull_request_id
+		LEFT JOIN "user" u ON u.id = pc.created_by
+		WHERE pr.repo_id = $1 AND pr.number = $2
+		ORDER BY pc.created_at ASC, pc.id ASC
+		`,
+		repoID,
+		number,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []PullRequestComment
+
+	for rows.Next() {
+		var comment PullRequestComment
+
+		var (
+			createdAt time.Time
+			updatedAt time.Time
+		)
+
+		if err := rows.Scan(
+			&comment.ID,
+			&comment.Body,
+			&comment.CreatedBy.ID,
+			&comment.CreatedBy.Username,
+			&comment.CreatedBy.Avatar,
+			&createdAt,
+			&updatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		comment.CreatedAt = createdAt.Format(time.RFC3339)
+		comment.UpdatedAt = updatedAt.Format(time.RFC3339)
+
+		comments = append(comments, comment)
+	}
+
+	return comments, rows.Err()
+}
+
+// AddPullRequestComment creates a comment on a pull request and returns it
+// resolved. A "comment" event is recorded in the same transaction.
+func AddPullRequestComment(repoID int64, number int, authorID, body string) (PullRequestComment, error) {
+	ctx := context.Background()
+
+	tx, err := DB.Begin(ctx)
+	if err != nil {
+		return PullRequestComment{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	var prID int64
+
+	err = tx.QueryRow(
+		ctx,
+		`SELECT id FROM pull_requests WHERE repo_id = $1 AND number = $2`,
+		repoID,
+		number,
+	).Scan(&prID)
+	if err != nil {
+		return PullRequestComment{}, err
+	}
+
+	var comment PullRequestComment
+
+	var (
+		createdAt time.Time
+		updatedAt time.Time
+	)
+
+	err = tx.QueryRow(
+		ctx,
+		`
+		INSERT INTO pull_request_comments (pull_request_id, body, created_by)
+		VALUES ($1, $2, $3)
+		RETURNING id, body, created_by, created_at, updated_at
+		`,
+		prID,
+		body,
+		authorID,
+	).Scan(
+		&comment.ID,
+		&comment.Body,
+		&comment.CreatedBy.ID,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		return PullRequestComment{}, err
+	}
+
+	comment.CreatedAt = createdAt.Format(time.RFC3339)
+	comment.UpdatedAt = updatedAt.Format(time.RFC3339)
+
+	err = tx.QueryRow(
+		ctx,
+		`SELECT COALESCE(u.name, ''), u.image FROM "user" u WHERE u.id = $1`,
+		authorID,
+	).Scan(&comment.CreatedBy.Username, &comment.CreatedBy.Avatar)
+	if err != nil {
+		return PullRequestComment{}, err
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		`UPDATE pull_requests SET updated_at = NOW() WHERE id = $1`,
+		prID,
+	)
+	if err != nil {
+		return PullRequestComment{}, err
+	}
+
+	preview := body
+	if len(preview) > 100 {
+		preview = preview[:100]
+	}
+
+	metadata, _ := json.Marshal(map[string]any{
+		"body_preview": preview,
+	})
+
+	_, err = tx.Exec(
+		ctx,
+		`INSERT INTO pull_request_events (pull_request_id, type, actor_id, metadata)
+		 VALUES ($1, 'comment', $2, $3)`,
+		prID,
+		authorID,
+		metadata,
+	)
+	if err != nil {
+		return PullRequestComment{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return PullRequestComment{}, err
+	}
+
+	return comment, nil
+}
+
+// UpdatePullRequestComment updates the body of a comment belonging to a pull
+// request.
+func UpdatePullRequestComment(repoID int64, number int, commentID int64, body string) (PullRequestComment, error) {
+	var comment PullRequestComment
+
+	var (
+		createdAt time.Time
+		updatedAt time.Time
+	)
+
+	err := DB.QueryRow(
+		context.Background(),
+		`
+		UPDATE pull_request_comments pc
+		SET body = $1, updated_at = NOW()
+		FROM pull_requests pr
+		WHERE pc.id = $2
+		  AND pr.id = pc.pull_request_id
+		  AND pr.repo_id = $3
+		  AND pr.number = $4
+		RETURNING pc.id, pc.body, pc.created_by, pc.created_at, pc.updated_at
+		`,
+		body,
+		commentID,
+		repoID,
+		number,
+	).Scan(
+		&comment.ID,
+		&comment.Body,
+		&comment.CreatedBy.ID,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return PullRequestComment{}, nil
+		}
+		return PullRequestComment{}, err
+	}
+
+	comment.CreatedAt = createdAt.Format(time.RFC3339)
+	comment.UpdatedAt = updatedAt.Format(time.RFC3339)
+
+	err = DB.QueryRow(
+		context.Background(),
+		`SELECT COALESCE(u.name, ''), u.image FROM "user" u WHERE u.id = $1`,
+		comment.CreatedBy.ID,
+	).Scan(&comment.CreatedBy.Username, &comment.CreatedBy.Avatar)
+	if err != nil {
+		return PullRequestComment{}, err
+	}
+
+	return comment, nil
+}
+
+// DeletePullRequestComment removes a comment belonging to a pull request.
+func DeletePullRequestComment(repoID int64, number int, commentID int64) error {
+	_, err := DB.Exec(
+		context.Background(),
+		`
+		DELETE FROM pull_request_comments pc
+		USING pull_requests pr
+		WHERE pc.id = $1
+		  AND pr.id = pc.pull_request_id
+		  AND pr.repo_id = $2
+		  AND pr.number = $3
+		`,
+		commentID,
+		repoID,
+		number,
+	)
+
+	return err
+}
+
+// ListPullRequestEvents returns the activity timeline of a pull request in
+// chronological order, with actors resolved against the "user" table.
+func ListPullRequestEvents(repoID int64, number int) ([]PullRequestEvent, error) {
+	rows, err := DB.Query(
+		context.Background(),
+		`
+		SELECT pe.id, pe.type, pe.actor_id, COALESCE(u.name, ''), u.image,
+		       pe.metadata, pe.created_at
+		FROM pull_request_events pe
+		JOIN pull_requests pr ON pr.id = pe.pull_request_id
+		LEFT JOIN "user" u ON u.id = pe.actor_id
+		WHERE pr.repo_id = $1 AND pr.number = $2
+		ORDER BY pe.created_at ASC, pe.id ASC
+		`,
+		repoID,
+		number,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []PullRequestEvent
+
+	for rows.Next() {
+		var event PullRequestEvent
+		var metadataBytes []byte
+		var createdAt time.Time
+
+		if err := rows.Scan(
+			&event.ID,
+			&event.Type,
+			&event.Actor.ID,
+			&event.Actor.Username,
+			&event.Actor.Avatar,
+			&metadataBytes,
+			&createdAt,
+		); err != nil {
+			return nil, err
+		}
+
+		if metadataBytes != nil {
+			if err := json.Unmarshal(metadataBytes, &event.Metadata); err != nil {
+				return nil, err
+			}
+		}
+
+		event.CreatedAt = createdAt.Format(time.RFC3339)
+
+		events = append(events, event)
+	}
+
+	return events, rows.Err()
+}
