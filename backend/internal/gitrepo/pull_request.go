@@ -216,8 +216,9 @@ func checkMergeability(owner, repo, targetBranch, sourceBranch string) (bool, []
 		return false, nil, fmt.Errorf("git checkout %s: %w: %s", targetBranch, err, strings.TrimSpace(string(out)))
 	}
 
-	// Attempt a no-commit merge of the source branch.
-	mergeCmd := exec.Command("git", "-C", tmpDir, "merge", "--no-commit", "--no-ff", sourceBranch)
+	// Attempt a no-commit merge of the source branch. In the temp clone the
+	// branch exists as a remote tracking ref, so we merge origin/<source>.
+	mergeCmd := exec.Command("git", "-C", tmpDir, "merge", "--no-commit", "--no-ff", "origin/"+sourceBranch)
 	mergeErr := mergeCmd.Run()
 
 	if mergeErr == nil {
@@ -285,8 +286,9 @@ func MergeBranches(owner, repo, sourceBranch, targetBranch, authorName string, p
 	// Build the merge commit message.
 	mergeMsg := fmt.Sprintf("Merge pull request #%d from %s/%s", prNumber, owner, sourceBranch)
 
-	// Perform the merge with --no-ff to always create a merge commit.
-	mergeCmd := exec.Command("git", "-C", tmpDir, "merge", "--no-ff", "-m", mergeMsg, sourceBranch)
+	// Perform the merge with --no-ff to always create a merge commit. In the
+	// temp clone branches are remote tracking refs, so merge origin/<source>.
+	mergeCmd := exec.Command("git", "-C", tmpDir, "merge", "--no-ff", "-m", mergeMsg, "origin/"+sourceBranch)
 	if out, err := mergeCmd.CombinedOutput(); err != nil {
 		// Check for conflicting files.
 		diffCmd := exec.Command("git", "-C", tmpDir, "diff", "--name-only", "--diff-filter=U")
@@ -321,6 +323,20 @@ func MergeBranches(owner, repo, sourceBranch, targetBranch, authorName string, p
 
 	mergeCommitHash := strings.TrimSpace(string(hashOut))
 
+	// Push the merge result to a temporary ref on the bare repository. This
+	// ensures the merge commit objects exist in the bare repo's object store
+	// before we update the target branch ref. We use a temp ref so the push
+	// doesn't move the target branch directly — the CAS update-ref below
+	// handles the safe ref update.
+	pushRef := fmt.Sprintf("refs/drei-tmp/%s", mergeCommitHash[:12])
+	pushCmd := exec.Command("git", "-C", tmpDir, "push",
+		bareRepoPath(owner, repo),
+		"HEAD:"+pushRef,
+	)
+	if out, err := pushCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("push merge objects: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
 	// Update the target branch ref in the bare repository. The three-argument
 	// form ensures the ref is only updated if it still points to the commit we
 	// originally resolved. If someone pushed to the target branch while the
@@ -337,6 +353,11 @@ func MergeBranches(owner, repo, sourceBranch, targetBranch, authorName string, p
 	if out, err := updateRefCmd.CombinedOutput(); err != nil {
 		return "", fmt.Errorf("update bare repo ref: %w: %s", err, strings.TrimSpace(string(out)))
 	}
+
+	// Clean up the temporary ref.
+	deleteRefCmd := exec.Command("git", "--git-dir="+bareRepoPath(owner, repo),
+		"update-ref", "-d", pushRef)
+	_ = deleteRefCmd.Run()
 
 	return mergeCommitHash, nil
 }
