@@ -342,10 +342,6 @@ func resolveBranchForCommit(r *git.Repository, target plumbing.Hash) string {
 	return branchName
 }
 
-// emptyTreeHash is the SHA-1 of an empty tree, used as the base when computing
-// diff stats for root commits that have no parent.
-var emptyTreeHash = plumbing.NewHash("4b825dc642cb6eb9a060e54bf899d69f74d2e6e6")
-
 // computeCommitStats returns the number of changed files, total additions,
 // total deletions, and per-file changes for a commit by diffing its tree
 // against the first parent's tree (or an empty tree for root commits).
@@ -365,11 +361,7 @@ func computeCommitStats(r *git.Repository, commit *object.Commit) (int, int, int
 	}
 
 	if parentTree == nil {
-		parentTree, _ = r.TreeObject(emptyTreeHash)
-	}
-
-	if parentTree == nil {
-		return 0, 0, 0, nil
+		parentTree = &object.Tree{}
 	}
 
 	changes, err := object.DiffTree(parentTree, commitTree)
@@ -452,11 +444,7 @@ func computeFileDiffs(r *git.Repository, commit *object.Commit) []FileDiff {
 	}
 
 	if parentTree == nil {
-		parentTree, _ = r.TreeObject(emptyTreeHash)
-	}
-
-	if parentTree == nil {
-		return nil
+		parentTree = &object.Tree{}
 	}
 
 	changes, err := object.DiffTree(parentTree, commitTree)
@@ -495,6 +483,9 @@ func computeFileDiffs(r *git.Repository, commit *object.Commit) []FileDiff {
 
 		lines, additions, deletions := chunksToDiffLines(fp.Chunks())
 		hunks := groupHunks(lines)
+		if hunks == nil {
+			hunks = []DiffHunk{}
+		}
 
 		result = append(result, FileDiff{
 			Path:      path,
