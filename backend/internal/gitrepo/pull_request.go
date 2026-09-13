@@ -24,9 +24,9 @@ type BranchCompare struct {
 	Conflicts []string     `json:"conflicts,omitempty"`
 }
 
-// openRepo opens the bare repository for the given owner/repo and returns the
+// OpenRepo opens the bare repository for the given owner/repo and returns the
 // go-git Repository handle.
-func openRepo(owner, repo string) (*git.Repository, error) {
+func OpenRepo(owner, repo string) (*git.Repository, error) {
 	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
 	return git.PlainOpen(repoPath)
 }
@@ -36,11 +36,26 @@ func bareRepoPath(owner, repo string) string {
 	return filepath.Join(config.App.ReposPath, owner, repo+".git")
 }
 
+// VerifyBranchExists checks that the given branch exists in the repository.
+func VerifyBranchExists(owner, repo, branch string) error {
+	r, err := OpenRepo(owner, repo)
+	if err != nil {
+		return fmt.Errorf("open repo: %w", err)
+	}
+
+	_, err = ResolveBranch(r, branch)
+	if err != nil {
+		return fmt.Errorf("branch %q not found", branch)
+	}
+
+	return nil
+}
+
 // CompareBranches computes the diff between baseBranch and headBranch for a
 // pull request view: commits ahead/behind, file changes, line-level diffs,
 // and mergeability via an actual Git 3-way merge in a temporary clone.
 func CompareBranches(owner, repo, baseBranch, headBranch string) (*BranchCompare, error) {
-	r, err := openRepo(owner, repo)
+	r, err := OpenRepo(owner, repo)
 	if err != nil {
 		return nil, fmt.Errorf("open repo: %w", err)
 	}
