@@ -23,6 +23,10 @@ var (
 	testRepoDir string
 	mux         *http.ServeMux
 	authServer  *httptest.Server
+
+	// testUserIDs is the set of user IDs created by tests. Cleanup only
+	// touches these rows so real database data is preserved.
+	testUserIDs = []string{"test-user-id"}
 )
 
 func TestMain(m *testing.M) {
@@ -52,18 +56,8 @@ func TestMain(m *testing.M) {
 }
 
 func setupTestData() func() {
-	// Clean previous test data.
-	database.DB.Exec(context.Background(), `DELETE FROM pull_request_events`)
-	database.DB.Exec(context.Background(), `DELETE FROM pull_request_comments`)
-	database.DB.Exec(context.Background(), `DELETE FROM pull_requests`)
-	database.DB.Exec(context.Background(), `DELETE FROM issue_comments`)
-	database.DB.Exec(context.Background(), `DELETE FROM issue_label_links`)
-	database.DB.Exec(context.Background(), `DELETE FROM issue_assignees`)
-	database.DB.Exec(context.Background(), `DELETE FROM issues`)
-	database.DB.Exec(context.Background(), `DELETE FROM issue_labels`)
-	database.DB.Exec(context.Background(), `DELETE FROM contributors`)
-	database.DB.Exec(context.Background(), `DELETE FROM repositories`)
-	database.DB.Exec(context.Background(), `DELETE FROM "user"`)
+	// Clean only test-owned data — never delete all rows.
+	cleanTestData()
 
 	// Create test user.
 	_, err := database.DB.Exec(context.Background(),
@@ -159,17 +153,50 @@ func setupTestData() func() {
 		authServer.Close()
 		os.RemoveAll(testRepoDir)
 		os.RemoveAll(tmpClone)
-		database.DB.Exec(context.Background(), `DELETE FROM pull_request_events`)
-		database.DB.Exec(context.Background(), `DELETE FROM pull_request_comments`)
-		database.DB.Exec(context.Background(), `DELETE FROM pull_requests`)
-		database.DB.Exec(context.Background(), `DELETE FROM issue_comments`)
-		database.DB.Exec(context.Background(), `DELETE FROM issue_label_links`)
-		database.DB.Exec(context.Background(), `DELETE FROM issue_assignees`)
-		database.DB.Exec(context.Background(), `DELETE FROM issues`)
-		database.DB.Exec(context.Background(), `DELETE FROM issue_labels`)
-		database.DB.Exec(context.Background(), `DELETE FROM contributors`)
-		database.DB.Exec(context.Background(), `DELETE FROM repositories`)
-		database.DB.Exec(context.Background(), `DELETE FROM "user"`)
+		cleanTestData()
+	}
+}
+
+// cleanTestData removes only rows created by tests. It targets the test
+// repository ("testrepo" owned by "testowner") and test user IDs, leaving all
+// other data intact.
+func cleanTestData() {
+	ctx := context.Background()
+
+	// Delete test repo's child rows via repo_id.
+	database.DB.Exec(ctx, `DELETE FROM pull_request_events WHERE pull_request_id IN
+		(SELECT id FROM pull_requests WHERE repo_id IN
+			(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo'))`)
+	database.DB.Exec(ctx, `DELETE FROM pull_request_comments WHERE pull_request_id IN
+		(SELECT id FROM pull_requests WHERE repo_id IN
+			(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo'))`)
+	database.DB.Exec(ctx, `DELETE FROM pull_requests WHERE repo_id IN
+		(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo')`)
+
+	database.DB.Exec(ctx, `DELETE FROM issue_comments WHERE issue_id IN
+		(SELECT id FROM issues WHERE repo_id IN
+			(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo'))`)
+	database.DB.Exec(ctx, `DELETE FROM issue_label_links WHERE issue_id IN
+		(SELECT id FROM issues WHERE repo_id IN
+			(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo'))`)
+	database.DB.Exec(ctx, `DELETE FROM issue_assignees WHERE issue_id IN
+		(SELECT id FROM issues WHERE repo_id IN
+			(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo'))`)
+	database.DB.Exec(ctx, `DELETE FROM issues WHERE repo_id IN
+		(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo')`)
+	database.DB.Exec(ctx, `DELETE FROM issue_labels WHERE repo_id IN
+		(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo')`)
+	database.DB.Exec(ctx, `DELETE FROM issue_label_links WHERE label_id IN
+		(SELECT id FROM issue_labels WHERE repo_id IN
+			(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo'))`)
+
+	database.DB.Exec(ctx, `DELETE FROM contributors WHERE repo_id IN
+		(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo')`)
+	database.DB.Exec(ctx, `DELETE FROM repositories WHERE owner = 'testowner' AND name = 'testrepo'`)
+
+	// Delete only test users — never touch real accounts.
+	for _, uid := range testUserIDs {
+		database.DB.Exec(ctx, `DELETE FROM "user" WHERE id = $1`, uid)
 	}
 }
 
