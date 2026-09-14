@@ -155,7 +155,7 @@ function PRdetail({ pull }: { pull: string }) {
         <div className="mt-2 flex items-center gap-2">
           <Badge
             variant="secondary"
-            className="h-7 gap-1.5 bg-green-600 text-sm text-background"
+            className="h-7 gap-1.5 bg-green-600 text-sm text-foreground"
           >
             <GitPullRequest className="size-4 shrink-0" />
             <span className="font-bold">Open</span>
