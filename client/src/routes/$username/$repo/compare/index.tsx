@@ -14,12 +14,13 @@ export function NewPRalert() {
       <AlertTitle>
         Discuss and review the changes in this comparison with others.
       </AlertTitle>
-
       <AlertAction>
+        {/* TODO: Forward to /compare/{baseBranch}...{compareBranch} */}
         <Button className="bg-green-600 text-white hover:bg-green-700">
           Create pull request
         </Button>
       </AlertAction>
+
     </Alert>
   )
 }
