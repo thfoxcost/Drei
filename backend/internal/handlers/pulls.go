@@ -186,6 +186,54 @@ func PullHandler(w http.ResponseWriter, r *http.Request) {
 
 		pull.Comments = comments
 
+		assignees, err := database.GetPRAssignees(pull.ID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if assignees == nil {
+			assignees = []database.PullRequestUser{}
+		}
+
+		pull.Assignees = assignees
+
+		reviewers, err := database.GetPRReviewers(pull.ID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if reviewers == nil {
+			reviewers = []database.PullRequestUser{}
+		}
+
+		pull.Reviewers = reviewers
+
+		labels, err := database.GetPRLabels(pull.ID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if labels == nil {
+			labels = []database.PRLabel{}
+		}
+
+		pull.Labels = labels
+
+		participants, err := database.GetPRParticipants(pull.ID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if participants == nil {
+			participants = []database.PullRequestUser{}
+		}
+
+		pull.Participants = participants
+
 		writeJSON(w, http.StatusOK, pull)
 
 	case http.MethodPatch:
@@ -477,6 +525,213 @@ func PullEventsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeSuccess(w, map[string]any{"events": events})
+}
+
+// PRAssigneeHandler sets the assignees on a pull request.
+//
+//	POST /api/repos/{owner}/{repo}/pulls/{number}/assignee
+func PRAssigneeHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "POST")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	number, ok := parsePullNumber(w, r)
+	if !ok {
+		return
+	}
+
+	author, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "you must be signed in to update assignees")
+		return
+	}
+
+	member, err := database.IsRepoMember(info.ID, author.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if !member {
+		writeError(w, http.StatusForbidden, "you must be a contributor of this repository to update assignees")
+		return
+	}
+
+	pull, ok := getPullOr404(w, info.ID, number)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		Assignees []string `json:"assignees"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	assignees, err := validateRepoMembers(info.ID, req.Assignees)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := database.SetPRAssignees(pull.ID, assignees); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, pull)
+}
+
+// PRReviewerHandler sets the reviewers on a pull request.
+//
+//	POST /api/repos/{owner}/{repo}/pulls/{number}/reviewers
+func PRReviewerHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "POST")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	number, ok := parsePullNumber(w, r)
+	if !ok {
+		return
+	}
+
+	author, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "you must be signed in to update reviewers")
+		return
+	}
+
+	member, err := database.IsRepoMember(info.ID, author.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if !member {
+		writeError(w, http.StatusForbidden, "you must be a contributor of this repository to update reviewers")
+		return
+	}
+
+	pull, ok := getPullOr404(w, info.ID, number)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		Reviewers []string `json:"reviewers"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	reviewers, err := validateRepoMembers(info.ID, req.Reviewers)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := database.SetPRReviewers(pull.ID, reviewers); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, pull)
+}
+
+// PRLabelHandler sets the labels on a pull request.
+//
+//	POST /api/repos/{owner}/{repo}/pulls/{number}/labels
+func PRLabelHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "POST")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	number, ok := parsePullNumber(w, r)
+	if !ok {
+		return
+	}
+
+	author, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "you must be signed in to update labels")
+		return
+	}
+
+	member, err := database.IsRepoMember(info.ID, author.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if !member {
+		writeError(w, http.StatusForbidden, "you must be a contributor of this repository to update labels")
+		return
+	}
+
+	pull, ok := getPullOr404(w, info.ID, number)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		Labels []int64 `json:"labels"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := database.SetPRLabels(pull.ID, req.Labels); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, pull)
 }
 
 // parsePullNumber extracts and validates the PR number from the URL path.

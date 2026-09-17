@@ -54,6 +54,10 @@ type PullRequest struct {
 	UpdatedAt       string              `json:"updatedAt"`
 	CommentCount    int                 `json:"commentCount"`
 	Comments        []PullRequestComment `json:"comments,omitempty"`
+	Assignees       []PullRequestUser   `json:"assignees,omitempty"`
+	Reviewers       []PullRequestUser   `json:"reviewers,omitempty"`
+	Labels          []PRLabel           `json:"labels,omitempty"`
+	Participants    []PullRequestUser   `json:"participants,omitempty"`
 }
 
 // PullRequestFilter describes the optional filters and sort applied when
@@ -895,4 +899,228 @@ func ListPullRequestEvents(repoID int64, number int) ([]PullRequestEvent, error)
 	}
 
 	return events, rows.Err()
+}
+
+// ── PR Assignees ────────────────────────────────────────────────────────────
+
+// SetPRAssignees replaces the full set of assignees on a pull request.
+func SetPRAssignees(pullRequestID int64, assigneeIDs []string) error {
+	tx, err := DB.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(context.Background()) //nolint:errcheck
+
+	if _, err := tx.Exec(context.Background(),
+		`DELETE FROM pr_assignees WHERE pull_request_id = $1`, pullRequestID); err != nil {
+		return err
+	}
+
+	for _, userID := range assigneeIDs {
+		if _, err := tx.Exec(context.Background(),
+			`INSERT INTO pr_assignees (pull_request_id, user_id) VALUES ($1, $2)`,
+			pullRequestID, userID); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(context.Background())
+}
+
+// GetPRAssignees returns the users assigned to a pull request.
+func GetPRAssignees(pullRequestID int64) ([]PullRequestUser, error) {
+	rows, err := DB.Query(context.Background(), `
+		SELECT u.id, COALESCE(u.name, ''), u.image
+		FROM pr_assignees pa
+		JOIN "user" u ON u.id = pa.user_id
+		WHERE pa.pull_request_id = $1
+		ORDER BY pa.created_at
+	`, pullRequestID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var assignees []PullRequestUser
+
+	for rows.Next() {
+		var u PullRequestUser
+
+		if err := rows.Scan(&u.ID, &u.Username, &u.Avatar); err != nil {
+			return nil, err
+		}
+
+		assignees = append(assignees, u)
+	}
+
+	return assignees, rows.Err()
+}
+
+// ── PR Reviewers ────────────────────────────────────────────────────────────
+
+// SetPRReviewers replaces the full set of reviewers on a pull request.
+func SetPRReviewers(pullRequestID int64, reviewerIDs []string) error {
+	tx, err := DB.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(context.Background()) //nolint:errcheck
+
+	if _, err := tx.Exec(context.Background(),
+		`DELETE FROM pr_reviewers WHERE pull_request_id = $1`, pullRequestID); err != nil {
+		return err
+	}
+
+	for _, userID := range reviewerIDs {
+		if _, err := tx.Exec(context.Background(),
+			`INSERT INTO pr_reviewers (pull_request_id, user_id) VALUES ($1, $2)`,
+			pullRequestID, userID); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(context.Background())
+}
+
+// GetPRReviewers returns the users assigned as reviewers on a pull request.
+func GetPRReviewers(pullRequestID int64) ([]PullRequestUser, error) {
+	rows, err := DB.Query(context.Background(), `
+		SELECT u.id, COALESCE(u.name, ''), u.image
+		FROM pr_reviewers prr
+		JOIN "user" u ON u.id = prr.user_id
+		WHERE prr.pull_request_id = $1
+		ORDER BY prr.created_at
+	`, pullRequestID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var reviewers []PullRequestUser
+
+	for rows.Next() {
+		var u PullRequestUser
+
+		if err := rows.Scan(&u.ID, &u.Username, &u.Avatar); err != nil {
+			return nil, err
+		}
+
+		reviewers = append(reviewers, u)
+	}
+
+	return reviewers, rows.Err()
+}
+
+// ── PR Labels ───────────────────────────────────────────────────────────────
+
+// PRLabel is a repository label linked to a pull request.
+type PRLabel struct {
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Color string `json:"color"`
+}
+
+// SetPRLabels replaces the full set of labels on a pull request.
+func SetPRLabels(pullRequestID int64, labelIDs []int64) error {
+	tx, err := DB.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(context.Background()) //nolint:errcheck
+
+	if _, err := tx.Exec(context.Background(),
+		`DELETE FROM pr_label_links WHERE pull_request_id = $1`, pullRequestID); err != nil {
+		return err
+	}
+
+	for _, labelID := range labelIDs {
+		if _, err := tx.Exec(context.Background(),
+			`INSERT INTO pr_label_links (pull_request_id, label_id) VALUES ($1, $2)`,
+			pullRequestID, labelID); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(context.Background())
+}
+
+// GetPRLabels returns the labels linked to a pull request.
+func GetPRLabels(pullRequestID int64) ([]PRLabel, error) {
+	rows, err := DB.Query(context.Background(), `
+		SELECT il.id, il.name, il.color
+		FROM pr_label_links pll
+		JOIN issue_labels il ON il.id = pll.label_id
+		WHERE pll.pull_request_id = $1
+		ORDER BY il.name
+	`, pullRequestID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var labels []PRLabel
+
+	for rows.Next() {
+		var l PRLabel
+
+		if err := rows.Scan(&l.ID, &l.Name, &l.Color); err != nil {
+			return nil, err
+		}
+
+		labels = append(labels, l)
+	}
+
+	return labels, rows.Err()
+}
+
+// GetPRParticipants returns all unique users who participated in a pull
+// request — the author, commenters, assignees, and reviewers.
+func GetPRParticipants(pullRequestID int64) ([]PullRequestUser, error) {
+	rows, err := DB.Query(context.Background(), `
+		SELECT DISTINCT u.id, COALESCE(u.name, ''), u.image
+		FROM (
+			SELECT pr.author_id AS user_id
+			FROM pull_requests pr
+			WHERE pr.id = $1
+			UNION
+			SELECT prc.created_by
+			FROM pull_request_comments prc
+			WHERE prc.pull_request_id = $1
+			UNION
+			SELECT pa.user_id
+			FROM pr_assignees pa
+			WHERE pa.pull_request_id = $1
+			UNION
+			SELECT prr.user_id
+			FROM pr_reviewers prr
+			WHERE prr.pull_request_id = $1
+		) all_users
+		JOIN "user" u ON u.id = all_users.user_id
+		ORDER BY u.id
+	`, pullRequestID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var users []PullRequestUser
+
+	for rows.Next() {
+		var u PullRequestUser
+
+		if err := rows.Scan(&u.ID, &u.Username, &u.Avatar); err != nil {
+			return nil, err
+		}
+
+		users = append(users, u)
+	}
+
+	return users, rows.Err()
 }

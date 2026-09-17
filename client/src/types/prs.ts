@@ -4,6 +4,28 @@ export interface PRUser {
 	avatar: string | null;
 }
 
+export interface PullRequestComment {
+	id: number;
+	body: string;
+	createdBy: PRUser;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface PullRequestEvent {
+	id: number;
+	type: "opened" | "comment" | "state_change" | "merged";
+	actor: PRUser;
+	metadata?: Record<string, unknown>;
+	createdAt: string;
+}
+
+export interface PRLabel {
+	id: number;
+	name: string;
+	color: string;
+}
+
 export interface PullRequest {
 	id: number;
 	number: number;
@@ -21,6 +43,11 @@ export interface PullRequest {
 	createdAt: string;
 	updatedAt: string;
 	commentCount: number;
+	comments?: PullRequestComment[];
+	assignees?: PRUser[];
+	reviewers?: PRUser[];
+	labels?: PRLabel[];
+	participants?: PRUser[];
 }
 
 export interface PullRequestsList {

@@ -76,7 +76,7 @@ function PullRequestItem({
             />
           )}
 
-          <span className="cursor-pointer truncate font-semibold hover:text-blue-400 hover:underline">
+          <span className="text-base cursor-pointer truncate font-semibold hover:text-blue-400 hover:underline">
             {title}
           </span>
         </div>
