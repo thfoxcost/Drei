@@ -484,6 +484,48 @@ func PullCompareHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, compare)
 }
 
+// PullDuplicateHandler checks whether an open pull request already exists for
+// the given source → target branch pair.
+//
+//	GET /api/repos/{owner}/{repo}/pulls/duplicate?source=&target=
+func PullDuplicateHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "GET")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	source := strings.TrimSpace(r.URL.Query().Get("source"))
+	target := strings.TrimSpace(r.URL.Query().Get("target"))
+
+	if source == "" || target == "" {
+		writeError(w, http.StatusBadRequest, "source and target query parameters are required")
+		return
+	}
+
+	number, err := database.FindOpenDuplicatePR(info.ID, source, target)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"duplicate": number != nil,
+		"number":    number,
+	})
+}
+
 // PullEventsHandler returns the activity timeline for a pull request.
 //
 //	GET /api/repos/{owner}/{repo}/pulls/{number}/events
