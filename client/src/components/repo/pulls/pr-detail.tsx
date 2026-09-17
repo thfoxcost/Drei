@@ -4,7 +4,9 @@ import {
   Copy,
   FileDiff,
   GitCommit,
+  GitMerge,
   GitPullRequest,
+  GitPullRequestClosed,
   ListChecks,
   MessageSquare,
   Pen,
@@ -326,7 +328,7 @@ function PRdetail({ pull }: { pull: string }) {
               variant="secondary"
               className="h-7 gap-1.5 bg-purple-600 text-sm text-foreground"
             >
-              <GitPullRequest className="size-4 shrink-0" />
+              <GitMerge className="size-4 shrink-0" />
               <span className="font-bold">Merged</span>
             </Badge>
           )}
@@ -336,7 +338,7 @@ function PRdetail({ pull }: { pull: string }) {
               variant="secondary"
               className="h-7 gap-1.5 bg-red-600 text-sm text-foreground"
             >
-              <GitPullRequest className="size-4 shrink-0" />
+              <GitPullRequestClosed className="size-4 shrink-0" />
               <span className="font-bold">Closed</span>
             </Badge>
           )}

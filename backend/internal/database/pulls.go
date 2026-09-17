@@ -190,6 +190,29 @@ func scanPullRequest(row rowScanner) (PullRequest, error) {
 	return pr, nil
 }
 
+// FindOpenDuplicatePR returns the number of an open pull request that has the
+// same source and target branch pair, or nil if none exists.
+func FindOpenDuplicatePR(repoID int64, sourceBranch, targetBranch string) (*int, error) {
+	var number int
+
+	err := DB.QueryRow(
+		context.Background(),
+		`SELECT number FROM pull_requests
+		WHERE repo_id = $1 AND source_branch = $2 AND target_branch = $3 AND state = 'open'
+		LIMIT 1`,
+		repoID, sourceBranch, targetBranch,
+	).Scan(&number)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &number, nil
+}
+
 // GetPullRequest returns a single pull request by its repository-scoped number.
 func GetPullRequest(repoID int64, number int) (*PullRequest, error) {
 	pr, err := scanPullRequest(DB.QueryRow(

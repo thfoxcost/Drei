@@ -2,6 +2,7 @@ import {
   ArrowRight,
   GitMerge,
   GitPullRequest,
+  GitPullRequestClosed,
   MessageSquare,
 } from "lucide-react";
 import { Badge } from "#/components/reui/badge";
@@ -68,6 +69,11 @@ function PullRequestItem({
             <GitPullRequest
               size={16}
               className="shrink-0 text-green-500"
+            />
+          ) : isClosed ? (
+            <GitPullRequestClosed
+              size={16}
+              className="shrink-0 text-red-500"
             />
           ) : (
             <GitMerge
