@@ -558,6 +558,7 @@ function PRdetail({ pull }: { pull: string }) {
                     username={session?.user.name}
                     onSubmit={handleAddComment}
                     defaultValue={quoteText}
+                    uploadUrl={`http://localhost:3200/api/repos/${username}/${repo}/pulls/images`}
                   />
                 </div>
 
@@ -566,9 +567,9 @@ function PRdetail({ pull }: { pull: string }) {
 					username={username}
 					repo={repo}
 					onUpdate={() => {
-						queryClient.invalidateQueries({
-							queryKey: ["pull-request", username, repo, number],
-						});
+					queryClient.invalidateQueries({
+						queryKey: ["pull", username, repo, number],
+					});
 					}}
 				/>
               </div>

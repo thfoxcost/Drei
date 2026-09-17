@@ -48,6 +48,7 @@ export interface PullRequest {
 	reviewers?: PRUser[];
 	labels?: PRLabel[];
 	participants?: PRUser[];
+	notifications: boolean;
 }
 
 export interface PullRequestsList {
