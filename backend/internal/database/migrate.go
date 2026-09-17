@@ -430,5 +430,71 @@ func Migrate() error {
 		return err
 	}
 
+	// Pull request assignees — many-to-many between PRs and users.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pr_assignees (
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			user_id TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			PRIMARY KEY (pull_request_id, user_id)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pr_assignees_pull_request_id_idx
+		ON pr_assignees (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Pull request reviewers — many-to-many between PRs and users.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pr_reviewers (
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			user_id TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			PRIMARY KEY (pull_request_id, user_id)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pr_reviewers_pull_request_id_idx
+		ON pr_reviewers (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Pull request labels — reuses the existing issue_labels table for
+	// repository-scoped label definitions.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pr_label_links (
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			label_id BIGINT NOT NULL REFERENCES issue_labels(id) ON DELETE CASCADE,
+
+			PRIMARY KEY (pull_request_id, label_id)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pr_label_links_pull_request_id_idx
+		ON pr_label_links (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
