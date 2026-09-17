@@ -1701,7 +1701,7 @@ export function OpenedEvent({
         </Badge>
       </span>
 
-      <span className="ml-auto text-xs text-muted-foreground underline underline-offset-2">
+      <span className="ml-auto text-xs text-muted-foreground">
         {timeAgo(date)}
       </span>
     </div>
@@ -1765,7 +1765,7 @@ export function StateChangeEvent({
 
       <span className="text-muted-foreground">{label} this pull request</span>
 
-      <span className="ml-auto text-xs text-muted-foreground underline underline-offset-2">
+      <span className="ml-auto text-xs text-muted-foreground">
         {timeAgo(date)}
       </span>
     </div>
@@ -1806,7 +1806,7 @@ export function MergedEvent({
 
       <span className="text-muted-foreground">merged this pull request</span>
 
-      <span className="ml-auto text-xs text-muted-foreground underline underline-offset-2">
+      <span className="ml-auto text-xs text-muted-foreground">
         {timeAgo(date)}
       </span>
     </div>

@@ -52,7 +52,7 @@ function IssueItem({
   return (
     // biome-ignore lint/a11y/useSemanticElements: presentational row wired to onNavigate, not a router link
     <div
-      className="group flex cursor-pointer flex-row items-center gap-3 p-3 transition-colors hover:bg-muted/50"
+      className="group flex cursor-pointer flex-row items-center gap-3 border-b p-3 transition-colors hover:bg-muted/50 last:border-b-0"
       role="link"
       tabIndex={0}
       onClick={() => onNavigate?.(number)}
