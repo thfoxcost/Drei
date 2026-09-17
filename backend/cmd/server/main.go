@@ -71,6 +71,7 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/labels/{labelId}", handlers.IssueLabelHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/compare", handlers.PullCompareHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls", handlers.PullsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/images", handlers.PullImageHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}", handlers.PullHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/close", handlers.PullCloseHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/reopen", handlers.PullReopenHandler)
@@ -81,6 +82,7 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/assignee", handlers.PRAssigneeHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/reviewers", handlers.PRReviewerHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/labels", handlers.PRLabelHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/notifications", handlers.PRNotificationsHandler)
 	http.HandleFunc("/api/notifications", handlers.NotificationsHandler)
 	http.HandleFunc("/api/notifications/{id}", handlers.NotificationItemHandler)
 	http.HandleFunc("/api/notifications/test", handlers.NotificationTestHandler)
@@ -96,6 +98,11 @@ func main() {
 	// takes precedence over the logo file server.
 	issueImagesDir := filepath.Join(config.App.ReposPath, "issue-images")
 	http.Handle("/uploads/issue-images/", http.StripPrefix("/uploads/issue-images/", http.FileServer(http.Dir(issueImagesDir))))
+
+	// Serve uploaded PR images from <REPOS_PATH>/pr-images under
+	// /uploads/pr-images/.
+	prImagesDir := filepath.Join(config.App.ReposPath, "pr-images")
+	http.Handle("/uploads/pr-images/", http.StripPrefix("/uploads/pr-images/", http.FileServer(http.Dir(prImagesDir))))
 
 	// Swagger UI
 	http.Handle("/swagger/", httpSwagger.Handler(

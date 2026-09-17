@@ -734,6 +734,62 @@ func PRLabelHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, pull)
 }
 
+// PRNotificationsHandler updates the notification preference for a pull request.
+//
+//	POST /api/repos/{owner}/{repo}/pulls/{number}/notifications
+func PRNotificationsHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "POST")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	number, ok := parsePullNumber(w, r)
+	if !ok {
+		return
+	}
+
+	_, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "you must be signed in to update notifications")
+		return
+	}
+
+	pull, ok := getPullOr404(w, info.ID, number)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		Notifications bool `json:"notifications"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := database.SetPRNotifications(pull.ID, req.Notifications); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	pull.Notifications = req.Notifications
+
+	writeJSON(w, http.StatusOK, pull)
+}
+
 // parsePullNumber extracts and validates the PR number from the URL path.
 func parsePullNumber(w http.ResponseWriter, r *http.Request) (int, bool) {
 	number, err := strconv.Atoi(r.PathValue("number"))

@@ -197,7 +197,7 @@ export default function CommentItem({
 				</div>
 
 				{!hidden && (
-					<div className="rounded-b-sm border border-foreground/30 border-t-0 p-3">
+					<div className="rounded-b-sm border border-foreground/30 border-t-0 p-2">
 						{editing ? (
 							<div className="space-y-2">
 								<Textarea
@@ -364,9 +364,8 @@ export function ReviewItemMSG({
 			<div className="mt-2 ml-9">
 				{/* Review header */}
 				<div
-					className={`border border-foreground/10 bg-accent/40 p-1 ${
-						isExpanded ? "rounded-t-sm" : "rounded-sm"
-					}`}
+					className={`border border-foreground/10 bg-accent/40 p-1 ${isExpanded ? "rounded-t-sm" : "rounded-sm"
+						}`}
 				>
 					<div className="flex flex-row items-center gap-2 text-sm">
 						{/* Expand / collapse */}
@@ -385,20 +384,18 @@ export function ReviewItemMSG({
 						>
 							<ChevronDown
 								size={16}
-								className={`transition-transform duration-200 ${
-									isExpanded ? "rotate-0" : "-rotate-90"
-								}`}
+								className={`transition-transform duration-200 ${isExpanded ? "rotate-0" : "-rotate-90"
+									}`}
 							/>
 						</div>
 
 						{/* File path */}
 						<div
 							onClick={toggleExpanded}
-							className={`truncate font-mono text-xs ${
-								isDisabled
+							className={`truncate font-mono text-xs ${isDisabled
 									? "cursor-default opacity-50"
 									: "cursor-pointer hover:text-blue-400 hover:underline"
-							}`}
+								}`}
 						>
 							{filePath}
 						</div>
@@ -460,9 +457,8 @@ export function ReviewItemMSG({
 				{/* Review content */}
 				{isExpanded && (
 					<div
-						className={`overflow-x-auto rounded-b-sm border border-foreground/20 border-t-0 ${
-							isDisabled ? "select-none" : ""
-						}`}
+						className={`overflow-x-auto rounded-b-sm border border-foreground/20 border-t-0 ${isDisabled ? "select-none" : ""
+							}`}
 					>
 						{/* Disabled review area */}
 						<div className={isDisabled ? "pointer-events-none opacity-50" : ""}>
@@ -630,7 +626,7 @@ export function ReviewItemMSG({
 											{notes.length - 1 === 1 ? "reply" : "replies"} hidden
 										</span>
 
-										<ChevronDown size={10} className="rotate-[-90deg]" />
+										<ChevronDown size={10} className="-rotate-90" />
 									</button>
 								)}
 							</div>
@@ -676,13 +672,12 @@ export function CheckAndMergeItem({ mergeState }: CheckAndMergeItemProps) {
 	return (
 		<div className="ml-9 group flex w-full flex-row gap-4">
 			<div
-				className={`flex size-11 shrink-0 items-center justify-center rounded-lg p-2 ${
-					isMergeable
+				className={`flex size-11 shrink-0 items-center justify-center rounded-lg p-2 ${isMergeable
 						? "bg-green-500/10"
 						: isConflicted
 							? "bg-red-500/10"
 							: "bg-yellow-500/10"
-				}`}
+					}`}
 			>
 				{isConflicted ? (
 					<svg
@@ -713,13 +708,12 @@ export function CheckAndMergeItem({ mergeState }: CheckAndMergeItemProps) {
 			</div>
 
 			<div
-				className={`flex flex-col overflow-hidden rounded-md border ${
-					isMergeable
+				className={`flex flex-col overflow-hidden rounded-md border ${isMergeable
 						? "border-green-500/40"
 						: isConflicted
 							? "border-red-500/40"
 							: "border-yellow-500/40"
-				}`}
+					}`}
 			>
 				<div className="flex items-center gap-2 p-4 w-[880px]">
 					{isChecking ? (
@@ -773,9 +767,8 @@ export function CheckAndMergeItem({ mergeState }: CheckAndMergeItemProps) {
 						</span>
 
 						<span
-							className={`text-sm ${
-								isConflicted ? "text-foreground" : "text-muted-foreground"
-							}`}
+							className={`text-sm ${isConflicted ? "text-foreground" : "text-muted-foreground"
+								}`}
 						>
 							{isChecking
 								? "Checking whether this pull request can be merged."
@@ -786,7 +779,14 @@ export function CheckAndMergeItem({ mergeState }: CheckAndMergeItemProps) {
 					</div>
 				</div>
 
-				<div className="flex flex-row items-center bg-accent/60 p-3">
+				<div
+					className={`flex flex-row items-center bg-accent/60 p-3 border-t ${isMergeable
+							? "border-green-600"
+							: isConflicted
+								? "border-red-600"
+								: "border-yellow-600"
+						}`}
+				>
 					<Button
 						variant="default"
 						disabled={!isMergeable}
@@ -881,7 +881,7 @@ export function ConversationSheet({
 
 	const invalidateAndRefresh = useCallback(() => {
 		queryClient.invalidateQueries({
-			queryKey: ["pull-request", username, repo, pull.number],
+			queryKey: ["pull", username, repo, pull.number],
 		});
 		queryClient.invalidateQueries({
 			queryKey: ["repo-labels", username, repo],
@@ -895,6 +895,7 @@ export function ConversationSheet({
 				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${pull.number}/assignee`,
 				{
 					method: "POST",
+					credentials: "include",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ assignees }),
 				},
@@ -910,6 +911,7 @@ export function ConversationSheet({
 				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${pull.number}/reviewers`,
 				{
 					method: "POST",
+					credentials: "include",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ reviewers }),
 				},
@@ -925,6 +927,7 @@ export function ConversationSheet({
 				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${pull.number}/labels`,
 				{
 					method: "POST",
+					credentials: "include",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ labels }),
 				},
@@ -946,6 +949,7 @@ export function ConversationSheet({
 				`http://localhost:3200/api/repos/${username}/${repo}/labels`,
 				{
 					method: "POST",
+					credentials: "include",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ name, color }),
 				},
@@ -953,6 +957,22 @@ export function ConversationSheet({
 			if (!res.ok) throw new Error("Failed to create label");
 			return res.json();
 		},
+	});
+
+	const notificationsMutation = useMutation({
+		mutationFn: async (notifications: boolean) => {
+			const res = await fetch(
+				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${pull.number}/notifications`,
+				{
+					method: "POST",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ notifications }),
+				},
+			);
+			if (!res.ok) throw new Error("Failed to update notifications");
+		},
+		onSuccess: invalidateAndRefresh,
 	});
 
 	const assignees = pull.assignees ?? [];
@@ -1100,7 +1120,7 @@ export function ConversationSheet({
 						{assignees.map((assignee) => (
 							<div
 								key={assignee.id}
-								className="flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-1 text-xs"
+								className="flex items-center gap-1.5 rounded-md bg-muted/50 p-1 text-xs"
 							>
 								<Avatar className="size-5">
 									<AvatarImage src={assignee.avatar} />
@@ -1223,21 +1243,14 @@ export function ConversationSheet({
 						{labels.map((label) => (
 							<div
 								key={label.id}
-								className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
+								className="inline-flex items-center gap-1 rounded-full border px-1 text-xs font-medium"
 								style={{
 									borderColor: `${label.color || "#6b7280"}60`,
 									backgroundColor: `${label.color || "#6b7280"}15`,
 									color: label.color || "#6b7280",
 								}}
 							>
-								<div
-									className="size-2 rounded-full"
-									style={{
-										backgroundColor:
-											label.color || "#6b7280",
-									}}
-								/>
-								<span>{label.name}</span>
+								<span className="ml-1">{label.name}</span>
 								<button
 									type="button"
 									onClick={() => removeLabel(label.id)}
@@ -1317,7 +1330,7 @@ export function ConversationSheet({
 						{reviewers.map((reviewer) => (
 							<div
 								key={reviewer.id}
-								className="flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-1 text-xs"
+								className="flex items-center gap-1.5 rounded-md bg-muted/50 p-1 text-xs"
 							>
 								<Avatar className="size-5">
 									<AvatarImage src={reviewer.avatar} />
@@ -1376,7 +1389,12 @@ export function ConversationSheet({
 						Get notified about activity on this PR.
 					</p>
 				</div>
-				<Switch />
+				<Switch
+					checked={pull.notifications}
+					onCheckedChange={(checked) =>
+						notificationsMutation.mutate(checked)
+					}
+				/>
 			</div>
 		</div>
 	);
@@ -1389,6 +1407,7 @@ type CommentEditorProps = {
 	username?: string;
 	onSubmit?: (body: string) => void;
 	defaultValue?: string;
+	uploadUrl?: string;
 };
 
 export function CommentEditor({
@@ -1398,10 +1417,13 @@ export function CommentEditor({
 	username,
 	onSubmit,
 	defaultValue,
+	uploadUrl,
 }: CommentEditorProps) {
 	const [value, setValue] = useState("");
 	const [tab, setTab] = useState<"write" | "preview">("write");
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [uploading, setUploading] = useState(false);
 
 	useEffect(() => {
 		if (defaultValue) {
@@ -1415,6 +1437,64 @@ export function CommentEditor({
 		if (!value.trim() || !onSubmit) return;
 		onSubmit(value);
 		setValue("");
+	}
+
+	function insertImageMarkdown(url: string) {
+		const textarea = textareaRef.current;
+		if (!textarea) {
+			setValue((prev) => prev + `![image](${url})`);
+			return;
+		}
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		const before = value.slice(0, start);
+		const after = value.slice(end);
+		const insertion = `![image](${url})`;
+		setValue(before + insertion + after);
+		setTimeout(() => {
+			textarea.selectionStart = textarea.selectionEnd = start + insertion.length;
+			textarea.focus();
+		}, 0);
+	}
+
+	async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+		const file = event.target.files?.[0];
+		if (!file || !uploadUrl) return;
+
+		if (!file.type.startsWith("image/")) {
+			toast.error("Please select an image file.");
+			return;
+		}
+
+		if (file.size > 5 * 1024 * 1024) {
+			toast.error("Image must be smaller than 5 MB.");
+			return;
+		}
+
+		setUploading(true);
+		try {
+			const formData = new FormData();
+			formData.append("image", file);
+
+			const res = await fetch(uploadUrl, {
+				method: "POST",
+				body: formData,
+				credentials: "include",
+			});
+
+			const data = await res.json();
+			if (!res.ok) {
+				toast.error(data.error || "Failed to upload image.");
+				return;
+			}
+
+			insertImageMarkdown(data.url);
+		} catch {
+			toast.error("Failed to upload image.");
+		} finally {
+			setUploading(false);
+			if (fileInputRef.current) fileInputRef.current.value = "";
+		}
 	}
 
 	return (
@@ -1445,14 +1525,22 @@ export function CommentEditor({
 									</TabsTrigger>
 								</TabsList>
 
+								<input
+									ref={fileInputRef}
+									type="file"
+									accept="image/*"
+									className="hidden"
+									onChange={handleFileUpload}
+								/>
 								<Button
 									type="button"
 									variant="ghost"
-									disabled={disabled}
+									disabled={disabled || uploading || !uploadUrl}
 									className="text-muted-foreground"
+									onClick={() => fileInputRef.current?.click()}
 								>
 									<ImagePlus className="size-4" />
-									<span>Attach image</span>
+									<span>{uploading ? "Uploading..." : "Attach image"}</span>
 								</Button>
 							</div>
 

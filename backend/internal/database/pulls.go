@@ -53,11 +53,12 @@ type PullRequest struct {
 	CreatedAt       string              `json:"createdAt"`
 	UpdatedAt       string              `json:"updatedAt"`
 	CommentCount    int                 `json:"commentCount"`
-	Comments        []PullRequestComment `json:"comments,omitempty"`
-	Assignees       []PullRequestUser   `json:"assignees,omitempty"`
-	Reviewers       []PullRequestUser   `json:"reviewers,omitempty"`
-	Labels          []PRLabel           `json:"labels,omitempty"`
-	Participants    []PullRequestUser   `json:"participants,omitempty"`
+	Comments        []PullRequestComment `json:"comments"`
+	Assignees       []PullRequestUser   `json:"assignees"`
+	Reviewers       []PullRequestUser   `json:"reviewers"`
+	Labels          []PRLabel           `json:"labels"`
+	Participants    []PullRequestUser   `json:"participants"`
+	Notifications   bool                `json:"notifications"`
 }
 
 // PullRequestFilter describes the optional filters and sort applied when
@@ -95,7 +96,8 @@ const prSelectColumns = `
 		SELECT COUNT(*)
 		FROM pull_request_comments pc
 		WHERE pc.pull_request_id = pr.id
-	), 0)`
+	), 0),
+	pr.notifications`
 
 const prFromClause = `
 	FROM pull_requests pr
@@ -143,6 +145,7 @@ func scanPullRequest(row rowScanner) (PullRequest, error) {
 		&createdAt,
 		&updatedAt,
 		&pr.CommentCount,
+		&pr.Notifications,
 	)
 	if err != nil {
 		return PullRequest{}, err
@@ -177,6 +180,12 @@ func scanPullRequest(row rowScanner) (PullRequest, error) {
 			Avatar:   closedByAvatar,
 		}
 	}
+
+	pr.Comments = []PullRequestComment{}
+	pr.Assignees = []PullRequestUser{}
+	pr.Reviewers = []PullRequestUser{}
+	pr.Labels = []PRLabel{}
+	pr.Participants = []PullRequestUser{}
 
 	return pr, nil
 }
@@ -381,6 +390,17 @@ func CreatePullRequest(repoID int64, authorID, title, description, sourceBranch,
 		prID,
 		authorID,
 		metadata,
+	)
+	if err != nil {
+		return PullRequest{}, err
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		`INSERT INTO pull_request_comments (pull_request_id, body, created_by)
+		 VALUES ($1, '*No description*', $2)`,
+		prID,
+		authorID,
 	)
 	if err != nil {
 		return PullRequest{}, err
@@ -1052,7 +1072,7 @@ func SetPRLabels(pullRequestID int64, labelIDs []int64) error {
 // GetPRLabels returns the labels linked to a pull request.
 func GetPRLabels(pullRequestID int64) ([]PRLabel, error) {
 	rows, err := DB.Query(context.Background(), `
-		SELECT il.id, il.name, il.color
+		SELECT il.id, il.name, COALESCE(il.color, '')
 		FROM pr_label_links pll
 		JOIN issue_labels il ON il.id = pll.label_id
 		WHERE pll.pull_request_id = $1
@@ -1123,4 +1143,15 @@ func GetPRParticipants(pullRequestID int64) ([]PullRequestUser, error) {
 	}
 
 	return users, rows.Err()
+}
+
+// ── PR Notifications ──────────────────────────────────────────────────────
+
+// SetPRNotifications updates the notification preference for a pull request.
+func SetPRNotifications(pullRequestID int64, enabled bool) error {
+	_, err := DB.Exec(context.Background(),
+		`UPDATE pull_requests SET notifications = $2, updated_at = NOW() WHERE id = $1`,
+		pullRequestID, enabled,
+	)
+	return err
 }

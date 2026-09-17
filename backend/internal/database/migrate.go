@@ -496,5 +496,27 @@ func Migrate() error {
 		return err
 	}
 
+	// Per-user notification preference for a pull request.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE pull_requests
+		ADD COLUMN IF NOT EXISTS notifications BOOLEAN NOT NULL DEFAULT FALSE;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Ensure every PR has at least one comment ("No description" if none exist).
+	_, err = DB.Exec(context.Background(), `
+		INSERT INTO pull_request_comments (pull_request_id, body, created_by)
+		SELECT pr.id, '*No description*', pr.author_id
+		FROM pull_requests pr
+		WHERE NOT EXISTS (
+			SELECT 1 FROM pull_request_comments c WHERE c.pull_request_id = pr.id
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
