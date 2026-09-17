@@ -138,11 +138,58 @@ function PRdetail({ pull }: { pull: string }) {
     }
   }
 
+  async function handleClose(body: string) {
+    try {
+      const payload: Record<string, string> = {};
+      if (body.trim()) payload.body = body;
+
+      const res = await fetch(
+        `http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}/close`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to close pull request");
+      }
+      toast.success("Pull request closed");
+      await refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
+  async function handleReopen() {
+    try {
+      const res = await fetch(
+        `http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}/reopen`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to reopen pull request");
+      }
+      toast.success("Pull request reopened");
+      await refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
   function buildTimeline(): ConversationItem[] {
     const items: ConversationItem[] = [];
 
-		for (const event of events) {
-			if (event.type === "comment" || event.type === "opened") continue;
+    for (const event of events) {
+      if (event.type === "comment" || event.type === "opened") continue;
 
       if (event.type === "opened") {
         items.push({
@@ -452,8 +499,8 @@ function PRdetail({ pull }: { pull: string }) {
             <TabsContent value="conversation">
               <div className="flex w-full flex-row gap-4">
                 <div className="flex w-full flex-col gap-4">
-									<div className="flex w-full flex-col gap-4">
-										{timeline.map((item, index) => {
+                  <div className="flex w-full flex-col gap-5">
+                    {timeline.map((item, index) => {
                       if (item.type === "comment") {
                         return (
                           <CommentItem
@@ -542,13 +589,8 @@ function PRdetail({ pull }: { pull: string }) {
                   <div className="ml-9 border-y" />
 
                   <CheckAndMergeItem
-                    mergeState={
-                      pr.state === "open"
-                        ? "mergeable"
-                        : pr.state === "closed"
-                          ? "conflicted"
-                          : "mergeable"
-                    }
+                    mergeState="mergeable"
+                    disabled={!isOpen}
                   />
 
                   <div className="ml-9 border-y" />
@@ -559,19 +601,23 @@ function PRdetail({ pull }: { pull: string }) {
                     onSubmit={handleAddComment}
                     defaultValue={quoteText}
                     uploadUrl={`http://localhost:3200/api/repos/${username}/${repo}/pulls/images`}
+                    onClose={handleClose}
+                    onReopen={handleReopen}
+                    isClosed={pr.state === "closed"}
+                    isMerged={pr.state === "merged"}
                   />
                 </div>
 
-				<ConversationSheet
-					pull={pr}
-					username={username}
-					repo={repo}
-					onUpdate={() => {
-					queryClient.invalidateQueries({
-						queryKey: ["pull", username, repo, number],
-					});
-					}}
-				/>
+                <ConversationSheet
+                  pull={pr}
+                  username={username}
+                  repo={repo}
+                  onUpdate={() => {
+                    queryClient.invalidateQueries({
+                      queryKey: ["pull", username, repo, number],
+                    });
+                  }}
+                />
               </div>
             </TabsContent>
 
