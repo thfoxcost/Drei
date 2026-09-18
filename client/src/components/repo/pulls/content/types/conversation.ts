@@ -19,6 +19,8 @@ export type ConversationCommit = {
 	avatarLink?: string;
 	message: string;
 	hash: string;
+	owner: string;
+	repo: string;
 };
 
 export type ConversationReview = {

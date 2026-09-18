@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import {
   Check,
   Ellipsis,
@@ -246,21 +247,15 @@ export function CommitItemMSG({
   avatarLink,
   message,
   hash,
+  owner,
+  repo,
 }: Omit<ConversationCommit, "type">) {
+  const commitPath = `/${owner}/${repo}/commits/${hash}`;
+
   return (
     <div className="ml-13 flex flex-row items-center gap-2 text-sm">
       <div className="flex size-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 1024 640"
-        >
-          <path
-            fill="currentColor"
-            d="M960 384H826q-23 110-111 183t-203 73t-203-73t-111-183H64q-27 0-45.5-19T0 319.5t18.5-45T64 256h134q23-111 111-183.5T512 0t203 72.5T826 256h134q27 0 45.5 18.5t18.5 45t-18.5 45.5T960 384M512 128q-80 0-136 56t-56 136t56 136t136 56t136-56t56-136t-56-136t-136-56"
-          />
-        </svg>
+        <GitCommit className="size-4" />
       </div>
 
       <Avatar className="size-6">
@@ -268,158 +263,162 @@ export function CommitItemMSG({
         <AvatarFallback>{username.slice(0, 2).toUpperCase()}</AvatarFallback>
       </Avatar>
 
-      <span className="font-semibold">{username}</span>
-
-      <p className="truncate font-mono text-xs text-muted-foreground underline underline-offset-2">
+      <Link
+        to={commitPath}
+        className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+      >
         {message}
-      </p>
+      </Link>
 
-      <span className="ml-auto cursor-pointer font-mono text-xs text-muted-foreground hover:underline">
-        {hash}
-      </span>
+      <Link
+        to={commitPath}
+        className="ml-auto shrink-0 cursor-pointer font-mono text-xs text-muted-foreground hover:underline"
+      >
+        {hash.slice(0, 7)}
+      </Link>
     </div>
   );
 }
 
 export function ReviewEventItem({
-	reviewId,
-	username,
-	avatarLink,
-	date,
-	state,
-	body,
-	isAuthor = false,
-	onDelete,
-	onQuoteReply,
+  reviewId,
+  username,
+  avatarLink,
+  date,
+  state,
+  body,
+  isAuthor = false,
+  onDelete,
+  onQuoteReply,
 }: Omit<ConversationReview, "type">) {
-	const isApproved = state === "approved";
-	const isChangesRequested = state === "changes_requested";
+  const isApproved = state === "approved";
+  const isChangesRequested = state === "changes_requested";
 
-	const iconBg = isApproved
-		? "bg-green-500/10"
-		: isChangesRequested
-			? "bg-yellow-500/10"
-			: "bg-muted";
+  const iconBg = isApproved
+    ? "bg-green-500/10"
+    : isChangesRequested
+      ? "bg-yellow-500/10"
+      : "bg-muted";
 
-	const iconColor = isApproved
-		? "text-green-500"
-		: isChangesRequested
-			? "text-yellow-500"
-			: "text-muted-foreground";
+  const iconColor = isApproved
+    ? "text-green-500"
+    : isChangesRequested
+      ? "text-yellow-500"
+      : "text-muted-foreground";
 
-	const actionText = isApproved
-		? "approved these changes"
-		: isChangesRequested
-			? "requested changes"
-			: "commented";
+  const actionText = isApproved
+    ? "approved these changes"
+    : isChangesRequested
+      ? "requested changes"
+      : "commented";
 
-	function handleCopyMarkdown() {
-		navigator.clipboard.writeText(body);
-		toast.success("Markdown copied");
-	}
+  function handleCopyMarkdown() {
+    navigator.clipboard.writeText(body);
+    toast.success("Markdown copied");
+  }
 
-	function handleQuoteReply() {
-		const quoted = body
-			.split("\n")
-			.map((line) => `> ${line}`)
-			.join("\n");
-		onQuoteReply?.(`${quoted}\n\n`);
-	}
+  function handleQuoteReply() {
+    const quoted = body
+      .split("\n")
+      .map((line) => `> ${line}`)
+      .join("\n");
+    onQuoteReply?.(`${quoted}\n\n`);
+  }
 
-	return (
-		<div className="ml-13 group flex flex-col gap-2">
-			<div className="flex items-center justify-between text-sm">
-				<div className="flex flex-row items-center gap-2 text-sm">
-				{isApproved ? (
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="28"
-						height="28"
-						viewBox="0 0 24 24"
-						className="text-green-500"
-					>
-						<g fill="none">
-							<path
-								fillRule="evenodd"
-								clipRule="evenodd"
-								d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12zm13.707-1.293a1 1 0 0 0-1.414-1.414L11 12.586l-1.293-1.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z"
-								fill="currentColor"
-							/>
-						</g>
-					</svg>
-				) : isChangesRequested ? (
-					<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 512 512" className="text-yellow-500">
-						<path fill="currentColor" d="M449.07 399.08L278.64 82.58c-12.08-22.44-44.26-22.44-56.35 0L51.87 399.08A32 32 0 0 0 80 446.25h340.89a32 32 0 0 0 28.18-47.17m-198.6-1.83a20 20 0 1 1 20-20a20 20 0 0 1-20 20m21.72-201.15l-5.74 122a16 16 0 0 1-32 0l-5.74-121.95a21.73 21.73 0 0 1 21.5-22.69h.21a21.74 21.74 0 0 1 21.73 22.7Z"/>
-					</svg>
-				) : (
-					<div className={`flex size-7 items-center justify-center rounded-full ${iconBg} ${iconColor}`}>
-						<MessageSquare size={16} />
-					</div>
-				)}
+  return (
+    <div className="ml-13 group flex flex-col gap-2">
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex flex-row items-center gap-2 text-sm">
+          {isApproved ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              className="text-green-500"
+            >
+              <g fill="none">
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12zm13.707-1.293a1 1 0 0 0-1.414-1.414L11 12.586l-1.293-1.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z"
+                  fill="currentColor"
+                />
+              </g>
+            </svg>
+          ) : isChangesRequested ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 512 512" className="text-yellow-500">
+              <path fill="currentColor" d="M449.07 399.08L278.64 82.58c-12.08-22.44-44.26-22.44-56.35 0L51.87 399.08A32 32 0 0 0 80 446.25h340.89a32 32 0 0 0 28.18-47.17m-198.6-1.83a20 20 0 1 1 20-20a20 20 0 0 1-20 20m21.72-201.15l-5.74 122a16 16 0 0 1-32 0l-5.74-121.95a21.73 21.73 0 0 1 21.5-22.69h.21a21.74 21.74 0 0 1 21.73 22.7Z" />
+            </svg>
+          ) : (
+            <div className={`flex size-7 items-center justify-center rounded-full ${iconBg} ${iconColor}`}>
+              <MessageSquare size={16} />
+            </div>
+          )}
 
-					<Avatar className="size-6">
-						<AvatarImage src={avatarLink} />
-						<AvatarFallback className="text-[9px]">{username.slice(0, 2).toUpperCase()}</AvatarFallback>
-					</Avatar>
+          <Avatar className="size-6">
+            <AvatarImage src={avatarLink} />
+            <AvatarFallback className="text-[9px]">{username.slice(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
 
-					<span className="font-semibold">{username}</span>
+          <span className="font-semibold">{username}</span>
 
-					<span className="text-muted-foreground">{actionText}</span>
+          <span className="text-muted-foreground">{actionText}</span>
 
-					<span className="text-xs text-muted-foreground">
-						{timeAgo(date)}
-					</span>
-				</div>
+          <span className="text-xs text-muted-foreground">
+            {timeAgo(date)}
+          </span>
+        </div>
 
-				<div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<button
-								type="button"
-								className="flex size-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-								aria-label="Review actions"
-							>
-								<Ellipsis size={16} />
-							</button>
-						</DropdownMenuTrigger>
+        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex size-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+                aria-label="Review actions"
+              >
+                <Ellipsis size={16} />
+              </button>
+            </DropdownMenuTrigger>
 
-						<DropdownMenuContent
-							side="right"
-							align="start"
-							className="min-w-44"
-						>
-							<DropdownMenuItem onClick={handleCopyMarkdown}>
-								Copy Markdown
-							</DropdownMenuItem>
+            <DropdownMenuContent
+              side="right"
+              align="start"
+              className="min-w-44"
+            >
+              <DropdownMenuItem onClick={handleCopyMarkdown}>
+                Copy Markdown
+              </DropdownMenuItem>
 
-							<DropdownMenuItem onClick={handleQuoteReply}>
-								Quote Reply
-							</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleQuoteReply}>
+                Quote Reply
+              </DropdownMenuItem>
 
-							{isAuthor && (
-								<>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem
-										variant="destructive"
-										onClick={() => onDelete?.(reviewId)}
-									>
-										<Trash2 size={14} />
-										Delete
-									</DropdownMenuItem>
-								</>
-							)}
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			</div>
+              {isAuthor && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => onDelete?.(reviewId)}
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
-			{body && (
-				<div className={`ml-9 rounded-sm border px-2 py-1 ${isApproved ? "border-green-500/30 bg-green-500/5" : isChangesRequested ? "border-yellow-500/30 bg-yellow-500/5" : "border-foreground/30 bg-accent/50"}`}>
-					<Markdown content={body} />
-				</div>
-			)}
-		</div>
-	);
+      {body && (
+        <div className={`ml-9 rounded-sm border px-2 py-1 ${isApproved ? "border-green-500/30 bg-green-500/5" : isChangesRequested ? "border-yellow-500/30 bg-yellow-500/5" : "border-foreground/30 bg-accent/50"}`}>
+          <Markdown content={body} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 type MergeState = "checking" | "mergeable" | "conflicted";
