@@ -157,6 +157,18 @@ func PullsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Record the initial commit count so the events handler can
+		// distinguish the original commits from future pushes.
+		if initCommits, err := gitrepo.CommitsBetweenBranches(
+			info.Owner, info.Name, req.TargetBranch, req.SourceBranch,
+		); err == nil && len(initCommits) > 0 {
+			database.UpdatePullRequestEventMetadata(info.ID, pull.Number, "opened", map[string]any{
+				"source_branch":        req.SourceBranch,
+				"target_branch":        req.TargetBranch,
+				"initial_commit_count": len(initCommits),
+			})
+		}
+
 		writeJSON(w, http.StatusCreated, pull)
 
 	default:
@@ -624,6 +636,11 @@ func PullEventsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pull, _ := database.GetPullRequest(info.ID, number)
+	if pull != nil && pull.State == "open" {
+		detectAndRecordPushEvents(info.Owner, info.Name, info.ID, number, pull)
+	}
+
 	events, err := database.ListPullRequestEvents(info.ID, number)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -925,4 +942,81 @@ func getPullOr404(w http.ResponseWriter, repoID int64, number int) (*database.Pu
 	}
 
 	return pull, true
+}
+
+// detectAndRecordPushEvents compares the commits on the source branch with
+// existing push events and records new ones for any unseen commits.
+func detectAndRecordPushEvents(owner, repo string, repoID int64, number int, pull *database.PullRequest) {
+	commits, err := gitrepo.CommitsBetweenBranches(owner, repo, pull.TargetBranch, pull.SourceBranch)
+	if err != nil || len(commits) == 0 {
+		return
+	}
+
+	// Reverse to oldest-first so skip logic works correctly.
+	for i, j := 0, len(commits)-1; i < j; i, j = i+1, j-1 {
+		commits[i], commits[j] = commits[j], commits[i]
+	}
+
+	events, err := database.ListPullRequestEvents(repoID, number)
+	if err != nil {
+		return
+	}
+
+	// Collect all commit hashes already covered by existing push events.
+	seen := make(map[string]bool)
+	for _, ev := range events {
+		if ev.Type != "push" {
+			continue
+		}
+		commitsRaw, ok := ev.Metadata["commits"].([]any)
+		if !ok {
+			continue
+		}
+		for _, c := range commitsRaw {
+			obj, ok := c.(map[string]any)
+			if !ok {
+				continue
+			}
+			if hash, ok := obj["hash"].(string); ok {
+				seen[hash] = true
+			}
+		}
+	}
+
+	// Find the initial commit count from the "opened" event to skip
+	// commits that existed when the PR was first created.
+	initialCount := 0
+	for _, ev := range events {
+		if ev.Type == "opened" {
+			if n, ok := ev.Metadata["initial_commit_count"].(float64); ok {
+				initialCount = int(n)
+			}
+			break
+		}
+	}
+
+	var newCommits []map[string]string
+	for i, c := range commits {
+		// Skip commits that were part of the initial PR creation.
+		if i < initialCount {
+			continue
+		}
+		if !seen[c.Hash] {
+			newCommits = append(newCommits, map[string]string{
+				"hash":    c.Hash,
+				"message": strings.SplitN(c.Message, "\n", 2)[0],
+			})
+		}
+	}
+
+	if len(newCommits) == 0 {
+		return
+	}
+
+	metadata, _ := json.Marshal(map[string]any{
+		"commit_count": len(newCommits),
+		"commits":      newCommits,
+	})
+
+	database.InsertPullRequestEvent(repoID, number, pull.Author.ID, "push", metadata)
 }

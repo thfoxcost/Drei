@@ -31,6 +31,7 @@ import CommentItem, {
 	ConversationSheet,
 	MergedEvent,
 	OpenedEvent,
+	PushEvent,
 	ReviewItemMSG,
 	StateChangeEvent,
 } from "./content/conversation";
@@ -39,6 +40,7 @@ import type {
 	ConversationItem,
 	ConversationMerged,
 	ConversationOpened,
+	ConversationPush,
 	ConversationStateChange,
 } from "./content/types/conversation";
 
@@ -228,6 +230,17 @@ function PRdetail({ pull }: { pull: string }) {
 					username: event.actor.username,
 					avatarLink: event.actor.avatar ?? undefined,
 				} satisfies ConversationMerged);
+			} else if (event.type === "push") {
+				const commits = (event.metadata?.commits as { hash: string; message: string }[]) ?? [];
+				const commitCount = (event.metadata?.commit_count as number) ?? commits.length;
+				items.push({
+					type: "push",
+					date: event.createdAt,
+					username: event.actor.username,
+					avatarLink: event.actor.avatar ?? undefined,
+					commitCount,
+					commits,
+				} satisfies ConversationPush);
 			}
 		}
 
@@ -588,6 +601,19 @@ function PRdetail({ pull }: { pull: string }) {
 														username={item.username}
 														avatarLink={item.avatarLink}
 														date={item.date}
+													/>
+												);
+											}
+
+											if (item.type === "push") {
+												return (
+													<PushEvent
+														key={`push-${index}`}
+														username={item.username}
+														avatarLink={item.avatarLink}
+														date={item.date}
+														commitCount={item.commitCount}
+														commits={item.commits}
 													/>
 												);
 											}

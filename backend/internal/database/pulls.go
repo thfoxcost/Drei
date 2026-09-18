@@ -1008,6 +1008,56 @@ func ListPullRequestEvents(repoID int64, number int) ([]PullRequestEvent, error)
 	return events, rows.Err()
 }
 
+// InsertPullRequestEvent inserts a single event for a pull request.
+func InsertPullRequestEvent(repoID int64, number int, actorID, eventType string, metadata []byte) {
+	var prID int64
+	err := DB.QueryRow(
+		context.Background(),
+		`SELECT id FROM pull_requests WHERE repo_id = $1 AND number = $2`,
+		repoID, number,
+	).Scan(&prID)
+	if err != nil {
+		return
+	}
+
+	_, _ = DB.Exec(
+		context.Background(),
+		`INSERT INTO pull_request_events (pull_request_id, type, actor_id, metadata)
+		 VALUES ($1, $2, $3, $4)`,
+		prID, eventType, actorID, metadata,
+	)
+}
+
+// UpdatePullRequestEventMetadata updates the metadata of the first event of
+// the given type for a pull request.
+func UpdatePullRequestEventMetadata(repoID int64, number int, eventType string, metadata map[string]any) {
+	var prID int64
+	err := DB.QueryRow(
+		context.Background(),
+		`SELECT id FROM pull_requests WHERE repo_id = $1 AND number = $2`,
+		repoID, number,
+	).Scan(&prID)
+	if err != nil {
+		return
+	}
+
+	metaBytes, err := json.Marshal(metadata)
+	if err != nil {
+		return
+	}
+
+	_, _ = DB.Exec(
+		context.Background(),
+		`UPDATE pull_request_events SET metadata = $1
+		 WHERE id = (
+			SELECT id FROM pull_request_events
+			WHERE pull_request_id = $2 AND type = $3
+			ORDER BY id ASC LIMIT 1
+		 )`,
+		metaBytes, prID, eventType,
+	)
+}
+
 // ── PR Assignees ────────────────────────────────────────────────────────────
 
 // SetPRAssignees replaces the full set of assignees on a pull request.
