@@ -57,6 +57,7 @@ type CodeCommitBlockProps = {
 	expanded?: boolean
 	expandGeneration?: number
 	diffId?: string
+	viewed?: boolean
 }
 
 function CodeCommitBlock({
@@ -65,6 +66,7 @@ function CodeCommitBlock({
 	expanded = true,
 	expandGeneration = 0,
 	diffId,
+	viewed = false,
 }: CodeCommitBlockProps) {
 	const { isCopied, copyToClipboard } =
 		useCopyToClipboard()
@@ -78,6 +80,12 @@ function CodeCommitBlock({
 			setSyncedGeneration(expandGeneration)
 		}
 	}, [expandGeneration, expanded, syncedGeneration])
+
+	useEffect(() => {
+		if (viewed) {
+			setIsExpanded(false)
+		}
+	}, [viewed])
 
 	const filePath = diff.path
 
@@ -100,8 +108,8 @@ function CodeCommitBlock({
 		maxSquares - greenSquares - redSquares
 
 	return (
-		<div id={diffId} className="mt-3 w-full overflow-hidden rounded-md border scroll-mt-4 transition-colors duration-500">
-			<div className="flex h-10 items-center gap-2 border-b bg-muted/30 px-2">
+		<div id={diffId} className={`mt-3 w-full overflow-hidden rounded-md border scroll-mt-4 transition-all duration-500 ${viewed ? "opacity-50" : ""}`}>
+			<div className={`flex h-10 items-center gap-2 bg-muted/30 px-2 ${isExpanded ? "border-b" : ""}`}>
 				<button
 					type="button"
 					onClick={() =>
@@ -127,6 +135,12 @@ function CodeCommitBlock({
 				<span className="cursor-pointer truncate font-mono text-xs transition-colors hover:text-blue-500 hover:underline">
 					{filePath}
 				</span>
+
+				{viewed && (
+					<span className="shrink-0 rounded-full border border-secondary-foreground/20 bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
+						Viewed
+					</span>
+				)}
 
 				<div className="ml-auto flex shrink-0 items-center gap-3">
 					<div className="flex items-center gap-1.5 font-mono text-[11px]">

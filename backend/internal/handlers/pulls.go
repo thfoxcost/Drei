@@ -1020,3 +1020,157 @@ func detectAndRecordPushEvents(owner, repo string, repoID int64, number int, pul
 
 	database.InsertPullRequestEvent(repoID, number, pull.Author.ID, "push", metadata)
 }
+
+// PullFilesHandler returns the changed files and line-level diffs for a pull
+// request. It resolves the PR's source and target branches from the database
+// and delegates to CompareBranches for the actual Git diff computation.
+//
+//	GET /api/repos/{owner}/{repo}/pulls/{number}/files
+func PullFilesHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "GET")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	number, ok := parsePullNumber(w, r)
+	if !ok {
+		return
+	}
+
+	pull, ok := getPullOr404(w, info.ID, number)
+	if !ok {
+		return
+	}
+
+	compare, err := gitrepo.CompareBranches(info.Owner, info.Name, pull.TargetBranch, pull.SourceBranch)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, compare)
+}
+
+// PullViewedFilesHandler manages the user's per-file viewed state for a pull
+// request.
+//
+//	GET    /api/repos/{owner}/{repo}/pulls/{number}/viewed
+//	PUT    /api/repos/{owner}/{repo}/pulls/{number}/viewed
+//	POST   /api/repos/{owner}/{repo}/pulls/{number}/viewed
+//	DELETE /api/repos/{owner}/{repo}/pulls/{number}/viewed
+func PullViewedFilesHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "GET, PUT, POST, DELETE")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	number, ok := parsePullNumber(w, r)
+	if !ok {
+		return
+	}
+
+	pull, ok := getPullOr404(w, info.ID, number)
+	if !ok {
+		return
+	}
+
+	user, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "you must be signed in")
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		paths, err := database.GetPRViewedFiles(pull.ID, user.ID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if paths == nil {
+			paths = []string{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"viewedFiles": paths,
+		})
+
+	case http.MethodPut:
+		var req struct {
+			Files []string `json:"files"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+		if err := database.SetPRViewedFiles(pull.ID, user.ID, req.Files); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+
+	case http.MethodPost:
+		var req struct {
+			FilePath string `json:"filePath"`
+			Viewed   bool   `json:"viewed"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+		if req.FilePath == "" {
+			writeError(w, http.StatusBadRequest, "filePath is required")
+			return
+		}
+		if req.Viewed {
+			if err := database.MarkPRFileViewed(pull.ID, user.ID, req.FilePath); err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+		} else {
+			if err := database.UnmarkPRFileViewed(pull.ID, user.ID, req.FilePath); err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+		}
+		paths, err := database.GetPRViewedFiles(pull.ID, user.ID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if paths == nil {
+			paths = []string{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"viewedFiles": paths,
+		})
+
+	case http.MethodDelete:
+		if err := database.SetPRViewedFiles(pull.ID, user.ID, nil); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}

@@ -19,6 +19,7 @@ import { Spinner } from "#/components/ui/spinner";
 import { usePullRequest } from "#/hooks/PRs/use-pull-request";
 import { usePullRequestEvents } from "#/hooks/PRs/use-pull-request-events";
 import { usePRCommits } from "#/hooks/PRs/use-pr-commits";
+import { usePRChangedFiles } from "#/hooks/PRs/use-pr-changed-files";
 import { authClient } from "#/lib/auth-client";
 import { Badge as ReuiBadge } from "@/components/reui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,6 +70,8 @@ function PRdetail({ pull }: { pull: string }) {
 		pr?.sourceBranch ?? "",
 	);
 
+	const { data: prFiles } = usePRChangedFiles(username, repo, number);
+
 	const events = eventsData?.events ?? [];
 	const comments = pr?.comments ?? [];
 
@@ -76,9 +79,9 @@ function PRdetail({ pull }: { pull: string }) {
 		conversation: events.length,
 		commits: prCommits?.length ?? 0,
 		checks: 0,
-		filesChanged: 0,
-		additions: 0,
-		deletions: 0,
+		filesChanged: prFiles?.files?.length ?? 0,
+		additions: prFiles?.diffs?.reduce((t, f) => t + f.additions, 0) ?? 0,
+		deletions: prFiles?.diffs?.reduce((t, f) => t + f.deletions, 0) ?? 0,
 	};
 
 	const maxSquares = 5;
@@ -673,7 +676,7 @@ function PRdetail({ pull }: { pull: string }) {
 						</TabsContent>
 
 						<TabsContent value="changes">
-							<Changedfiles />
+							<Changedfiles owner={username} repo={repo} pullNumber={number} />
 						</TabsContent>
 					</Tabs>
 				</div>

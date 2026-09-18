@@ -1292,3 +1292,83 @@ func SetPRNotifications(pullRequestID int64, enabled bool) error {
 	)
 	return err
 }
+
+// ── PR Viewed Files ───────────────────────────────────────────────────────
+
+// GetPRViewedFiles returns the set of file paths the given user has marked as
+// viewed for the specified pull request.
+func GetPRViewedFiles(pullRequestID int64, userID string) ([]string, error) {
+	rows, err := DB.Query(context.Background(),
+		`SELECT file_path FROM pr_viewed_files
+		 WHERE pull_request_id = $1 AND user_id = $2
+		 ORDER BY file_path`,
+		pullRequestID, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var paths []string
+	for rows.Next() {
+		var p string
+		if err := rows.Scan(&p); err != nil {
+			return nil, err
+		}
+		paths = append(paths, p)
+	}
+	return paths, rows.Err()
+}
+
+// MarkPRFileViewed marks a single file as viewed for the given user and PR.
+// It is idempotent — marking an already-viewed file is a no-op.
+func MarkPRFileViewed(pullRequestID int64, userID, filePath string) error {
+	_, err := DB.Exec(context.Background(),
+		`INSERT INTO pr_viewed_files (pull_request_id, user_id, file_path)
+		 VALUES ($1, $2, $3)
+		 ON CONFLICT (pull_request_id, user_id, file_path) DO NOTHING`,
+		pullRequestID, userID, filePath,
+	)
+	return err
+}
+
+// UnmarkPRFileViewed removes the viewed mark for a single file.
+func UnmarkPRFileViewed(pullRequestID int64, userID, filePath string) error {
+	_, err := DB.Exec(context.Background(),
+		`DELETE FROM pr_viewed_files
+		 WHERE pull_request_id = $1 AND user_id = $2 AND file_path = $3`,
+		pullRequestID, userID, filePath,
+	)
+	return err
+}
+
+// SetPRViewedFiles replaces the entire set of viewed files for a user and PR
+// in a single transaction. It deletes all existing rows and inserts the new set.
+func SetPRViewedFiles(pullRequestID int64, userID string, filePaths []string) error {
+	tx, err := DB.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(context.Background())
+
+	_, err = tx.Exec(context.Background(),
+		`DELETE FROM pr_viewed_files WHERE pull_request_id = $1 AND user_id = $2`,
+		pullRequestID, userID,
+	)
+	if err != nil {
+		return err
+	}
+
+	for _, fp := range filePaths {
+		_, err = tx.Exec(context.Background(),
+			`INSERT INTO pr_viewed_files (pull_request_id, user_id, file_path)
+			 VALUES ($1, $2, $3)`,
+			pullRequestID, userID, fp,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(context.Background())
+}
