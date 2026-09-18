@@ -135,6 +135,82 @@ func GetCommits(owner, repo, branch string) ([]CommitInfo, CommitInfo, error) {
 	return commits, lastCommit, nil
 }
 
+// CommitsBetweenBranches returns the commits on headBranch that are not
+// reachable from baseBranch (i.e., the commits a PR would contain). Commits
+// are returned newest first.
+func CommitsBetweenBranches(owner, repo, baseBranch, headBranch string) ([]CommitInfo, error) {
+	r, err := OpenRepo(owner, repo)
+	if err != nil {
+		return nil, fmt.Errorf("open repo: %w", err)
+	}
+
+	headCommit, err := ResolveBranch(r, headBranch)
+	if err != nil {
+		return nil, fmt.Errorf("resolve head branch %q: %w", headBranch, err)
+	}
+
+	baseCommit, err := ResolveBranch(r, baseBranch)
+	if err != nil {
+		return nil, fmt.Errorf("resolve base branch %q: %w", baseBranch, err)
+	}
+
+	mergeBases, err := headCommit.MergeBase(baseCommit)
+	if err != nil {
+		return nil, fmt.Errorf("find merge base: %w", err)
+	}
+
+	if len(mergeBases) == 0 {
+		return nil, fmt.Errorf("no common ancestor between %q and %q", baseBranch, headBranch)
+	}
+
+	stopHash := mergeBases[0].Hash
+
+	var raw []rawCommit
+
+	iter, err := r.Log(&git.LogOptions{From: headCommit.Hash})
+	if err != nil {
+		return nil, err
+	}
+
+	err = iter.ForEach(func(c *object.Commit) error {
+		if c.Hash == stopHash {
+			return fmt.Errorf("stop")
+		}
+
+		raw = append(raw, rawCommit{
+			hash:    c.Hash.String(),
+			message: c.Message,
+			name:    c.Author.Name,
+			email:   c.Author.Email,
+			when:    c.Author.When,
+		})
+
+		return nil
+	})
+
+	if err != nil && err.Error() != "stop" {
+		return nil, err
+	}
+
+	usernames, err := database.ResolveUsernamesByEmails(authorEmails(raw))
+	if err != nil {
+		return nil, err
+	}
+
+	commits := make([]CommitInfo, 0, len(raw))
+
+	for _, c := range raw {
+		commits = append(commits, CommitInfo{
+			Hash:    c.hash,
+			Message: c.message,
+			Author:  resolveAuthorName(c.name, c.email, usernames),
+			Date:    c.when.Format(time.RFC3339),
+		})
+	}
+
+	return commits, nil
+}
+
 type CommitDetail struct {
 	FullHash     string `json:"fullHash"`
 	ShortHash    string `json:"shortHash"`

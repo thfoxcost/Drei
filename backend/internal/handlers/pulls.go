@@ -77,10 +77,13 @@ func PullsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var req struct {
-			Title        string `json:"title"`
-			Description  string `json:"description"`
-			SourceBranch string `json:"sourceBranch"`
-			TargetBranch string `json:"targetBranch"`
+			Title        string   `json:"title"`
+			Description  string   `json:"description"`
+			SourceBranch string   `json:"sourceBranch"`
+			TargetBranch string   `json:"targetBranch"`
+			Labels       []string `json:"labels"`
+			Assignees    []string `json:"assignees"`
+			Reviewers    []string `json:"reviewers"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -124,6 +127,20 @@ func PullsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		labels := cleanLabels(req.Labels)
+
+		assignees, err := validateRepoMembers(info.ID, req.Assignees)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		reviewers, err := validateRepoMembers(info.ID, req.Reviewers)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
 		pull, err := database.CreatePullRequest(
 			info.ID,
 			user.ID,
@@ -131,6 +148,9 @@ func PullsHandler(w http.ResponseWriter, r *http.Request) {
 			req.Description,
 			req.SourceBranch,
 			req.TargetBranch,
+			labels,
+			assignees,
+			reviewers,
 		)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
@@ -444,6 +464,54 @@ func PullMergeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeSuccess(w, map[string]any{"mergeCommitHash": mergeCommitHash})
+}
+
+// PullCompareCommitsHandler returns the commits between two branches for a
+// pull request view.
+//
+//	GET /api/repos/{owner}/{repo}/pulls/compare/commits?base=&head=
+func PullCompareCommitsHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "GET")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	base := strings.TrimSpace(r.URL.Query().Get("base"))
+	head := strings.TrimSpace(r.URL.Query().Get("head"))
+
+	if base == "" || head == "" {
+		writeError(w, http.StatusBadRequest, "base and head query parameters are required")
+		return
+	}
+
+	if base == head {
+		writeJSON(w, http.StatusOK, []any{})
+		return
+	}
+
+	commits, err := gitrepo.CommitsBetweenBranches(info.Owner, info.Name, base, head)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if commits == nil {
+		commits = []gitrepo.CommitInfo{}
+	}
+
+	writeJSON(w, http.StatusOK, commits)
 }
 
 // PullCompareHandler returns the diff between two branches.

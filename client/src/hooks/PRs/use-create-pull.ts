@@ -6,6 +6,9 @@ interface CreatePullRequestParams {
 	description: string;
 	sourceBranch: string;
 	targetBranch: string;
+	labels?: string[];
+	assignees?: string[];
+	reviewers?: string[];
 }
 
 export function useCreatePullRequest(owner: string, repo: string) {
