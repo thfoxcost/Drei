@@ -80,6 +80,8 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/merge", handlers.PullMergeHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/comments", handlers.PullCommentsHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/comments/{commentId}", handlers.PullCommentHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/reviews", handlers.PullReviewsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/reviews/{reviewId}", handlers.PullReviewHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/events", handlers.PullEventsHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/assignee", handlers.PRAssigneeHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/reviewers", handlers.PRReviewerHandler)

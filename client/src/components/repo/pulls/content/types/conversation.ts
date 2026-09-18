@@ -23,11 +23,15 @@ export type ConversationCommit = {
 
 export type ConversationReview = {
 	type: "review";
+	reviewId: number;
 	date: string;
 	username: string;
 	avatarLink?: string;
-	filePath: string;
-	isOutdated?: boolean;
+	state: "approved" | "changes_requested" | "commented";
+	body: string;
+	isAuthor?: boolean;
+	onDelete?: (reviewId: number) => void;
+	onQuoteReply?: (text: string) => void;
 };
 
 export type ConversationOpened = {

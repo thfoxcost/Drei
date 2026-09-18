@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ChevronDown,
+  Check,
   Ellipsis,
   Eye,
   EyeOff,
-  FoldHorizontal,
   GitCommit,
   ImagePlus,
+  MessageSquare,
   Pencil,
   Settings,
   Trash2,
@@ -281,383 +281,145 @@ export function CommitItemMSG({
   );
 }
 
-type ReviewItemMSGProps = Omit<ConversationReview, "type"> & {
-  isAuthor?: boolean;
-};
+export function ReviewEventItem({
+	reviewId,
+	username,
+	avatarLink,
+	date,
+	state,
+	body,
+	isAuthor = false,
+	onDelete,
+	onQuoteReply,
+}: Omit<ConversationReview, "type">) {
+	const isApproved = state === "approved";
+	const isChangesRequested = state === "changes_requested";
 
-export function ReviewItemMSG({
-  username,
-  avatarLink,
-  date,
-  filePath,
-  isOutdated,
-  isAuthor = false,
-}: ReviewItemMSGProps) {
-  const [isResolved, setIsResolved] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(!isOutdated);
-  const [showAllComments, setShowAllComments] = useState(false);
+	const iconBg = isApproved
+		? "bg-green-500/10"
+		: isChangesRequested
+			? "bg-yellow-500/10"
+			: "bg-muted";
 
-  const isDisabled = isOutdated || isResolved;
+	const iconColor = isApproved
+		? "text-green-500"
+		: isChangesRequested
+			? "text-yellow-500"
+			: "text-muted-foreground";
 
-  const toggleExpanded = () => {
-    setIsExpanded((value) => !value);
-  };
+	const actionText = isApproved
+		? "approved these changes"
+		: isChangesRequested
+			? "requested changes"
+			: "commented";
 
-  const toggleResolved = () => {
-    const nextResolved = !isResolved;
+	function handleCopyMarkdown() {
+		navigator.clipboard.writeText(body);
+		toast.success("Markdown copied");
+	}
 
-    setIsResolved(nextResolved);
+	function handleQuoteReply() {
+		const quoted = body
+			.split("\n")
+			.map((line) => `> ${line}`)
+			.join("\n");
+		onQuoteReply?.(`${quoted}\n\n`);
+	}
 
-    if (nextResolved) {
-      setIsExpanded(false);
-    } else {
-      setIsExpanded(true);
-    }
-  };
+	return (
+		<div className="ml-13 group flex flex-col gap-2">
+			<div className="flex items-center justify-between text-sm">
+				<div className="flex flex-row items-center gap-2 text-sm">
+				{isApproved ? (
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="28"
+						height="28"
+						viewBox="0 0 24 24"
+						className="text-green-500"
+					>
+						<g fill="none">
+							<path
+								fillRule="evenodd"
+								clipRule="evenodd"
+								d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12zm13.707-1.293a1 1 0 0 0-1.414-1.414L11 12.586l-1.293-1.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z"
+								fill="currentColor"
+							/>
+						</g>
+					</svg>
+				) : isChangesRequested ? (
+					<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 512 512" className="text-yellow-500">
+						<path fill="currentColor" d="M449.07 399.08L278.64 82.58c-12.08-22.44-44.26-22.44-56.35 0L51.87 399.08A32 32 0 0 0 80 446.25h340.89a32 32 0 0 0 28.18-47.17m-198.6-1.83a20 20 0 1 1 20-20a20 20 0 0 1-20 20m21.72-201.15l-5.74 122a16 16 0 0 1-32 0l-5.74-121.95a21.73 21.73 0 0 1 21.5-22.69h.21a21.74 21.74 0 0 1 21.73 22.7Z"/>
+					</svg>
+				) : (
+					<div className={`flex size-7 items-center justify-center rounded-full ${iconBg} ${iconColor}`}>
+						<MessageSquare size={16} />
+					</div>
+				)}
 
-  const notes = [
-    {
-      username: "thefoxcost",
-      avatar: "https://api.dicebear.com/10.x/sprouts/svg?seed=i5rw5xmn",
-      message: "Consider using the logger instead of console.log here.",
-    },
-    {
-      username: "alice",
-      avatar: "https://api.dicebear.com/10.x/sprouts/svg?seed=9p1b8wb2",
-      message: "Could we extract this into a reusable function?",
-    },
-    {
-      username: "bob",
-      avatar: "https://api.dicebear.com/10.x/sprouts/svg?seed=4q5xhvgl",
-      message: "This condition can probably be simplified.",
-    },
-    {
-      username: "charlie",
-      avatar: "https://api.dicebear.com/10.x/sprouts/svg?seed=46ocup8i",
-      message: "Please add a test case for this behavior.",
-    },
-    {
-      username: "david",
-      avatar: "https://api.dicebear.com/10.x/shapes/svg?seed=w81z4jq7",
-      message: "Looks good overall, but I would rename this variable.",
-    },
-  ];
+					<Avatar className="size-6">
+						<AvatarImage src={avatarLink} />
+						<AvatarFallback className="text-[9px]">{username.slice(0, 2).toUpperCase()}</AvatarFallback>
+					</Avatar>
 
-  return (
-    <div className="group ml-13 flex flex-col">
-      {/* Review author */}
-      <div className="flex flex-row items-center gap-2 text-sm">
-        <div className="flex size-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <Eye size={17} />
-        </div>
+					<span className="font-semibold">{username}</span>
 
-        <Avatar className="size-6">
-          <AvatarImage src={avatarLink} />
-          <AvatarFallback>{username.slice(0, 2).toUpperCase()}</AvatarFallback>
-        </Avatar>
+					<span className="text-muted-foreground">{actionText}</span>
 
-        <span className="font-semibold">{username}</span>
+					<span className="text-xs text-muted-foreground">
+						{timeAgo(date)}
+					</span>
+				</div>
 
-        <span className="text-xs text-muted-foreground underline underline-offset-2">
-          {timeAgo(date)}
-        </span>
-      </div>
+				<div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<button
+								type="button"
+								className="flex size-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+								aria-label="Review actions"
+							>
+								<Ellipsis size={16} />
+							</button>
+						</DropdownMenuTrigger>
 
-      <div className="mt-2 ml-9">
-        {/* Review header */}
-        <div
-          className={`border border-foreground/10 bg-accent/40 p-1 ${isExpanded ? "rounded-t-sm" : "rounded-sm"
-            }`}
-        >
-          <div className="flex flex-row items-center gap-2 text-sm">
-            {/* Expand / collapse */}
-            <div
-              onClick={toggleExpanded}
-              className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-              role="button"
-              tabIndex={0}
-              aria-label={isExpanded ? "Collapse review" : "Expand review"}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  toggleExpanded();
-                }
-              }}
-            >
-              <ChevronDown
-                size={16}
-                className={`transition-transform duration-200 ${isExpanded ? "rotate-0" : "-rotate-90"
-                  }`}
-              />
-            </div>
+						<DropdownMenuContent
+							side="right"
+							align="start"
+							className="min-w-44"
+						>
+							<DropdownMenuItem onClick={handleCopyMarkdown}>
+								Copy Markdown
+							</DropdownMenuItem>
 
-            {/* File path */}
-            <div
-              onClick={toggleExpanded}
-              className={`truncate font-mono text-xs ${isDisabled
-                ? "cursor-default opacity-50"
-                : "cursor-pointer hover:text-blue-400 hover:underline"
-                }`}
-            >
-              {filePath}
-            </div>
+							<DropdownMenuItem onClick={handleQuoteReply}>
+								Quote Reply
+							</DropdownMenuItem>
 
-            {/* Outdated */}
-            {isOutdated && (
-              <Badge
-                variant="outline"
-                className="ml-2 gap-1 border-yellow-500/50 bg-yellow-500/10 text-yellow-600 dark:text-yellow-500"
-              >
-                <TriangleAlert size={12} />
-                Outdated
-              </Badge>
-            )}
+							{isAuthor && (
+								<>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										variant="destructive"
+										onClick={() => onDelete?.(reviewId)}
+									>
+										<Trash2 size={14} />
+										Delete
+									</DropdownMenuItem>
+								</>
+							)}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
+			</div>
 
-            <div className="ml-auto mr-1 flex items-center gap-2">
-              {/* Show / Hide Resolved
-                  Only shown when resolved.
-                  NEVER disabled. */}
-              {isResolved && (
-                <div
-                  onClick={toggleExpanded}
-                  className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  <FoldHorizontal size={14} />
-
-                  {isExpanded ? "Hide Resolved" : "Show Resolved"}
-                </div>
-              )}
-
-              {/* Show / hide all comments
-                  NEVER disabled. */}
-              {notes.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllComments((value) => !value)}
-                  className="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                  aria-label={
-                    showAllComments ? "Hide comments" : "Show all comments"
-                  }
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M9 22a1 1 0 0 1-1-1v-3H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6.1l-3.7 3.71c-.2.19-.45.29-.7.29zm8-11V9h-2v2zm-4 0V9h-2v2zm-4 0V9H7v2z"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Review content */}
-        {isExpanded && (
-          <div
-            className={`overflow-x-auto rounded-b-sm border border-foreground/20 border-t-0 ${isDisabled ? "select-none" : ""
-              }`}
-          >
-            {/* Disabled review area */}
-            <div className={isDisabled ? "pointer-events-none opacity-50" : ""}>
-              {/* Diff */}
-              <div className="min-w-max font-mono text-xs">
-                {/* Hunk */}
-                <div className="flex min-h-7 items-center bg-muted/30 px-2 text-muted-foreground">
-                  <span className="whitespace-pre">@@ -10,7 +10,7 @@</span>
-                </div>
-
-                {/* Line 10 */}
-                <div className="flex min-h-6">
-                  <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
-                    10
-                  </span>
-
-                  <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
-                    10
-                  </span>
-
-                  <span className="w-6 shrink-0 select-none text-center font-semibold text-muted-foreground">
-                    {" "}
-                  </span>
-
-                  <code className="whitespace-pre px-2">
-                    {"  const handleClick = () => {"}
-                  </code>
-                </div>
-
-                {/* Reviewed line */}
-                <div className="flex min-h-6 bg-yellow-500/10">
-                  <span className="min-w-8 shrink-0 select-none bg-yellow-500/20 px-1 text-center text-yellow-700 dark:text-yellow-400">
-                    11
-                  </span>
-
-                  <span className="min-w-8 shrink-0 select-none bg-yellow-500/20 px-1 text-center text-yellow-700 dark:text-yellow-400">
-                    11
-                  </span>
-
-                  <span className="w-6 shrink-0 select-none text-center font-semibold text-yellow-600 dark:text-yellow-500">
-                    {" "}
-                  </span>
-
-                  <code className="whitespace-pre px-2 text-yellow-800 dark:text-yellow-300">
-                    {"  console.log('hello')"}
-                  </code>
-                </div>
-
-                {/* Line 12 */}
-                <div className="flex min-h-6">
-                  <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
-                    12
-                  </span>
-
-                  <span className="min-w-8 shrink-0 select-none px-1 text-center text-muted-foreground">
-                    12
-                  </span>
-
-                  <span className="w-6 shrink-0 select-none text-center font-semibold text-muted-foreground">
-                    {" "}
-                  </span>
-
-                  <code className="whitespace-pre px-2">
-                    {"  return response.json()"}
-                  </code>
-                </div>
-              </div>
-
-              {/* Review notes */}
-              <div className="border-t border-foreground/10 px-2 py-1.5">
-                {notes.map((note, index) => {
-                  if (index > 0 && !showAllComments) {
-                    return null;
-                  }
-
-                  return (
-                    <div key={index} className="group/note relative px-1">
-                      <div className="relative flex items-center gap-2 py-1">
-                        <Avatar className="size-6 shrink-0">
-                          <AvatarImage src={note.avatar} />
-                          <AvatarFallback className="text-[9px]">
-                            {note.username.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[13px] font-bold leading-none">
-                              {note.username.charAt(0).toUpperCase() +
-                                note.username.slice(1)}
-                            </span>
-
-                            {note.username === username && isAuthor && (
-                              <span className="font-normal text-muted-foreground">
-                                (Author)
-                              </span>
-                            )}
-                            <div className="opacity-0 transition-opacity group-hover/note:opacity-100">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button
-                                    type="button"
-                                    className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                                    aria-label="Comment actions"
-                                  >
-                                    <Ellipsis size={14} />
-                                  </button>
-                                </DropdownMenuTrigger>
-
-                                <DropdownMenuContent
-                                  side="right"
-                                  align="start"
-                                  className="min-w-50"
-                                >
-                                  <DropdownMenuItem>
-                                    Copy Markdown
-                                  </DropdownMenuItem>
-
-                                  <DropdownMenuItem>
-                                    Quote Reply
-                                  </DropdownMenuItem>
-
-                                  <DropdownMenuItem>
-                                    Reference in new issue
-                                  </DropdownMenuItem>
-
-                                  <DropdownMenuSeparator />
-
-                                  <DropdownMenuItem>Hide</DropdownMenuItem>
-
-                                  <DropdownMenuItem>Edit</DropdownMenuItem>
-
-                                  <DropdownMenuSeparator />
-
-                                  <DropdownMenuItem variant="destructive">
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-
-                            <span className="ml-auto text-[10px] text-muted-foreground">
-                              {timeAgo(date)}
-                            </span>
-                          </div>
-
-                          <p className="text-xs leading-snug text-foreground/90">
-                            {note.message}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Collapsed replies indicator */}
-                {!showAllComments && notes.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllComments(true)}
-                    className="flex items-center gap-1.5 py-0.5 pl-7 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <span>
-                      <span className="font-medium">{notes.length - 1}</span>{" "}
-                      {notes.length - 1 === 1 ? "reply" : "replies"} hidden
-                    </span>
-
-                    <ChevronDown size={10} className="-rotate-90" />
-                  </button>
-                )}
-              </div>
-
-              {/* Reply */}
-              <div className="flex flex-row items-center gap-2 border-y border-foreground/10 bg-accent/40 p-2 px-2">
-                <Avatar size="sm">
-                  <AvatarImage src="https://github.com/shadcn.png" />
-                  <AvatarFallback>CN</AvatarFallback>
-                </Avatar>
-
-                <Input className="w-full" placeholder="Reply..." />
-              </div>
-            </div>
-
-            <div className="flex items-center px-3 py-3 gap-2">
-              <Button variant="outline" onClick={toggleResolved}>
-                {isResolved ? "Unresolve Conversation" : "Resolve Conversation"}
-              </Button>
-              <span className="text-muted-foreground">
-                <span className="font-semibold">thefoxcost</span> marked this
-                conversation as resolved.
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+			{body && (
+				<div className={`ml-9 rounded-sm border px-2 py-1 ${isApproved ? "border-green-500/30 bg-green-500/5" : isChangesRequested ? "border-yellow-500/30 bg-yellow-500/5" : "border-foreground/30 bg-accent/50"}`}>
+					<Markdown content={body} />
+				</div>
+			)}
+		</div>
+	);
 }
 
 type MergeState = "checking" | "mergeable" | "conflicted";

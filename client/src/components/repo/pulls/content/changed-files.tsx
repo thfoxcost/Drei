@@ -63,6 +63,9 @@ import {
   usePRViewedFiles,
   useTogglePRViewedFile,
 } from "#/hooks/PRs/use-pr-viewed-files"
+import { authClient } from "#/lib/auth-client"
+import { useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 
 import {
   Sheet,
@@ -509,13 +512,16 @@ function Changedfiles({
   repo: string
   pullNumber: number
 }) {
-  const isAuthor = false
+  const { data: session } = authClient.useSession()
+  const queryClient = useQueryClient()
 
   const { data: pr } = usePullRequest(
     owner,
     repo,
     pullNumber,
   )
+
+  const isAuthor = session?.user.id === pr?.author.id
 
   const {
     data: filesData,
@@ -612,11 +618,81 @@ function Changedfiles({
   ] = React.useState("")
 
   const [
+    reviewAction,
+    setReviewAction,
+  ] = React.useState<string | null>(null)
+
+  const [
     reviewTab,
     setReviewTab,
   ] = React.useState<
     "write" | "preview"
   >("write")
+
+  const reviewFileInputRef = React.useRef<HTMLInputElement>(null)
+  const reviewTextareaRef = React.useRef<HTMLTextAreaElement>(null)
+  const [reviewUploading, setReviewUploading] = React.useState(false)
+
+  function insertReviewImageMarkdown(url: string) {
+    const textarea = reviewTextareaRef.current
+    if (!textarea) {
+      setReviewComment((prev) => prev + `![image](${url})`)
+      return
+    }
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const before = reviewComment.slice(0, start)
+    const after = reviewComment.slice(end)
+    const insertion = `![image](${url})`
+    setReviewComment(before + insertion + after)
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + insertion.length
+      textarea.focus()
+    }, 0)
+  }
+
+  async function handleReviewFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file.")
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be smaller than 5 MB.")
+      return
+    }
+
+    setReviewUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("image", file)
+
+      const res = await fetch(
+        `http://localhost:3200/api/repos/${owner}/${repo}/pulls/images`,
+        {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        },
+      )
+
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || "Failed to upload image.")
+        return
+      }
+
+      insertReviewImageMarkdown(data.url)
+    } catch {
+      toast.error("Failed to upload image.")
+    } finally {
+      setReviewUploading(false)
+      if (reviewFileInputRef.current) reviewFileInputRef.current.value = ""
+    }
+  }
 
   /*
    * Mark file as viewed
@@ -794,23 +870,43 @@ function Changedfiles({
    * Submit review
    */
 
+  const submitReview = useMutation({
+    mutationFn: async ({ state, body }: { state: string; body: string }) => {
+      const res = await fetch(
+        `http://localhost:3200/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ state, body }),
+        },
+      )
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "Failed to submit review")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      toast.success("Review submitted")
+      queryClient.invalidateQueries({ queryKey: ["pull-reviews", owner, repo, pullNumber] })
+      queryClient.invalidateQueries({ queryKey: ["pull", owner, repo, pullNumber] })
+      setReviewComment("")
+    },
+    onError: (err) => {
+      toast.error(err.message)
+    },
+  })
+
   const handleReviewSubmit = (
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault()
 
-    const formData =
-      new FormData(
-        event.currentTarget,
-      )
-
-    const action =
-      formData.get("review-action")
-
     const comment =
       reviewComment.trim()
 
-    if (!action) {
+    if (!reviewAction) {
       toast.error(
         "Please choose a review action.",
       )
@@ -818,13 +914,12 @@ function Changedfiles({
       return
     }
 
-    toast("Review submitted", {
-      description: [
-        `Action: ${action}`,
-        `Comment: ${comment || "None"
-        }`,
-      ].join(" · "),
-    })
+    if (reviewAction === "comment" && !comment) {
+      toast.error("Please add a comment.")
+      return
+    }
+
+    submitReview.mutate({ state: reviewAction, body: comment })
   }
 
   if (filesLoading) {
@@ -1269,12 +1364,13 @@ function Changedfiles({
                             type="button"
                             variant="ghost"
                             className="h-8 gap-1.5 px-2 text-xs text-muted-foreground"
+                            disabled={reviewUploading}
+                            onClick={() => reviewFileInputRef.current?.click()}
                           >
                             <ImagePlus className="size-4" />
 
                             <span>
-                              Attach
-                              image
+                              {reviewUploading ? "Uploading..." : "Attach image"}
                             </span>
                           </Button>
                         </div>
@@ -1283,7 +1379,15 @@ function Changedfiles({
                           value="write"
                           className="m-0 p-0"
                         >
+                          <input
+                            ref={reviewFileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleReviewFileUpload}
+                          />
                           <Textarea
+                            ref={reviewTextareaRef}
                             rows={10}
                             className="h-[345px] resize-none rounded-none border-0 bg-transparent focus-visible:ring-0 dark:bg-transparent"
                             placeholder="Leave a comment..."
@@ -1338,7 +1442,10 @@ function Changedfiles({
                       required
                     >
                       <QuestionnaireChoices>
-                        <QuestionnaireChoice value="comment">
+                        <QuestionnaireChoice
+                          value="comment"
+                          onChange={() => setReviewAction("comment")}
+                        >
                           <span className="font-medium">
                             Comment
                           </span>
@@ -1353,6 +1460,7 @@ function Changedfiles({
                           disabled={
                             isAuthor
                           }
+                          onChange={() => setReviewAction("approved")}
                         >
                           <span className="font-medium">
                             Approve
@@ -1368,6 +1476,7 @@ function Changedfiles({
                           disabled={
                             isAuthor
                           }
+                          onChange={() => setReviewAction("changes_requested")}
                         >
                           <span className="font-medium">
                             Request changes
@@ -1397,9 +1506,10 @@ function Changedfiles({
 
                     <Button
                       type="submit"
+                      disabled={submitReview.isPending}
                       className="bg-green-600 text-white hover:bg-green-700"
                     >
-                      Submit review
+                      {submitReview.isPending ? "Submitting..." : "Submit review"}
                     </Button>
                   </div>
                 </div>
