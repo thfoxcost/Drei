@@ -33,16 +33,15 @@ import CommentItem, {
 	ConversationSheet,
 	MergedEvent,
 	OpenedEvent,
-	PushEvent,
 	ReviewEventItem,
 	StateChangeEvent,
 } from "./content/conversation";
 import type {
 	ConversationComment,
+	ConversationCommit,
 	ConversationItem,
 	ConversationMerged,
 	ConversationOpened,
-	ConversationPush,
 	ConversationStateChange,
 } from "./content/types/conversation";
 
@@ -79,8 +78,10 @@ function PRdetail({ pull }: { pull: string }) {
 	const comments = pr?.comments ?? [];
 	const reviews = reviewsData?.reviews ?? [];
 
+	const timeline = buildTimeline();
+
 	const stats = {
-		conversation: events.length + reviews.length,
+		conversation: comments.length,
 		commits: prCommits?.length ?? 0,
 		checks: 0,
 		filesChanged: prFiles?.files?.length ?? 0,
@@ -259,15 +260,18 @@ function PRdetail({ pull }: { pull: string }) {
 				} satisfies ConversationMerged);
 			} else if (event.type === "push") {
 				const commits = (event.metadata?.commits as { hash: string; message: string }[]) ?? [];
-				const commitCount = (event.metadata?.commit_count as number) ?? commits.length;
-				items.push({
-					type: "push",
-					date: event.createdAt,
-					username: event.actor.username,
-					avatarLink: event.actor.avatar ?? undefined,
-					commitCount,
-					commits,
-				} satisfies ConversationPush);
+				for (const c of commits) {
+					items.push({
+						type: "commit",
+						date: event.createdAt,
+						username: event.actor.username,
+						avatarLink: event.actor.avatar ?? undefined,
+						message: c.message,
+						hash: c.hash,
+						owner: username,
+						repo,
+					} satisfies ConversationCommit);
+				}
 			}
 		}
 
@@ -337,7 +341,6 @@ function PRdetail({ pull }: { pull: string }) {
 
 	const isOpen = pr.state === "open";
 	const isMerged = pr.state === "merged";
-	const timeline = buildTimeline();
 
 	return (
 		<div className={activeTab === "changes" ? "mx-5 mb-10" : "mx-30 mb-10"}>
@@ -615,6 +618,8 @@ function PRdetail({ pull }: { pull: string }) {
 														message={item.message}
 														hash={item.hash}
 														date={item.date}
+														owner={username}
+														repo={repo}
 													/>
 												);
 											}
@@ -652,19 +657,6 @@ function PRdetail({ pull }: { pull: string }) {
 														username={item.username}
 														avatarLink={item.avatarLink}
 														date={item.date}
-													/>
-												);
-											}
-
-											if (item.type === "push") {
-												return (
-													<PushEvent
-														key={`push-${index}`}
-														username={item.username}
-														avatarLink={item.avatarLink}
-														date={item.date}
-														commitCount={item.commitCount}
-														commits={item.commits}
 													/>
 												);
 											}

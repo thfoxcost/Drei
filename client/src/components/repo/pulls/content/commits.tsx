@@ -84,9 +84,7 @@ function CommitRow({
 						})}
 					</span>
 
-					<span className="mx-0.5">·</span>
 
-					<Check className="size-4 shrink-0 text-green-600" />
 				</div>
 			</div>
 
