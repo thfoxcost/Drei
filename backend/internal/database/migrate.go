@@ -542,5 +542,38 @@ func Migrate() error {
 		return err
 	}
 
+	// Pull request reviews — formal review submissions (approve, request
+	// changes, or comment) attached to a pull request.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pull_request_reviews (
+			id BIGSERIAL PRIMARY KEY,
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			reviewer_id TEXT NOT NULL,
+			state TEXT NOT NULL CHECK (state IN ('comment', 'approved', 'changes_requested')),
+			body TEXT NOT NULL DEFAULT '',
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_request_reviews_pr_id_idx
+		ON pull_request_reviews (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_request_reviews_reviewer_idx
+		ON pull_request_reviews (pull_request_id, reviewer_id);
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

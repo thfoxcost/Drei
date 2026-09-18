@@ -1250,6 +1250,10 @@ func GetPRParticipants(pullRequestID int64) ([]PullRequestUser, error) {
 			FROM pull_request_comments prc
 			WHERE prc.pull_request_id = $1
 			UNION
+			SELECT prrv.reviewer_id
+			FROM pull_request_reviews prrv
+			WHERE prrv.pull_request_id = $1
+			UNION
 			SELECT pa.user_id
 			FROM pr_assignees pa
 			WHERE pa.pull_request_id = $1
@@ -1371,4 +1375,120 @@ func SetPRViewedFiles(pullRequestID int64, userID string, filePaths []string) er
 	}
 
 	return tx.Commit(context.Background())
+}
+
+// PullRequestReview is a formal review submission on a pull request.
+type PullRequestReview struct {
+	ID        int64           `json:"id"`
+	Reviewer  PullRequestUser `json:"reviewer"`
+	State     string          `json:"state"`
+	Body      string          `json:"body"`
+	CreatedAt string          `json:"createdAt"`
+	UpdatedAt string          `json:"updatedAt"`
+}
+
+// AddPullRequestReview inserts a new review for a pull request. The repoID
+// parameter is used to resolve the pull request; it is not stored in the
+// review row.
+func AddPullRequestReview(repoID int64, pullNumber int, reviewerID, state, body string) (PullRequestReview, error) {
+	var prID int64
+	err := DB.QueryRow(context.Background(),
+		`SELECT id FROM pull_requests WHERE repo_id = $1 AND number = $2`,
+		repoID, pullNumber,
+	).Scan(&prID)
+	if err != nil {
+		return PullRequestReview{}, err
+	}
+
+	var review PullRequestReview
+	var createdAt, updatedAt time.Time
+	err = DB.QueryRow(context.Background(),
+		`INSERT INTO pull_request_reviews (pull_request_id, reviewer_id, state, body)
+		 VALUES ($1, $2, $3, $4)
+		 RETURNING id, created_at, updated_at`,
+		prID, reviewerID, state, body,
+	).Scan(&review.ID, &createdAt, &updatedAt)
+	if err != nil {
+		return PullRequestReview{}, err
+	}
+
+	review.CreatedAt = createdAt.Format(time.RFC3339)
+	review.UpdatedAt = updatedAt.Format(time.RFC3339)
+	review.State = state
+	review.Body = body
+
+	// Resolve reviewer user record.
+	err = DB.QueryRow(context.Background(),
+		`SELECT COALESCE(name, ''), image FROM "user" WHERE id = $1`,
+		reviewerID,
+	).Scan(&review.Reviewer.Username, &review.Reviewer.Avatar)
+	if err == nil {
+		review.Reviewer.ID = reviewerID
+	}
+
+	return review, nil
+}
+
+// ListPullRequestReviews returns all reviews for a pull request, ordered by
+// creation time ascending (oldest first).
+func ListPullRequestReviews(repoID int64, pullNumber int) ([]PullRequestReview, error) {
+	rows, err := DB.Query(context.Background(),
+		`SELECT prr.id, prr.state, prr.body, prr.created_at, prr.updated_at,
+		        prr.reviewer_id,
+		        COALESCE(u.name, ''), u.image
+		 FROM pull_request_reviews prr
+		 LEFT JOIN "user" u ON u.id = prr.reviewer_id
+		 WHERE prr.pull_request_id = (
+		     SELECT id FROM pull_requests WHERE repo_id = $1 AND number = $2
+		 )
+		 ORDER BY prr.created_at ASC`,
+		repoID, pullNumber,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var reviews []PullRequestReview
+	for rows.Next() {
+		var r PullRequestReview
+		var createdAt, updatedAt time.Time
+		if err := rows.Scan(
+			&r.ID, &r.State, &r.Body, &createdAt, &updatedAt,
+			&r.Reviewer.ID,
+			&r.Reviewer.Username, &r.Reviewer.Avatar,
+		); err != nil {
+			return nil, err
+		}
+		r.CreatedAt = createdAt.Format(time.RFC3339)
+		r.UpdatedAt = updatedAt.Format(time.RFC3339)
+		reviews = append(reviews, r)
+	}
+
+	return reviews, rows.Err()
+}
+
+// DeletePullRequestReview deletes a review by its ID, only if the deleter
+// is the original reviewer.
+func DeletePullRequestReview(repoID int64, pullNumber int, reviewID int64, reviewerID string) error {
+	result, err := DB.Exec(context.Background(),
+		`DELETE FROM pull_request_reviews
+		 WHERE id = $1
+		   AND reviewer_id = $2
+		   AND pull_request_id = (
+		       SELECT id FROM pull_requests WHERE repo_id = $3 AND number = $4
+		   )`,
+		reviewID, reviewerID, repoID, pullNumber,
+	)
+	if err != nil {
+		return err
+	}
+
+	n := result.RowsAffected()
+
+	if n == 0 {
+		return fmt.Errorf("review not found or not authorized to delete")
+	}
+
+	return nil
 }

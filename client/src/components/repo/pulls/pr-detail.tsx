@@ -18,6 +18,7 @@ import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
 import { usePullRequest } from "#/hooks/PRs/use-pull-request";
 import { usePullRequestEvents } from "#/hooks/PRs/use-pull-request-events";
+import { usePullRequestReviews } from "#/hooks/PRs/use-pull-request-reviews";
 import { usePRCommits } from "#/hooks/PRs/use-pr-commits";
 import { usePRChangedFiles } from "#/hooks/PRs/use-pr-changed-files";
 import { authClient } from "#/lib/auth-client";
@@ -33,7 +34,7 @@ import CommentItem, {
 	MergedEvent,
 	OpenedEvent,
 	PushEvent,
-	ReviewItemMSG,
+	ReviewEventItem,
 	StateChangeEvent,
 } from "./content/conversation";
 import type {
@@ -63,6 +64,8 @@ function PRdetail({ pull }: { pull: string }) {
 
 	const { data: eventsData } = usePullRequestEvents(username, repo, number);
 
+	const { data: reviewsData } = usePullRequestReviews(username, repo, number);
+
 	const { data: prCommits } = usePRCommits(
 		username,
 		repo,
@@ -74,9 +77,10 @@ function PRdetail({ pull }: { pull: string }) {
 
 	const events = eventsData?.events ?? [];
 	const comments = pr?.comments ?? [];
+	const reviews = reviewsData?.reviews ?? [];
 
 	const stats = {
-		conversation: events.length,
+		conversation: events.length + reviews.length,
 		commits: prCommits?.length ?? 0,
 		checks: 0,
 		filesChanged: prFiles?.files?.length ?? 0,
@@ -95,6 +99,9 @@ function PRdetail({ pull }: { pull: string }) {
 		});
 		await queryClient.invalidateQueries({
 			queryKey: ["pull-events", username, repo, number],
+		});
+		await queryClient.invalidateQueries({
+			queryKey: ["pull-reviews", username, repo, number],
 		});
 	}
 
@@ -147,6 +154,23 @@ function PRdetail({ pull }: { pull: string }) {
 			);
 			if (!res.ok) throw new Error("Failed to delete comment");
 			toast.success("Comment deleted");
+			await refresh();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Something went wrong");
+		}
+	}
+
+	async function handleDeleteReview(reviewId: number) {
+		try {
+			const res = await fetch(
+				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}/reviews/${reviewId}`,
+				{
+					method: "DELETE",
+					credentials: "include",
+				},
+			);
+			if (!res.ok) throw new Error("Failed to delete review");
+			toast.success("Review deleted");
 			await refresh();
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -261,6 +285,26 @@ function PRdetail({ pull }: { pull: string }) {
 				onQuoteReply: (text: string) => setQuoteText(text),
 				issueBasePath: { username, repo },
 			} satisfies ConversationComment);
+		}
+
+		for (const review of reviews) {
+			const stateMap: Record<string, "approved" | "changes_requested" | "commented"> = {
+				approved: "approved",
+				changes_requested: "changes_requested",
+				comment: "commented",
+			};
+			items.push({
+				type: "review",
+				reviewId: review.id,
+				date: review.createdAt,
+				username: review.reviewer.username,
+				avatarLink: review.reviewer.avatar ?? undefined,
+				state: stateMap[review.state] ?? "commented",
+				body: review.body,
+				isAuthor: currentUserID === review.reviewer.id,
+				onDelete: handleDeleteReview,
+				onQuoteReply: (text: string) => setQuoteText(text),
+			} satisfies ConversationReview);
 		}
 
 		items.sort(
@@ -545,18 +589,22 @@ function PRdetail({ pull }: { pull: string }) {
 												);
 											}
 
-											if (item.type === "review") {
-												return (
-													<ReviewItemMSG
-														key={`review-${index}`}
-														username={item.username}
-														avatarLink={item.avatarLink}
-														date={item.date}
-														filePath={item.filePath}
-														isOutdated={item.isOutdated}
-													/>
-												);
-											}
+										if (item.type === "review") {
+											return (
+												<ReviewEventItem
+													key={`review-${index}`}
+													reviewId={item.reviewId}
+													username={item.username}
+													avatarLink={item.avatarLink}
+													date={item.date}
+													state={item.state}
+													body={item.body}
+													isAuthor={item.isAuthor}
+													onDelete={item.onDelete}
+													onQuoteReply={item.onQuoteReply}
+												/>
+											);
+										}
 
 											if (item.type === "commit") {
 												return (

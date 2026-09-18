@@ -20,6 +20,15 @@ export interface PullRequestEvent {
 	createdAt: string;
 }
 
+export interface PullRequestReview {
+	id: number;
+	reviewer: PRUser;
+	state: "comment" | "approved" | "changes_requested";
+	body: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
 export interface PRLabel {
 	id: number;
 	name: string;
