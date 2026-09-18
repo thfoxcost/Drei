@@ -36,12 +36,12 @@ import { UserAvatar } from "@/components/UserAvatar"
 const NAV_ITEMS: {
     label: string
     icon: LucideIcon
-    to?: "/repos" | "/issues"
+    to?: "/repos" | "/issues" | "/pulls"
     disabled?: boolean
 }[] = [
         { label: "Repositories", icon: BookMarked, to: "/repos" },
         { label: "Issues", icon: Bug, to: "/issues" },
-        { label: "PRs", icon: GitPullRequest, disabled: true },
+        { label: "PRs", icon: GitPullRequest, to: "/pulls" },
         { label: "Notifications", icon: Bell, disabled: true },
     ]
 

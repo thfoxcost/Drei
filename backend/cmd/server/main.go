@@ -43,6 +43,7 @@ func main() {
 	http.HandleFunc("/api/users", handlers.UsersHandler)
 	http.HandleFunc("/api/users/{owner}/repos", handlers.GetRepos)
 	http.HandleFunc("/api/issues", handlers.AllIssuesHandler)
+	http.HandleFunc("/api/pulls", handlers.AllPullsHandler)
 	http.HandleFunc("/api/status", handlers.Status)
 	http.HandleFunc("/api/profile", handlers.ProfileHandler)
 	http.HandleFunc("/api/user/account/password", handlers.AccountPasswordHandler)
