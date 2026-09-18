@@ -5,6 +5,7 @@ import {
   Eye,
   EyeOff,
   FoldHorizontal,
+  GitCommit,
   ImagePlus,
   Pencil,
   Settings,
@@ -40,6 +41,7 @@ import type {
   ConversationCommit,
   ConversationMerged,
   ConversationOpened,
+  ConversationPush,
   ConversationReview,
   ConversationStateChange,
 } from "./types/conversation";
@@ -1809,6 +1811,58 @@ export function MergedEvent({
       <span className="ml-auto text-xs text-muted-foreground">
         {timeAgo(date)}
       </span>
+    </div>
+  );
+}
+
+export function PushEvent({
+  username,
+  avatarLink,
+  date,
+  commitCount,
+  commits,
+}: Omit<ConversationPush, "type">) {
+  return (
+    <div className="ml-13 flex flex-row items-start gap-2 text-sm">
+      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <GitCommit className="size-4" />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <Avatar className="size-6">
+            <AvatarImage src={avatarLink} />
+            <AvatarFallback>
+              {username.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+
+          <span className="font-semibold">{username}</span>
+
+          <span className="text-muted-foreground">
+            {commitCount === 1
+              ? "pushed 1 commit"
+              : `pushed ${commitCount} commits`}
+          </span>
+
+          <span className="ml-auto text-xs text-muted-foreground">
+            {timeAgo(date)}
+          </span>
+        </div>
+
+        {commits.length > 0 && (
+          <div className="mt-1.5 rounded-md border bg-muted/30 px-3 py-2">
+            {commits.map((c) => (
+              <div key={c.hash} className="flex items-center gap-2 text-xs">
+                <code className="font-mono text-muted-foreground">
+                  {c.hash.slice(0, 7)}
+                </code>
+                <span className="truncate">{c.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

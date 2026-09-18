@@ -55,10 +55,20 @@ export type ConversationMerged = {
 	avatarLink?: string;
 };
 
+export type ConversationPush = {
+	type: "push";
+	date: string;
+	username: string;
+	avatarLink?: string;
+	commitCount: number;
+	commits: { hash: string; message: string }[];
+};
+
 export type ConversationItem =
 	| ConversationComment
 	| ConversationCommit
 	| ConversationReview
 	| ConversationOpened
 	| ConversationStateChange
-	| ConversationMerged;
+	| ConversationMerged
+	| ConversationPush;
