@@ -60,6 +60,8 @@ type PullRequest struct {
 	Labels          []PRLabel           `json:"labels"`
 	Participants    []PullRequestUser   `json:"participants"`
 	Notifications   bool                `json:"notifications"`
+	Owner           string              `json:"owner"`
+	Repo            string              `json:"repo"`
 }
 
 // PullRequestFilter describes the optional filters and sort applied when
@@ -98,13 +100,16 @@ const prSelectColumns = `
 		FROM pull_request_comments pc
 		WHERE pc.pull_request_id = pr.id
 	), 0),
-	pr.notifications`
+	pr.notifications,
+	COALESCE(r.owner, ''),
+	COALESCE(r.name, '')`
 
 const prFromClause = `
 	FROM pull_requests pr
 	LEFT JOIN "user" au ON au.id = pr.author_id
 	LEFT JOIN "user" mu ON mu.id = pr.merged_by
-	LEFT JOIN "user" cbu ON cbu.id = pr.closed_by`
+	LEFT JOIN "user" cbu ON cbu.id = pr.closed_by
+	LEFT JOIN repositories r ON r.id = pr.repo_id`
 
 func scanPullRequest(row rowScanner) (PullRequest, error) {
 	var pr PullRequest
@@ -147,6 +152,8 @@ func scanPullRequest(row rowScanner) (PullRequest, error) {
 		&updatedAt,
 		&pr.CommentCount,
 		&pr.Notifications,
+		&pr.Owner,
+		&pr.Repo,
 	)
 	if err != nil {
 		return PullRequest{}, err
@@ -333,6 +340,76 @@ func ListPullRequests(repoID int64, filter PullRequestFilter) ([]PullRequest, er
 // for a repository after applying every non-state filter.
 func CountPullRequests(repoID int64, filter PullRequestFilter) (open, closed, merged int, err error) {
 	where, args, _ := pullRequestWhere(repoID, filter)
+
+	err = DB.QueryRow(
+		context.Background(),
+		`SELECT COUNT(*) FILTER (WHERE pr.state = 'open'),
+		       COUNT(*) FILTER (WHERE pr.state = 'closed'),
+		       COUNT(*) FILTER (WHERE pr.state = 'merged')
+		FROM pull_requests pr`+where,
+		args...,
+	).Scan(&open, &closed, &merged)
+
+	return open, closed, merged, err
+}
+
+// pullRequestWhereAll builds the WHERE clause for a global (cross-repo) filter
+// without the repo_id predicate.
+func pullRequestWhereAll(filter PullRequestFilter) (string, []any, int) {
+	query := " WHERE 1=1"
+	args := []any{}
+	param := 1
+
+	if filter.AuthorID != "" {
+		query += fmt.Sprintf(" AND pr.author_id = $%d", param)
+		args = append(args, filter.AuthorID)
+		param++
+	}
+
+	if filter.Search != "" {
+		pattern := "%" + filter.Search + "%"
+		query += fmt.Sprintf(
+			" AND (pr.title ILIKE $%d OR pr.description ILIKE $%d OR pr.number::text = $%d)",
+			param, param+1, param+2,
+		)
+		args = append(args, pattern, pattern, filter.Search)
+		param += 3
+	}
+
+	return query, args, param
+}
+
+// ListAllPulls returns pull requests across every repository, filtered and sorted
+// according to the given filter.
+func ListAllPulls(filter PullRequestFilter) ([]PullRequest, error) {
+	where, args, param := pullRequestWhereAll(filter)
+	query := `SELECT ` + prSelectColumns + `
+		` + prFromClause + where
+	query, args = appendPRStateAndSort(query, param, args, filter)
+
+	rows, err := DB.Query(context.Background(), query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var pullRequests []PullRequest
+
+	for rows.Next() {
+		pr, err := scanPullRequest(rows)
+		if err != nil {
+			return nil, err
+		}
+		pullRequests = append(pullRequests, pr)
+	}
+
+	return pullRequests, rows.Err()
+}
+
+// CountAllPulls returns the open, closed, and merged pull request counts across
+// every repository after applying every non-state filter.
+func CountAllPulls(filter PullRequestFilter) (open, closed, merged int, err error) {
+	where, args, _ := pullRequestWhereAll(filter)
 
 	err = DB.QueryRow(
 		context.Background(),

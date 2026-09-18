@@ -58,6 +58,8 @@ export interface PullRequest {
 	labels?: PRLabel[];
 	participants?: PRUser[];
 	notifications: boolean;
+	owner: string;
+	repo: string;
 }
 
 export interface PullRequestsList {
