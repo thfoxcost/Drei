@@ -70,6 +70,7 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/labels", handlers.IssueLabelsHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/labels/{labelId}", handlers.IssueLabelHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/duplicate", handlers.PullDuplicateHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/compare/commits", handlers.PullCompareCommitsHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/compare", handlers.PullCompareHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls", handlers.PullsHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/images", handlers.PullImageHandler)

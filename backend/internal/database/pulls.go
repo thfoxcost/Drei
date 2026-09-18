@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -345,10 +346,55 @@ func CountPullRequests(repoID int64, filter PullRequestFilter) (open, closed, me
 	return open, closed, merged, err
 }
 
+// linkPRLabels creates labels if they don't exist and links them to a PR.
+func linkPRLabels(pullRequestID, repoID int64, labelNames []string) error {
+	ctx := context.Background()
+
+	for _, name := range labelNames {
+		name = strings.TrimSpace(name)
+
+		if name == "" {
+			continue
+		}
+
+		var labelID int64
+
+		err := DB.QueryRow(
+			ctx,
+			`SELECT id FROM issue_labels WHERE repo_id = $1 AND lower(name) = lower($2)`,
+			repoID, name,
+		).Scan(&labelID)
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = DB.QueryRow(
+				ctx,
+				`INSERT INTO issue_labels (repo_id, name) VALUES ($1, $2) RETURNING id`,
+				repoID, name,
+			).Scan(&labelID)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		_, err = DB.Exec(
+			ctx,
+			`INSERT INTO pr_label_links (pull_request_id, label_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+			pullRequestID, labelID,
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CreatePullRequest inserts a new open pull request, allocating the next
 // repository-scoped number atomically under a row lock on the repository.
 // An "opened" event is recorded in the same transaction.
-func CreatePullRequest(repoID int64, authorID, title, description, sourceBranch, targetBranch string) (PullRequest, error) {
+func CreatePullRequest(repoID int64, authorID, title, description, sourceBranch, targetBranch string, labelNames []string, assigneeIDs, reviewerIDs []string) (PullRequest, error) {
 	ctx := context.Background()
 
 	tx, err := DB.Begin(ctx)
@@ -440,6 +486,24 @@ func CreatePullRequest(repoID int64, authorID, title, description, sourceBranch,
 
 	if created == nil {
 		return PullRequest{}, pgx.ErrNoRows
+	}
+
+	if len(labelNames) > 0 {
+		if err := linkPRLabels(created.ID, repoID, labelNames); err != nil {
+			return PullRequest{}, err
+		}
+	}
+
+	if len(assigneeIDs) > 0 {
+		if err := SetPRAssignees(created.ID, assigneeIDs); err != nil {
+			return PullRequest{}, err
+		}
+	}
+
+	if len(reviewerIDs) > 0 {
+		if err := SetPRReviewers(created.ID, reviewerIDs); err != nil {
+			return PullRequest{}, err
+		}
 	}
 
 	return *created, nil
