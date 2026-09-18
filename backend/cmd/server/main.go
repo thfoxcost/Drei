@@ -84,6 +84,8 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/assignee", handlers.PRAssigneeHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/reviewers", handlers.PRReviewerHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/labels", handlers.PRLabelHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/files", handlers.PullFilesHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/viewed", handlers.PullViewedFilesHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/notifications", handlers.PRNotificationsHandler)
 	http.HandleFunc("/api/notifications", handlers.NotificationsHandler)
 	http.HandleFunc("/api/notifications/{id}", handlers.NotificationItemHandler)

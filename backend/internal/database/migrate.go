@@ -518,5 +518,29 @@ func Migrate() error {
 		return err
 	}
 
+	// Per-user file viewed tracking for pull requests. Records which changed
+	// files in a PR the current user has marked as viewed.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pr_viewed_files (
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			user_id TEXT NOT NULL,
+			file_path TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			PRIMARY KEY (pull_request_id, user_id, file_path)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pr_viewed_files_pull_user_idx
+		ON pr_viewed_files (pull_request_id, user_id);
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
