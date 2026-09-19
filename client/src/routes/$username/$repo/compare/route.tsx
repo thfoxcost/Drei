@@ -240,7 +240,7 @@ export function CompareComponent() {
 
   const stats = compare
     ? {
-      commits: compare.ahead + compare.behind,
+      commits: compare.ahead,
       filesChanged: compare.files.length,
       contributors: 1,
     }

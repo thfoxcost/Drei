@@ -22,6 +22,7 @@ type BranchCompare struct {
 	Diffs     []FileDiff   `json:"diffs"`
 	Mergeable bool         `json:"mergeable"`
 	Conflicts []string     `json:"conflicts,omitempty"`
+	Remerge   bool         `json:"remerge,omitempty"`
 }
 
 // OpenRepo opens the bare repository for the given owner/repo and returns the
@@ -94,6 +95,20 @@ func CompareBranches(owner, repo, baseBranch, headBranch string) (*BranchCompare
 		return nil, fmt.Errorf("count commits behind: %w", err)
 	}
 
+	// When ahead=0 and behind=0 the branch was likely already merged (or
+	// reverted). Look for a merge commit on the base that brought in the
+	// head branch and show those changes so the user can re-merge.
+	if ahead == 0 && behind == 0 {
+		mergeHash, err := FindMergeCommit(r, baseCommit, headCommit)
+		if err == nil {
+			result, err := CompareWithMergeCommit(owner, repo, mergeHash.String())
+			if err == nil {
+				result.Remerge = true
+				return result, nil
+			}
+		}
+	}
+
 	// Compute file changes and diffs between merge-base and head branch.
 	mergeBaseTree, err := mergeBase.Tree()
 	if err != nil {
@@ -151,7 +166,7 @@ func CompareBranches(owner, repo, baseBranch, headBranch string) (*BranchCompare
 	}
 
 	// Check mergeability via an actual Git 3-way merge in a temporary clone.
-	mergeable, conflicts, err := checkMergeability(owner, repo, baseBranch, headBranch)
+	mergeable, conflicts, err := CheckMergeability(owner, repo, baseBranch, headBranch)
 	if err != nil {
 		return nil, fmt.Errorf("check mergeability: %w", err)
 	}
@@ -165,6 +180,152 @@ func CompareBranches(owner, repo, baseBranch, headBranch string) (*BranchCompare
 		Mergeable: mergeable,
 		Conflicts: conflicts,
 	}, nil
+}
+
+// CompareWithMergeCommit computes the file diff for a merged PR by diffing
+// the merge commit against its first parent (the target branch state before
+// merge). This is used when the source branch has been deleted after merge.
+func CompareWithMergeCommit(owner, repo, mergeCommitHash string) (*BranchCompare, error) {
+	r, err := OpenRepo(owner, repo)
+	if err != nil {
+		return nil, fmt.Errorf("open repo: %w", err)
+	}
+
+	hash := plumbing.NewHash(mergeCommitHash)
+	mergeCommit, err := r.CommitObject(hash)
+	if err != nil {
+		return nil, fmt.Errorf("resolve merge commit: %w", err)
+	}
+
+	parents := mergeCommit.Parents()
+	firstParent, err := parents.Next()
+	if err != nil || firstParent == nil {
+		return nil, fmt.Errorf("merge commit has no first parent")
+	}
+
+	firstParentTree, err := firstParent.Tree()
+	if err != nil {
+		return nil, fmt.Errorf("first parent tree: %w", err)
+	}
+
+	mergeTree, err := mergeCommit.Tree()
+	if err != nil {
+		return nil, fmt.Errorf("merge commit tree: %w", err)
+	}
+
+	changes, err := object.DiffTree(firstParentTree, mergeTree)
+	if err != nil {
+		return nil, fmt.Errorf("diff trees: %w", err)
+	}
+
+	files := fileChangesFromDiff(changes)
+
+	patch, err := changes.Patch()
+	if err != nil {
+		return nil, fmt.Errorf("compute patch: %w", err)
+	}
+
+	diffs := make([]FileDiff, 0, len(patch.FilePatches()))
+
+	for _, fp := range patch.FilePatches() {
+		from, to := fp.Files()
+
+		path := ""
+		if to != nil {
+			path = to.Path()
+		} else if from != nil {
+			path = from.Path()
+		}
+
+		action := "changed"
+		for _, fc := range files {
+			if fc.Path == path {
+				action = fc.Action
+				break
+			}
+		}
+
+		lines, additions, deletions := chunksToDiffLines(fp.Chunks())
+		hunks := groupHunks(lines)
+
+		diffs = append(diffs, FileDiff{
+			Path:      path,
+			Action:    action,
+			Additions: additions,
+			Deletions: deletions,
+			Hunks:     hunks,
+		})
+	}
+
+	return &BranchCompare{
+		Ahead:     0,
+		Behind:    0,
+		MergeBase: firstParent.Hash.String(),
+		Files:     files,
+		Diffs:     diffs,
+		Mergeable: false,
+	}, nil
+}
+
+// FindMergeCommit walks the base branch looking for a merge commit whose
+// second parent is the head branch commit. Returns the merge commit hash.
+func FindMergeCommit(r *git.Repository, baseCommit, headCommit *object.Commit) (plumbing.Hash, error) {
+	iter, err := r.Log(&git.LogOptions{From: baseCommit.Hash})
+	if err != nil {
+		return plumbing.ZeroHash, err
+	}
+
+	var found plumbing.Hash
+	err = iter.ForEach(func(c *object.Commit) error {
+		if c.NumParents() < 2 {
+			return nil
+		}
+		parents := c.Parents()
+		parents.Next()
+		second, err := parents.Next()
+		if err != nil || second == nil {
+			return nil
+		}
+		if second.Hash == headCommit.Hash {
+			found = c.Hash
+			return fmt.Errorf("found")
+		}
+		return nil
+	})
+	if err != nil && err.Error() != "found" {
+		return plumbing.ZeroHash, err
+	}
+	if found == plumbing.ZeroHash {
+		return plumbing.ZeroHash, fmt.Errorf("no merge commit found")
+	}
+	return found, nil
+}
+
+// AutoFindMergeCommit opens the repo and finds a merge commit on the base
+// branch that brought in the head branch. Used as a fallback when
+// CommitsBetweenBranches returns 0 results (already merged).
+func AutoFindMergeCommit(owner, repo, baseBranch, headBranch string) (string, error) {
+	r, err := OpenRepo(owner, repo)
+	if err != nil {
+		return "", err
+	}
+
+	baseCommit, err := ResolveBranch(r, baseBranch)
+	if err != nil {
+		return "", err
+	}
+
+	headCommit, err := ResolveBranch(r, headBranch)
+	if err != nil {
+		return "", err
+	}
+
+	hash, err := FindMergeCommit(r, baseCommit, headCommit)
+	if err != nil {
+		return "", err
+	}
+
+	return hash.String(), nil
 }
 
 // countCommitsUntil walks from commit backwards and counts how many commits
@@ -194,10 +355,10 @@ func countCommitsUntil(r *git.Repository, commit *object.Commit, stopHash plumbi
 	return count, nil
 }
 
-// checkMergeability clones the bare repo to a temporary directory, checks out
+// CheckMergeability clones the bare repo to a temporary directory, checks out
 // the target branch, and attempts a no-commit merge of the source branch. Git
 // itself is the authority on whether the merge is clean.
-func checkMergeability(owner, repo, targetBranch, sourceBranch string) (bool, []string, error) {
+func CheckMergeability(owner, repo, targetBranch, sourceBranch string) (bool, []string, error) {
 	tmpDir, err := os.MkdirTemp("", "drei-merge-check-*")
 	if err != nil {
 		return false, nil, fmt.Errorf("create temp dir: %w", err)
@@ -360,4 +521,74 @@ func MergeBranches(owner, repo, sourceBranch, targetBranch, authorName string, p
 	_ = deleteRefCmd.Run()
 
 	return mergeCommitHash, nil
+}
+
+// RevertMerge reverts a merge commit by using git revert -m 1 on the target
+// branch. It returns the new revert commit hash.
+func RevertMerge(owner, repo, targetBranch, mergeCommitHash, authorName string) (string, error) {
+	tmpDir, err := os.MkdirTemp("", "drei-revert-*")
+	if err != nil {
+		return "", fmt.Errorf("create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	revCmd := exec.Command("git", "--git-dir="+bareRepoPath(owner, repo), "rev-parse", "refs/heads/"+targetBranch)
+	revOut, err := revCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("resolve target branch %q: %w", targetBranch, err)
+	}
+
+	expectedTargetHash := strings.TrimSpace(string(revOut))
+
+	cloneCmd := exec.Command("git", "clone", bareRepoPath(owner, repo), tmpDir)
+	if out, err := cloneCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("git clone: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	checkoutCmd := exec.Command("git", "-C", tmpDir, "checkout", targetBranch)
+	if out, err := checkoutCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("git checkout %s: %w: %s", targetBranch, err, strings.TrimSpace(string(out)))
+	}
+
+	// -m 1 tells git to keep the first parent's (target) history.
+	revertCmd := exec.Command("git", "-C", tmpDir, "revert", "-m", "1", "--no-edit", mergeCommitHash)
+	if out, err := revertCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("git revert: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	hashCmd := exec.Command("git", "-C", tmpDir, "rev-parse", "HEAD")
+	hashOut, err := hashCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("get revert commit hash: %w", err)
+	}
+
+	revertHash := strings.TrimSpace(string(hashOut))
+
+	pushRef := fmt.Sprintf("refs/drei-tmp/%s", revertHash[:12])
+	pushCmd := exec.Command("git", "-C", tmpDir, "push",
+		bareRepoPath(owner, repo),
+		"HEAD:"+pushRef,
+	)
+	if out, err := pushCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("push revert objects: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	updateRefCmd := exec.Command(
+		"git",
+		"--git-dir="+bareRepoPath(owner, repo),
+		"update-ref",
+		"refs/heads/"+targetBranch,
+		revertHash,
+		expectedTargetHash,
+	)
+
+	if out, err := updateRefCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("update bare repo ref: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	deleteRefCmd := exec.Command("git", "--git-dir="+bareRepoPath(owner, repo),
+		"update-ref", "-d", pushRef)
+	_ = deleteRefCmd.Run()
+
+	return revertHash, nil
 }

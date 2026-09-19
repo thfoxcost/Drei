@@ -59,6 +59,20 @@ export type ConversationMerged = {
 	date: string;
 	username: string;
 	avatarLink?: string;
+	targetBranch: string;
+	sourceBranch: string;
+	onRevert?: () => void;
+	isReverting?: boolean;
+	isReverted?: boolean;
+};
+
+export type ConversationReverted = {
+	type: "reverted";
+	date: string;
+	username: string;
+	avatarLink?: string;
+	targetBranch: string;
+	sourceBranch: string;
 };
 
 export type ConversationPush = {
@@ -70,6 +84,14 @@ export type ConversationPush = {
 	commits: { hash: string; message: string }[];
 };
 
+export type ConversationBranchDeleted = {
+	type: "branch_deleted";
+	date: string;
+	username: string;
+	avatarLink?: string;
+	branch: string;
+};
+
 export type ConversationItem =
 	| ConversationComment
 	| ConversationCommit
@@ -77,4 +99,6 @@ export type ConversationItem =
 	| ConversationOpened
 	| ConversationStateChange
 	| ConversationMerged
-	| ConversationPush;
+	| ConversationReverted
+	| ConversationPush
+	| ConversationBranchDeleted;

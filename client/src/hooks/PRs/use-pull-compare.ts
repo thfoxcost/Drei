@@ -14,6 +14,7 @@ export interface BranchCompare {
 	diffs: FileDiff[];
 	mergeable: boolean;
 	conflicts?: string[];
+	remerge?: boolean;
 }
 
 export function usePullCompare(

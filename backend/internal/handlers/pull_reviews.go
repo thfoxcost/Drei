@@ -3,6 +3,7 @@ package handlers
 import (
 	"backend/internal/database"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -56,17 +57,10 @@ func PullReviewsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// PR authors cannot approve or request changes on their own PR.
-		if pull.Author.ID == user.ID {
-			var req struct {
-				State string `json:"state"`
-			}
-			if err := json.NewDecoder(r.Body).Decode(&req); err == nil {
-				if req.State == "approved" || req.State == "changes_requested" {
-					writeError(w, http.StatusForbidden, "you cannot approve or request changes on your own pull request")
-					return
-				}
-			}
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
 		}
 
 		var req struct {
@@ -74,9 +68,17 @@ func PullReviewsHandler(w http.ResponseWriter, r *http.Request) {
 			Body  string `json:"body"`
 		}
 
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		if err := json.Unmarshal(bodyBytes, &req); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid request body")
 			return
+		}
+
+		// PR authors cannot approve or request changes on their own PR.
+		if pull.Author.ID == user.ID {
+			if req.State == "approved" || req.State == "changes_requested" {
+				writeError(w, http.StatusForbidden, "you cannot approve or request changes on your own pull request")
+				return
+			}
 		}
 
 		req.State = strings.TrimSpace(req.State)

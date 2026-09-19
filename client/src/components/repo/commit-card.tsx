@@ -5,6 +5,12 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { timeAgo } from "#/lib/time-ago";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "#/components/ui/tooltip";
 
 interface CommitCardProps {
   hash: string;
@@ -29,9 +35,12 @@ function CommitCard({
   owner,
   repo,
 }: CommitCardProps) {
-  const title = message.trim() || "No commit message";
   const [copied, setCopied] = useState(false);
   const commitPath = `/${owner}/${repo}/commits/${hash}`;
+
+  const parts = message.split("\n");
+  const title = parts[0]?.trim() || "No commit message";
+  const description = parts.slice(1).join("\n").trim();
 
   const handleCopy = async () => {
     try {
@@ -52,13 +61,30 @@ function CommitCard({
       </Avatar>
 
       <div className="min-w-0 flex-1">
-        <Link
-          to={commitPath}
-          className="truncate text-base hover:underline font-semibold text-foreground block"
-          title={title}
-        >
-          {title}
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            to={commitPath}
+            className="truncate text-base hover:underline font-semibold text-foreground"
+            title={title}
+          >
+            {title}
+          </Link>
+
+          {description && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex shrink-0 cursor-default text-muted-foreground hover:text-foreground">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13.5a1.5 1.5 0 0 1-1.5-1.5a1.5 1.5 0 0 1 1.5-1.5a1.5 1.5 0 0 1 1.5 1.5a1.5 1.5 0 0 1-1.5 1.5m-5 0a1.5 1.5 0 0 1-1.5-1.5a1.5 1.5 0 0 1 1.5-1.5a1.5 1.5 0 0 1 1.5 1.5a1.5 1.5 0 0 1-1.5 1.5m-5 0A1.5 1.5 0 0 1 7.5 12A1.5 1.5 0 0 1 9 10.5a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 9 13.5M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.96.89 1.65.89H22a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2"/></svg>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-md whitespace-pre-wrap text-xs">{description}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
 
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {author} committed {timeAgo(date)}

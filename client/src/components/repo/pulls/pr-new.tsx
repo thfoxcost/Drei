@@ -8,7 +8,7 @@ import {
   Settings,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Contributor } from "#/components/repo/contributor-avatars";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
@@ -28,6 +28,7 @@ import { Label } from "#/components/ui/label";
 import { Separator } from "#/components/ui/separator";
 import { Textarea } from "#/components/ui/textarea";
 import { useCreatePullRequest } from "#/hooks/PRs/use-create-pull";
+import { usePRCommits } from "#/hooks/PRs/use-pr-commits";
 import type { BranchCompare } from "#/hooks/PRs/use-pull-compare";
 import { useRepoData } from "#/hooks/useRepoData";
 import { authClient } from "#/lib/auth-client";
@@ -101,6 +102,20 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
+function branchToTitle(branch: string): string {
+  const prefixes = ["feat/", "fix/", "chore/", "refactor/", "docs/", "test/", "ci/", "build/", "perf/"];
+  let name = branch;
+  for (const prefix of prefixes) {
+    if (name.toLowerCase().startsWith(prefix)) {
+      name = name.slice(prefix.length);
+      break;
+    }
+  }
+  return name
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function PrNew({
   owner,
   repo,
@@ -114,8 +129,29 @@ function PrNew({
   const createPR = useCreatePullRequest(owner, repo);
   const { data: repoData } = useRepoData(owner, repo);
 
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(() => (source ? branchToTitle(source) : ""));
   const [description, setDescription] = useState("");
+  const [isChecking, setIsChecking] = useState(false);
+
+  const descInitialized = useRef(false);
+
+  const { data: branchCommits } = usePRCommits(
+    owner,
+    repo,
+    base,
+    source,
+  );
+
+  useEffect(() => {
+    if (descInitialized.current) return;
+    if (branchCommits && branchCommits.length > 0) {
+      const desc = branchCommits
+        .map((c) => `- ${c.message.split("\n")[0]}`)
+        .join("\n");
+      setDescription(desc);
+      descInitialized.current = true;
+    }
+  }, [branchCommits]);
 
   const [selectedReviewers, setSelectedReviewers] = useState<Contributor[]>([]);
   const [selectedAssignees, setSelectedAssignees] = useState<Contributor[]>([]);
@@ -188,10 +224,10 @@ function PrNew({
 
   const isSameBranch = base === source;
   const isConflicting = compare && !compare.mergeable;
-  const isAhead = compare && compare.ahead > 0;
+  const isAhead = compare && (compare.ahead > 0 || compare.remerge);
   const isDuplicate = duplicatePR?.duplicate === true;
   const isDisabled =
-    isSameBranch || !isAhead || isDuplicate || createPR.isPending;
+    isSameBranch || !isAhead || isDuplicate || createPR.isPending || isChecking;
 
   function toggleReviewer(contributor: Contributor) {
     setSelectedReviewers((prev) =>
@@ -233,7 +269,9 @@ function PrNew({
   }
 
   const handleCreate = () => {
-    if (!title.trim() || isDisabled) return;
+    if (!title.trim() || isDisabled || isChecking) return;
+
+    setIsChecking(true);
 
     createPR.mutate(
       {
@@ -248,6 +286,9 @@ function PrNew({
       {
         onSuccess: (pr) => {
           navigate({ to: `/${owner}/${repo}/pulls/${pr.number}` });
+        },
+        onError: () => {
+          setIsChecking(false);
         },
       },
     );
@@ -307,7 +348,14 @@ function PrNew({
             </div>
           )}
 
-          {compare && !isSameBranch && !isAhead && (
+          {compare && !isSameBranch && compare.remerge && (
+            <div className="flex items-center gap-2 rounded-md border border-purple-500/50 bg-purple-500/10 px-3 py-2 text-sm text-purple-600 dark:text-purple-400">
+              This branch was previously merged. The changes shown are from the
+              original merge.
+            </div>
+          )}
+
+          {compare && !isSameBranch && !compare.remerge && !isAhead && (
             <div className="flex items-center gap-2 rounded-md border bg-accent/20 px-3 py-2 text-sm text-muted-foreground">
               There are no new commits on{" "}
               <span className="font-semibold">{source}</span> compared to{" "}
@@ -352,7 +400,7 @@ function PrNew({
             <Button
               variant="outline"
               onClick={handleCancel}
-              disabled={createPR.isPending}
+              disabled={createPR.isPending || isChecking}
             >
               Cancel
             </Button>
@@ -361,10 +409,12 @@ function PrNew({
               onClick={handleCreate}
               disabled={isDisabled || !title.trim()}
             >
-              {createPR.isPending && (
+              {(createPR.isPending || isChecking) && (
                 <Loader2 className="mr-1.5 size-3.5 animate-spin" />
               )}
-              Create pull request
+              {isChecking && !createPR.isPending
+                ? "Checking mergeability..."
+                : "Create pull request"}
             </Button>
           </div>
         </div>

@@ -478,6 +478,84 @@ func PullMergeHandler(w http.ResponseWriter, r *http.Request) {
 	writeSuccess(w, map[string]any{"mergeCommitHash": mergeCommitHash})
 }
 
+// PullRevertHandler reverts a merged pull request by reverting the merge commit.
+//
+//	POST /api/repos/{owner}/{repo}/pulls/{number}/revert
+func PullRevertHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "POST")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	number, ok := parsePullNumber(w, r)
+	if !ok {
+		return
+	}
+
+	user, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "you must be signed in to revert a pull request")
+		return
+	}
+
+	member, err := database.IsRepoMember(info.ID, user.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if !member {
+		writeError(w, http.StatusForbidden, "you must be a contributor of this repository")
+		return
+	}
+
+	pull, ok := getPullOr404(w, info.ID, number)
+	if !ok {
+		return
+	}
+
+	if pull.State != "merged" {
+		writeError(w, http.StatusConflict, "only merged pull requests can be reverted")
+		return
+	}
+
+	if pull.MergeCommitHash == nil {
+		writeError(w, http.StatusInternalServerError, "merge commit hash not found")
+		return
+	}
+
+	revertHash, err := gitrepo.RevertMerge(
+		info.Owner,
+		info.Name,
+		pull.TargetBranch,
+		*pull.MergeCommitHash,
+		user.Name,
+	)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	revertMeta, _ := json.Marshal(map[string]any{
+		"revert_commit_hash": revertHash,
+	})
+	database.InsertPullRequestEvent(info.ID, number, user.ID, "reverted", revertMeta)
+
+	writeSuccess(w, map[string]any{"revertCommitHash": revertHash})
+}
+
 // PullCompareCommitsHandler returns the commits between two branches for a
 // pull request view.
 //
@@ -502,6 +580,7 @@ func PullCompareCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	base := strings.TrimSpace(r.URL.Query().Get("base"))
 	head := strings.TrimSpace(r.URL.Query().Get("head"))
+	mergeCommit := strings.TrimSpace(r.URL.Query().Get("mergeCommit"))
 
 	if base == "" || head == "" {
 		writeError(w, http.StatusBadRequest, "base and head query parameters are required")
@@ -514,6 +593,16 @@ func PullCompareCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	commits, err := gitrepo.CommitsBetweenBranches(info.Owner, info.Name, base, head)
+	if err != nil && mergeCommit != "" {
+		commits, err = gitrepo.CommitsFromMergeCommit(info.Owner, info.Name, mergeCommit)
+	}
+	// Auto-detect merge commit when branches show 0 commits (already merged).
+	if len(commits) == 0 && err == nil {
+		mergeHash, merr := gitrepo.AutoFindMergeCommit(info.Owner, info.Name, base, head)
+		if merr == nil {
+			commits, err = gitrepo.CommitsFromMergeCommit(info.Owner, info.Name, mergeHash)
+		}
+	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -917,6 +1006,158 @@ func PRNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, pull)
 }
 
+// PullMergeabilityHandler returns whether the PR can be cleanly merged.
+//
+//	GET /api/repos/{owner}/{repo}/pulls/{number}/mergeability
+func PullMergeabilityHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "GET")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	number, ok := parsePullNumber(w, r)
+	if !ok {
+		return
+	}
+
+	pull, ok := getPullOr404(w, info.ID, number)
+	if !ok {
+		return
+	}
+
+	if pull.State != "open" {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"mergeable": false,
+			"conflicts": []string{},
+			"state":     pull.State,
+		})
+		return
+	}
+
+	if pull.SourceBranch == pull.TargetBranch {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"mergeable": false,
+			"conflicts": []string{},
+			"error":     "source and target branches are the same",
+		})
+		return
+	}
+
+	if err := gitrepo.VerifyBranchExists(info.Owner, info.Name, pull.SourceBranch); err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"mergeable": false,
+			"conflicts": []string{},
+			"error":     "source branch no longer exists",
+		})
+		return
+	}
+
+	if err := gitrepo.VerifyBranchExists(info.Owner, info.Name, pull.TargetBranch); err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"mergeable": false,
+			"conflicts": []string{},
+			"error":     "target branch no longer exists",
+		})
+		return
+	}
+
+	mergeable, conflicts, err := gitrepo.CheckMergeability(
+		info.Owner, info.Name, pull.TargetBranch, pull.SourceBranch,
+	)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"mergeable": mergeable,
+		"conflicts": conflicts,
+	})
+}
+
+// PullDeleteSourceBranch deletes the PR's source branch after merge.
+//
+//	DELETE /api/repos/{owner}/{repo}/pulls/{number}/source-branch
+func PullDeleteSourceBranchHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "DELETE")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodDelete {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	info, ok := resolveRepo(w, r)
+	if !ok {
+		return
+	}
+
+	number, ok := parsePullNumber(w, r)
+	if !ok {
+		return
+	}
+
+	user, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "you must be signed in")
+		return
+	}
+
+	member, err := database.IsRepoMember(info.ID, user.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if !member {
+		writeError(w, http.StatusForbidden, "you must be a contributor of this repository")
+		return
+	}
+
+	pull, ok := getPullOr404(w, info.ID, number)
+	if !ok {
+		return
+	}
+
+	if pull.State != "merged" {
+		writeError(w, http.StatusConflict, "source branch can only be deleted after merge")
+		return
+	}
+
+	if pull.SourceBranch == pull.TargetBranch {
+		writeError(w, http.StatusBadRequest, "source and target branches are the same")
+		return
+	}
+
+	if err := gitrepo.DeleteBranch(info.Owner, info.Name, pull.SourceBranch); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	branchMeta, _ := json.Marshal(map[string]any{
+		"branch": pull.SourceBranch,
+	})
+	database.InsertPullRequestEvent(info.ID, number, user.ID, "branch_deleted", branchMeta)
+
+	writeJSON(w, http.StatusOK, map[string]any{"success": true})
+}
+
 // parsePullNumber extracts and validates the PR number from the URL path.
 func parsePullNumber(w http.ResponseWriter, r *http.Request) (int, bool) {
 	number, err := strconv.Atoi(r.PathValue("number"))
@@ -1056,8 +1297,18 @@ func PullFilesHandler(w http.ResponseWriter, r *http.Request) {
 
 	compare, err := gitrepo.CompareBranches(info.Owner, info.Name, pull.TargetBranch, pull.SourceBranch)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		// If the source branch was deleted after merge, fall back to
+		// diffing the merge commit against its first parent.
+		if pull.State == "merged" && pull.MergeCommitHash != nil {
+			compare, err = gitrepo.CompareWithMergeCommit(info.Owner, info.Name, *pull.MergeCommitHash)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+		} else {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, compare)
