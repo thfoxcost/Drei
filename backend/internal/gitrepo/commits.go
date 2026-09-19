@@ -211,6 +211,82 @@ func CommitsBetweenBranches(owner, repo, baseBranch, headBranch string) ([]Commi
 	return commits, nil
 }
 
+// CommitsFromMergeCommit returns the PR commits from a merge commit by
+// walking from the second parent (source branch tip) back to the first parent
+// (target branch state before merge). Used when the source branch has been
+// deleted after merge.
+func CommitsFromMergeCommit(owner, repo, mergeCommitHash string) ([]CommitInfo, error) {
+	r, err := OpenRepo(owner, repo)
+	if err != nil {
+		return nil, fmt.Errorf("open repo: %w", err)
+	}
+
+	hash := plumbing.NewHash(mergeCommitHash)
+	mergeCommit, err := r.CommitObject(hash)
+	if err != nil {
+		return nil, fmt.Errorf("resolve merge commit: %w", err)
+	}
+
+	parents := mergeCommit.Parents()
+
+	firstParent, err := parents.Next()
+	if err != nil || firstParent == nil {
+		return nil, fmt.Errorf("merge commit has no first parent")
+	}
+
+	secondParent, err := parents.Next()
+	if err != nil || secondParent == nil {
+		return nil, fmt.Errorf("merge commit has no second parent")
+	}
+
+	stopHash := firstParent.Hash
+
+	var raw []rawCommit
+
+	iter, err := r.Log(&git.LogOptions{From: secondParent.Hash})
+	if err != nil {
+		return nil, err
+	}
+
+	err = iter.ForEach(func(c *object.Commit) error {
+		if c.Hash == stopHash {
+			return fmt.Errorf("stop")
+		}
+
+		raw = append(raw, rawCommit{
+			hash:    c.Hash.String(),
+			message: c.Message,
+			name:    c.Author.Name,
+			email:   c.Author.Email,
+			when:    c.Author.When,
+		})
+
+		return nil
+	})
+
+	if err != nil && err.Error() != "stop" {
+		return nil, err
+	}
+
+	usernames, err := database.ResolveUsernamesByEmails(authorEmails(raw))
+	if err != nil {
+		return nil, err
+	}
+
+	commits := make([]CommitInfo, 0, len(raw))
+
+	for _, c := range raw {
+		commits = append(commits, CommitInfo{
+			Hash:    c.hash,
+			Message: c.message,
+			Author:  resolveAuthorName(c.name, c.email, usernames),
+			Date:    c.when.Format(time.RFC3339),
+		})
+	}
+
+	return commits, nil
+}
+
 type CommitDetail struct {
 	FullHash     string `json:"fullHash"`
 	ShortHash    string `json:"shortHash"`

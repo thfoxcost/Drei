@@ -41,7 +41,7 @@ const NAV_ITEMS: {
 }[] = [
         { label: "Repositories", icon: BookMarked, to: "/repos" },
         { label: "Issues", icon: Bug, to: "/issues" },
-        { label: "PRs", icon: GitPullRequest, to: "/pulls" },
+        { label: "Pulls", icon: GitPullRequest, to: "/pulls" },
         { label: "Notifications", icon: Bell, disabled: true },
     ]
 

@@ -11,14 +11,18 @@ import {
 	MessageSquare,
 	Pen,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
 import { usePullRequest } from "#/hooks/PRs/use-pull-request";
 import { usePullRequestEvents } from "#/hooks/PRs/use-pull-request-events";
+import { usePullRequestMergeability } from "#/hooks/PRs/use-pull-request-mergeability";
 import { usePullRequestReviews } from "#/hooks/PRs/use-pull-request-reviews";
+import { useMergePullRequest } from "#/hooks/PRs/use-merge-pull-request";
+import { useDeleteSourceBranch } from "#/hooks/PRs/use-delete-source-branch";
+import { useRevertMerge } from "#/hooks/PRs/use-revert-merge";
 import { usePRCommits } from "#/hooks/PRs/use-pr-commits";
 import { usePRChangedFiles } from "#/hooks/PRs/use-pr-changed-files";
 import { authClient } from "#/lib/auth-client";
@@ -27,21 +31,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Changedfiles from "./content/changed-files";
 import Commits from "./content/commits";
 import CommentItem, {
+	BranchDeletedEvent,
 	CheckAndMergeItem,
 	CommentEditor,
 	CommitItemMSG,
 	ConversationSheet,
+	MergeSuccessBanner,
 	MergedEvent,
 	OpenedEvent,
 	ReviewEventItem,
+	RevertedEvent,
 	StateChangeEvent,
 } from "./content/conversation";
 import type {
+	ConversationBranchDeleted,
 	ConversationComment,
 	ConversationCommit,
 	ConversationItem,
 	ConversationMerged,
 	ConversationOpened,
+	ConversationReverted,
 	ConversationStateChange,
 } from "./content/types/conversation";
 
@@ -49,6 +58,8 @@ function PRdetail({ pull }: { pull: string }) {
 	const { username, repo } = useParams({ strict: false });
 	const [activeTab, setActiveTab] = useState("conversation");
 	const [quoteText, setQuoteText] = useState("");
+	const [isEditingTitle, setIsEditingTitle] = useState(false);
+	const [editTitle, setEditTitle] = useState("");
 	const queryClient = useQueryClient();
 	const { data: session } = authClient.useSession();
 	const currentUserID = session?.user.id;
@@ -70,9 +81,39 @@ function PRdetail({ pull }: { pull: string }) {
 		repo,
 		pr?.targetBranch ?? "",
 		pr?.sourceBranch ?? "",
+		pr?.mergeCommitHash,
 	);
 
 	const { data: prFiles } = usePRChangedFiles(username, repo, number);
+
+	const { data: mergeabilityData, isLoading: isCheckingMergeability } =
+		usePullRequestMergeability(username, repo, number, pr?.state ?? "");
+
+	const [mergeCheckStarted, setMergeCheckStarted] = useState(false);
+
+	useEffect(() => {
+		if (pr?.state === "open") {
+			const timer = setTimeout(() => setMergeCheckStarted(true), 5000);
+			return () => clearTimeout(timer);
+		}
+	}, [pr?.state]);
+	const {
+		mutate: mergePullRequest,
+		isPending: isMerging,
+		error: mergeError,
+	} = useMergePullRequest(username, repo, number);
+	const {
+		mutate: deleteSourceBranch,
+		isPending: isDeletingBranch,
+		isSuccess: branchDeleted,
+	} = useDeleteSourceBranch(username, repo, number);
+	const {
+		mutate: revertMerge,
+		isPending: isReverting,
+	 isSuccess: revertSuccess,
+	} = useRevertMerge(username, repo, number);
+
+	const justMerged = useRef(false);
 
 	const events = eventsData?.events ?? [];
 	const comments = pr?.comments ?? [];
@@ -225,6 +266,31 @@ function PRdetail({ pull }: { pull: string }) {
 		}
 	}
 
+	async function handleSaveTitle() {
+		const trimmed = editTitle.trim();
+		if (!trimmed || trimmed === pr.title) {
+			setIsEditingTitle(false);
+			return;
+		}
+		try {
+			const res = await fetch(
+				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}`,
+				{
+					method: "PATCH",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ title: trimmed, description: pr.description ?? "" }),
+				},
+			);
+			if (!res.ok) throw new Error("Failed to update title");
+			toast.success("Title updated");
+			setIsEditingTitle(false);
+			await refresh();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Something went wrong");
+		}
+	}
+
 	function buildTimeline(): ConversationItem[] {
 		const items: ConversationItem[] = [];
 
@@ -257,7 +323,21 @@ function PRdetail({ pull }: { pull: string }) {
 					date: event.createdAt,
 					username: event.actor.username,
 					avatarLink: event.actor.avatar ?? undefined,
+					targetBranch: pr?.targetBranch ?? "",
+					sourceBranch: pr?.sourceBranch ?? "",
+					onRevert: () => handleRevert(),
+					isReverting,
+					isReverted: revertSuccess,
 				} satisfies ConversationMerged);
+			} else if (event.type === "reverted") {
+				items.push({
+					type: "reverted",
+					date: event.createdAt,
+					username: event.actor.username,
+					avatarLink: event.actor.avatar ?? undefined,
+					targetBranch: pr?.targetBranch ?? "",
+					sourceBranch: pr?.sourceBranch ?? "",
+				} satisfies ConversationReverted);
 			} else if (event.type === "push") {
 				const commits = (event.metadata?.commits as { hash: string; message: string }[]) ?? [];
 				for (const c of commits) {
@@ -272,6 +352,15 @@ function PRdetail({ pull }: { pull: string }) {
 						repo,
 					} satisfies ConversationCommit);
 				}
+			} else if (event.type === "branch_deleted") {
+				const branch = (event.metadata?.branch as string) ?? "";
+				items.push({
+					type: "branch_deleted",
+					date: event.createdAt,
+					username: event.actor.username,
+					avatarLink: event.actor.avatar ?? undefined,
+					branch,
+				} satisfies ConversationBranchDeleted);
 			}
 		}
 
@@ -342,19 +431,75 @@ function PRdetail({ pull }: { pull: string }) {
 	const isOpen = pr.state === "open";
 	const isMerged = pr.state === "merged";
 
+	const mergeState: "checking" | "mergeable" | "conflicted" | "merged" = (() => {
+		if (isMerged || justMerged.current) return "merged";
+		if (!isOpen) return "conflicted";
+		if (isCheckingMergeability || !mergeCheckStarted) return "checking";
+		if (mergeabilityData?.mergeable) return "mergeable";
+		return "conflicted";
+	})();
+
+	function handleMerge() {
+		mergePullRequest(undefined, {
+			onSuccess: () => {
+				justMerged.current = true;
+				toast.success("Pull request merged");
+			},
+			onError: (err) => {
+				toast.error(err.message || "Failed to merge");
+			},
+		});
+	}
+
+	function handleRevert() {
+		revertMerge(undefined, {
+			onSuccess: () => {
+				toast.success("Pull request reverted");
+			},
+			onError: (err) => {
+				toast.error(err.message || "Failed to revert");
+			},
+		});
+	}
+
 	return (
 		<div className={activeTab === "changes" ? "mx-5 mb-10" : "mx-30 mb-10"}>
 			<div className="pt-1">
 				<h1 className="flex min-w-0 items-baseline gap-1 truncate text-3xl font-medium tracking-tight">
-					<span className="min-w-0 truncate">{pr.title}</span>
+					{isEditingTitle ? (
+						<input
+							autoFocus
+							value={editTitle}
+							onChange={(e) => setEditTitle(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") handleSaveTitle();
+								if (e.key === "Escape") setIsEditingTitle(false);
+							}}
+							onBlur={handleSaveTitle}
+							className="min-w-0 flex-1 truncate border-b bg-transparent text-3xl font-medium tracking-tight outline-none"
+						/>
+					) : (
+						<span className="min-w-0 truncate">{pr.title}</span>
+					)}
 
 					<span className="shrink-0 font-light text-muted-foreground">
 						#{pull}
 					</span>
 
 					<div className="ml-auto flex shrink-0 items-center gap-1">
-						{isOpen && (
-							<Button variant="outline">
+						{isOpen && mergeState === "checking" && (
+							<Button variant="outline" disabled>
+								<Spinner className="size-4" />
+								Checking...
+							</Button>
+						)}
+
+						{isOpen && mergeState === "mergeable" && (
+							<Button
+								variant="outline"
+								onClick={handleMerge}
+								disabled={isMerging}
+							>
 								<svg
 									className="text-green-500"
 									xmlns="http://www.w3.org/2000/svg"
@@ -373,11 +518,43 @@ function PRdetail({ pull }: { pull: string }) {
 										/>
 									</g>
 								</svg>
-								Able to merge
+								Merge pull request
 							</Button>
 						)}
 
-						<Button variant="outline">
+						{isOpen && mergeState === "conflicted" && (
+							<Button variant="outline">
+								<svg
+									className="text-red-500"
+									xmlns="http://www.w3.org/2000/svg"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									role="img"
+									aria-label="Conflicts"
+								>
+									<g fill="none">
+										<path
+											fillRule="evenodd"
+											clipRule="evenodd"
+											d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2m3.535 6.465a1 1 0 0 0-1.414 0L12 10.585l-2.121-2.12a1 1 0 1 0-1.414 1.414L10.585 12l-2.12 2.121a1 1 0 1 0 1.414 1.414L12 13.415l2.121 2.12a1 1 0 1 0 1.414-1.414L13.415 12l2.12-2.121a1 1 0 0 0 0-1.414"
+											fill="currentColor"
+										/>
+									</g>
+								</svg>
+								{mergeabilityData?.error ?? "Conflicts"}
+							</Button>
+						)}
+
+						<Button
+							variant="ghost"
+							size="icon"
+							className="text-muted-foreground"
+							onClick={() => {
+								setEditTitle(pr.title);
+								setIsEditingTitle(true);
+							}}
+						>
 							<Pen />
 						</Button>
 					</div>
@@ -397,7 +574,7 @@ function PRdetail({ pull }: { pull: string }) {
 					{isMerged && (
 						<Badge
 							variant="secondary"
-							className="h-7 gap-1.5 bg-purple-600 text-sm text-foreground"
+							className="h-7 gap-1.5 bg-purple-700 text-sm text-foreground"
 						>
 							<GitMerge className="size-4 shrink-0" />
 							<span className="font-bold">Merged</span>
@@ -423,7 +600,15 @@ function PRdetail({ pull }: { pull: string }) {
 						<ReuiBadge variant="save-info">{pr.sourceBranch}</ReuiBadge>
 					</span>
 
-					<Button variant="ghost" size="icon" className="text-muted-foreground">
+					<Button
+						variant="ghost"
+						size="icon"
+						className="text-muted-foreground"
+						onClick={() => {
+							navigator.clipboard.writeText(pr.sourceBranch);
+							toast.success("Branch name copied");
+						}}
+					>
 						<Copy />
 					</Button>
 				</div>
@@ -657,6 +842,38 @@ function PRdetail({ pull }: { pull: string }) {
 														username={item.username}
 														avatarLink={item.avatarLink}
 														date={item.date}
+														targetBranch={item.targetBranch}
+														sourceBranch={item.sourceBranch}
+														onRevert={item.onRevert}
+														isReverting={item.isReverting}
+														isReverted={item.isReverted}
+													/>
+												);
+											}
+
+											if (item.type === "reverted") {
+												return (
+													<RevertedEvent
+														key={`reverted-${index}`}
+														username={item.username}
+														avatarLink={item.avatarLink}
+														date={item.date}
+														targetBranch={item.targetBranch}
+														sourceBranch={item.sourceBranch}
+														owner={username}
+														repo={repo}
+													/>
+												);
+											}
+
+											if (item.type === "branch_deleted") {
+												return (
+													<BranchDeletedEvent
+														key={`branch-deleted-${index}`}
+														username={item.username}
+														avatarLink={item.avatarLink}
+														date={item.date}
+														branch={item.branch}
 													/>
 												);
 											}
@@ -667,10 +884,30 @@ function PRdetail({ pull }: { pull: string }) {
 
 									<div className="ml-9 border-y" />
 
-									<CheckAndMergeItem
-										mergeState="mergeable"
-										disabled={!isOpen}
-									/>
+									{isMerged ? (
+										<MergeSuccessBanner
+											sourceBranch={pr.sourceBranch}
+											owner={username}
+											repo={repo}
+											number={number}
+											onDeleteBranch={() => deleteSourceBranch()}
+											isDeletingBranch={isDeletingBranch}
+											branchDeleted={branchDeleted}
+										/>
+									) : (
+										<CheckAndMergeItem
+											mergeState={mergeState}
+											disabled={!isOpen || isMerging}
+											onMerge={handleMerge}
+											isMerging={isMerging}
+										/>
+									)}
+
+									{mergeError && isOpen && (
+										<div className="ml-9 my-2 rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-600">
+											{mergeError.message}
+										</div>
+									)}
 
 									<div className="ml-9 border-y" />
 

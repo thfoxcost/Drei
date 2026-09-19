@@ -14,7 +14,7 @@ export interface PullRequestComment {
 
 export interface PullRequestEvent {
 	id: number;
-	type: "opened" | "comment" | "state_change" | "merged" | "push";
+	type: "opened" | "comment" | "state_change" | "merged" | "reverted" | "push" | "branch_deleted";
 	actor: PRUser;
 	metadata?: Record<string, unknown>;
 	createdAt: string;

@@ -43,8 +43,10 @@ import type {
   ConversationMerged,
   ConversationOpened,
   ConversationPush,
+  ConversationReverted,
   ConversationReview,
   ConversationStateChange,
+  ConversationBranchDeleted,
 } from "./types/conversation";
 
 function linkifyIssueRefs(
@@ -426,9 +428,11 @@ type MergeState = "checking" | "mergeable" | "conflicted";
 type CheckAndMergeItemProps = {
   mergeState: MergeState;
   disabled?: boolean;
+  onMerge?: () => void;
+  isMerging?: boolean;
 };
 
-export function CheckAndMergeItem({ mergeState, disabled = false }: CheckAndMergeItemProps) {
+export function CheckAndMergeItem({ mergeState, disabled = false, onMerge, isMerging = false }: CheckAndMergeItemProps) {
   const isChecking = mergeState === "checking";
   const isMergeable = mergeState === "mergeable";
   const isConflicted = mergeState === "conflicted";
@@ -437,15 +441,15 @@ export function CheckAndMergeItem({ mergeState, disabled = false }: CheckAndMerg
     <div className="ml-9 group flex w-full flex-row gap-4">
       <div
         className={`flex size-11 shrink-0 items-center justify-center rounded-lg p-2 ${isMergeable
-          ? "bg-green-500/10"
+          ? "bg-green-500/80"
           : isConflicted
-            ? "bg-red-500/10"
-            : "bg-yellow-500/10"
+            ? "bg-red-500/80"
+            : "bg-yellow-500/90"
           }`}
       >
         {isConflicted ? (
           <svg
-            className="size-5 text-foreground"
+            className="size-5 text-white"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="none"
@@ -457,16 +461,29 @@ export function CheckAndMergeItem({ mergeState, disabled = false }: CheckAndMerg
             <path d="M12 6h4a2 2 0 0 1 2 2v7M6 12v9M9 3L3 9m6 0L3 3" />
             <circle cx="18" cy="18" r="3" />
           </svg>
+        ) : isChecking ? (
+          <svg
+            className="size-5 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+          >
+            <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+              <circle cx="18" cy="18" r="3" />
+              <circle cx="6" cy="6" r="3" />
+              <path d="M6 21V9a9 9 0 0 0 9 9" />
+            </g>
+          </svg>
         ) : (
           <svg
-            className="size-5 text-foreground"
+            className="size-5 text-white"
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 512 512"
+            viewBox="0 0 24 24"
           >
-            <path
-              fill="currentColor"
-              d="M384 224c-23.637 0-44.307 12.89-55.391 32H319c-42.464 0-79.99-17.904-111.535-53.214-20.356-22.787-33.493-48.869-37.856-58.218C183.301 132.822 192 115.413 192 96c0-35.29-28.71-64-64-64S64 60.71 64 96c0 23.637 12.89 44.307 32 55.391V360.61C76.89 371.693 64 392.363 64 416c0 35.29 28.71 64 64 64s64-28.71 64-64c0-23.637-12.89-44.307-32-55.391V245.692C203.553 294.307 258.468 320 319 320h9.609c11.084 19.11 31.754 32 55.391 32 35.29 0 64-28.71 64-64s-28.71-64-64-64zM128 64c17.673 0 32 14.327 32 32s-14.327 32-32 32-32-14.327-32-32 14.327-32 32-32zm0 384c-17.673 0-32-14.327-32-32s14.327-32 32-32 32 14.327 32 32-14.327 32-32 32zm256-128c-17.673 0-32-14.327-32-32s14.327-32 32-32 32 14.327 32 32-14.327 32-32 32z"
-            />
+            <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+              <circle cx="18" cy="18" r="3" />
+              <circle cx="6" cy="6" r="3" />
+              <path d="M6 21V9a9 9 0 0 0 9 9" />
+            </g>
           </svg>
         )}
       </div>
@@ -487,17 +504,11 @@ export function CheckAndMergeItem({ mergeState, disabled = false }: CheckAndMerg
               viewBox="0 0 24 24"
               fill="none"
             >
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="3"
-              />
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
             </svg>
           ) : isMergeable ? (
             <svg
-              className="size-11 shrink-0 text-green-500"
+              className="size-10 shrink-0 text-green-500"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
             >
@@ -544,7 +555,7 @@ export function CheckAndMergeItem({ mergeState, disabled = false }: CheckAndMerg
         </div>
 
         <div
-          className={`flex flex-row items-center bg-accent/60 p-3 border-t ${isMergeable
+          className={`flex flex-row items-center bg-accent/15 p-3 border-t ${isMergeable
             ? "border-green-600"
             : isConflicted
               ? "border-red-600"
@@ -553,7 +564,7 @@ export function CheckAndMergeItem({ mergeState, disabled = false }: CheckAndMerg
         >
           <Button
             variant="default"
-            disabled={!isMergeable || disabled}
+            disabled={!isMergeable || disabled || isMerging}
             className={
               isMergeable
                 ? "w-fit bg-green-600 text-white hover:bg-green-700"
@@ -561,13 +572,82 @@ export function CheckAndMergeItem({ mergeState, disabled = false }: CheckAndMerg
                   ? "w-fit bg-red-600 text-white"
                   : "w-fit bg-yellow-600 text-white"
             }
+            onClick={onMerge}
           >
-            Merge pull request
+            {isMerging ? (
+              <>
+                <Spinner className="size-4" />
+                Merging...
+              </>
+            ) : (
+              "Merge pull request"
+            )}
           </Button>
 
           <span className="ml-3 text-xs text-muted-foreground">
             You can also merge this with the command line.
           </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type MergeSuccessBannerProps = {
+  sourceBranch: string;
+  owner: string;
+  repo: string;
+  number: number;
+  onDeleteBranch: () => void;
+  isDeletingBranch: boolean;
+  branchDeleted: boolean;
+};
+
+export function MergeSuccessBanner({
+  sourceBranch,
+  onDeleteBranch,
+  isDeletingBranch,
+  branchDeleted,
+}: MergeSuccessBannerProps) {
+  return (
+    <div className="ml-9 group flex w-full flex-row gap-4">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-purple-700 p-2">
+        <svg
+          className="size-5 text-white"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+        >
+          <circle cx="18" cy="18" r="3" />
+          <circle cx="6" cy="6" r="3" />
+          <path d="M6 21V9a9 9 0 0 0 9 9" />
+        </svg>
+      </div>
+
+      <div className="flex flex-col overflow-hidden rounded-md border border-purple-600 w-[880px]">
+        <div className="flex items-center justify-between gap-4 p-4">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-base font-semibold">
+              Pull request successfully merged and closed
+            </span>
+            <span className="text-sm text-muted-foreground">
+              The {sourceBranch} branch can safely be deleted.
+            </span>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isDeletingBranch || branchDeleted}
+            onClick={onDeleteBranch}
+            className="shrink-0"
+          >
+            {branchDeleted ? "Branch deleted" : "Delete branch"}
+          </Button>
         </div>
       </div>
     </div>
@@ -1501,21 +1581,7 @@ export function StateChangeEvent({
             <line x1="9" y1="9" x2="15" y2="15" />
           </svg>
         ) : (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="16 12 12 8 8 12" />
-            <line x1="12" y1="16" x2="12" y2="8" />
-          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M22 12c0 5.523-4.477 10-10 10a9.98 9.98 0 0 1-7.781-3.719L2 20.5v-6h6l-2.357 2.357A8 8 0 0 0 20 12zm-10-2a2 2 0 1 1 0 4a2 2 0 0 1 0-4m0-8a9.98 9.98 0 0 1 7.781 3.719L22 3.5v6h-6l2.357-2.357A8 8 0 0 0 4 12H2C2 6.477 6.477 2 12 2"/></svg>
         )}
       </div>
 
@@ -1539,20 +1605,26 @@ export function MergedEvent({
   username,
   avatarLink,
   date,
+  targetBranch,
+  sourceBranch,
+  onRevert,
+  isReverting,
+  isReverted,
 }: Omit<ConversationMerged, "type">) {
   return (
     <div className="ml-13 flex flex-row items-center gap-2 text-sm">
-      <div className="flex size-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
+      <div className="flex size-7 items-center justify-center rounded-full bg-purple-700">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="2"
+          className="text-white"
         >
           <circle cx="18" cy="18" r="3" />
           <circle cx="6" cy="6" r="3" />
@@ -1567,11 +1639,61 @@ export function MergedEvent({
 
       <span className="font-semibold">{username}</span>
 
-      <span className="text-muted-foreground">merged this pull request</span>
+      <span className="text-muted-foreground">
+        merged{" "}
+        <Badge size="sm" variant="outline">
+          {targetBranch}
+        </Badge>{" "}
+        into{" "}
+        <Badge size="sm" variant="outline">
+          {sourceBranch}
+        </Badge>
+      </span>
 
-      <span className="ml-auto text-xs text-muted-foreground">
+      <span className="ml-auto text-xs text-muted-foreground underline">
         {timeAgo(date)}
       </span>
+
+      <Button variant="outline" size="sm" className="ml-1 h-7 text-xs" onClick={onRevert} disabled={isReverting || isReverted}>
+        {isReverted ? "Reverted" : isReverting ? "Reverting..." : "Revert"}
+      </Button>
+    </div>
+  );
+}
+
+export function RevertedEvent({
+  username,
+  avatarLink,
+  date,
+  targetBranch,
+  sourceBranch,
+  owner,
+  repo,
+}: Omit<ConversationReverted, "type"> & { owner: string; repo: string }) {
+  return (
+    <div className="ml-13 flex flex-row items-center gap-2 text-sm">
+      <div className="flex size-7 items-center justify-center rounded-full bg-muted border border-border">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" className="text-muted-foreground"><path fill="currentColor" d="M9 10h6c2.21 0 4 1.79 4 4s-1.79 4-4 4h-3v2h3c3.31 0 6-2.69 6-6s-2.69-6-6-6H9V4L3 9l6 5z"/></svg>
+      </div>
+
+      <Avatar className="size-6">
+        <AvatarImage src={avatarLink} />
+        <AvatarFallback>{username.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+
+      <span className="font-semibold">{username}</span>
+
+      <span className="text-muted-foreground">reverted this pull request</span>
+
+      <span className="ml-auto text-xs text-muted-foreground underline">
+        {timeAgo(date)}
+      </span>
+
+      <Button asChild variant="outline" size="sm" className="ml-1 h-7 text-xs border-purple-500 text-purple-600 hover:bg-purple-50 dark:border-purple-400 dark:text-purple-400 dark:hover:bg-purple-950">
+        <Link to={`/${owner}/${repo}/compare/${targetBranch}...${sourceBranch}`}>
+          Remerge
+        </Link>
+      </Button>
     </div>
   );
 }
@@ -1624,6 +1746,38 @@ export function PushEvent({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+export function BranchDeletedEvent({
+  username,
+  avatarLink,
+  date,
+  branch,
+}: Omit<ConversationBranchDeleted, "type">) {
+  return (
+    <div className="ml-13 flex flex-row items-center gap-2 text-sm">
+      <div className="flex size-7 items-center justify-center rounded-full bg-muted border border-border">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"><path d="M5 18a2 2 0 1 0 4 0a2 2 0 1 0-4 0M5 6a2 2 0 1 0 4 0a2 2 0 1 0-4 0m2 2v8m2 2h6a2 2 0 0 0 2-2v-5"/><path d="m14 14l3-3l3 3M15 4l4 4m-4 0l4-4"/></g></svg>
+      </div>
+
+      <Avatar className="size-6">
+        <AvatarImage src={avatarLink} />
+        <AvatarFallback>{username.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+
+      <span className="font-semibold">{username}</span>
+
+      <span className="text-muted-foreground">deleted the</span>
+
+      <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">{branch}</code>
+
+      <span className="text-muted-foreground">branch</span>
+
+      <span className="ml-auto text-xs text-muted-foreground underline">
+        {timeAgo(date)}
+      </span>
     </div>
   );
 }

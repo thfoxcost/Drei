@@ -6,11 +6,13 @@ export function usePRCommits(
 	repo: string,
 	base: string,
 	head: string,
+	mergeCommitHash?: string | null,
 ) {
 	return useQuery({
-		queryKey: ["pr-commits", owner, repo, base, head],
+		queryKey: ["pr-commits", owner, repo, base, head, mergeCommitHash ?? ""],
 		queryFn: async (): Promise<Commit[]> => {
 			const params = new URLSearchParams({ base, head });
+			if (mergeCommitHash) params.set("mergeCommit", mergeCommitHash);
 			const res = await fetch(
 				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/compare/commits?${params}`,
 			);
