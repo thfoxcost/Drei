@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIssues } from "@/hooks/useIssues";
+import { usePullRequests } from "@/hooks/PRs/use-pull-requests";
 import { useRepoData } from "@/hooks/useRepoData";
 import RepoStarsheader from "./repo-stars-header";
 
@@ -46,6 +47,7 @@ interface RepoProps {
 export default function RepoTabs({ owner, repo }: RepoProps) {
 	const { data: repoData, isPending } = useRepoData(owner, repo);
 	const { data: issuesData } = useIssues(owner, repo, { state: "open" });
+	const { data: pullsData } = usePullRequests(owner, repo, { state: "open" });
 
 	const [loadingTab, setLoadingTab] = useState<string | null>(null);
 
@@ -163,8 +165,11 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
 											</Badge>
 										)}
 
-									{tab.value === "pulls" && (
-										<Badge variant="secondary">3</Badge>
+								{tab.value === "pulls" &&
+									(pullsData?.open ?? 0) > 0 && (
+										<Badge variant="secondary">
+											{pullsData?.open ?? 0}
+										</Badge>
 									)}
 								</>
 							);

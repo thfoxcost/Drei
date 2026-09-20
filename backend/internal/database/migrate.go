@@ -327,12 +327,249 @@ func Migrate() error {
 		return err
 	}
 
+	// Pull requests. Numbers are shared with issues per repository — the
+	// allocation query in CreateIssue / CreatePullRequest takes the MAX across
+	// both tables to prevent collisions.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pull_requests (
+			id BIGSERIAL PRIMARY KEY,
+			repo_id BIGINT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+			number INTEGER NOT NULL,
+			title TEXT NOT NULL,
+			description TEXT NOT NULL DEFAULT '',
+			state TEXT NOT NULL DEFAULT 'open',
+			author_id TEXT NOT NULL,
+			source_branch TEXT NOT NULL,
+			target_branch TEXT NOT NULL,
+			merge_commit_hash TEXT,
+			merged_at TIMESTAMPTZ,
+			merged_by TEXT,
+			closed_at TIMESTAMPTZ,
+			closed_by TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			UNIQUE(repo_id, number)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_requests_repo_state_idx
+		ON pull_requests (repo_id, state);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_requests_author_id_idx
+		ON pull_requests (author_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Pull request comments. mirrors issue_comments exactly.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pull_request_comments (
+			id BIGSERIAL PRIMARY KEY,
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			body TEXT NOT NULL,
+			created_by TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_request_comments_pull_request_id_idx
+		ON pull_request_comments (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Pull request events — activity timeline entries (opened, closed,
+	// merged, comment, reopened). metadata is a flexible JSONB payload.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pull_request_events (
+			id BIGSERIAL PRIMARY KEY,
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			type TEXT NOT NULL,
+			actor_id TEXT NOT NULL,
+			metadata JSONB,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_request_events_pull_request_id_idx
+		ON pull_request_events (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
 	// User appearance preferences: theme and language.
 	// Defaults ensure existing users get English without a backfill migration.
 	_, err = DB.Exec(context.Background(), `
 		ALTER TABLE "user"
 		ADD COLUMN IF NOT EXISTS appearance_theme TEXT NOT NULL DEFAULT 'system',
 		ADD COLUMN IF NOT EXISTS appearance_language TEXT NOT NULL DEFAULT 'en';
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Pull request assignees — many-to-many between PRs and users.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pr_assignees (
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			user_id TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			PRIMARY KEY (pull_request_id, user_id)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pr_assignees_pull_request_id_idx
+		ON pr_assignees (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Pull request reviewers — many-to-many between PRs and users.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pr_reviewers (
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			user_id TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			PRIMARY KEY (pull_request_id, user_id)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pr_reviewers_pull_request_id_idx
+		ON pr_reviewers (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Pull request labels — reuses the existing issue_labels table for
+	// repository-scoped label definitions.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pr_label_links (
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			label_id BIGINT NOT NULL REFERENCES issue_labels(id) ON DELETE CASCADE,
+
+			PRIMARY KEY (pull_request_id, label_id)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pr_label_links_pull_request_id_idx
+		ON pr_label_links (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Per-user notification preference for a pull request.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE pull_requests
+		ADD COLUMN IF NOT EXISTS notifications BOOLEAN NOT NULL DEFAULT FALSE;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Ensure every PR has at least one comment ("No description" if none exist).
+	_, err = DB.Exec(context.Background(), `
+		INSERT INTO pull_request_comments (pull_request_id, body, created_by)
+		SELECT pr.id, '*No description*', pr.author_id
+		FROM pull_requests pr
+		WHERE NOT EXISTS (
+			SELECT 1 FROM pull_request_comments c WHERE c.pull_request_id = pr.id
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Per-user file viewed tracking for pull requests. Records which changed
+	// files in a PR the current user has marked as viewed.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pr_viewed_files (
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			user_id TEXT NOT NULL,
+			file_path TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			PRIMARY KEY (pull_request_id, user_id, file_path)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pr_viewed_files_pull_user_idx
+		ON pr_viewed_files (pull_request_id, user_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Pull request reviews — formal review submissions (approve, request
+	// changes, or comment) attached to a pull request.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS pull_request_reviews (
+			id BIGSERIAL PRIMARY KEY,
+			pull_request_id BIGINT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+			reviewer_id TEXT NOT NULL,
+			state TEXT NOT NULL CHECK (state IN ('comment', 'approved', 'changes_requested')),
+			body TEXT NOT NULL DEFAULT '',
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_request_reviews_pr_id_idx
+		ON pull_request_reviews (pull_request_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS pull_request_reviews_reviewer_idx
+		ON pull_request_reviews (pull_request_id, reviewer_id);
 	`)
 	if err != nil {
 		return err

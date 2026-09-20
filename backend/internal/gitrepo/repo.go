@@ -20,6 +20,7 @@ type RepoResponse struct {
 	Created           string                 `json:"created"`
 	Langs             []Language             `json:"langs"`
 	Branches          []string               `json:"branches"`
+	BranchDates       map[string]string      `json:"branchDates"`
 	DefaultBranch     string                 `json:"defaultBranch"`
 	Tags              []string               `json:"tags"`
 	CloneURL          string                 `json:"cloneUrl"`
@@ -97,6 +98,7 @@ func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
 			CloneURL:        cloneURL,
 			Langs:           []Language{},
 			Branches:        []string{},
+			BranchDates:     map[string]string{},
 			Tags:            []string{},
 			Commits:         []CommitInfo{},
 			CommitActivity:  []CommitDay{},
@@ -119,6 +121,11 @@ func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
 	branches, defaultBranch, err := GetBranches(owner, repo)
 	if err != nil {
 		return nil, err
+	}
+
+	branchDates, err := GetBranchDates(owner, repo)
+	if err != nil {
+		branchDates = map[string]string{}
 	}
 
 	tags, err := GetTags(owner, repo)
@@ -177,6 +184,7 @@ func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
 		Created:         info.CreatedAt.Format(time.RFC3339),
 		Langs:           langs,
 		Branches:        branches,
+		BranchDates:     branchDates,
 		DefaultBranch:   defaultBranch,
 		Tags:            tags,
 		CloneURL:        cloneURL,

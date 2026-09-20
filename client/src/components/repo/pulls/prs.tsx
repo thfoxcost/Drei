@@ -1,170 +1,120 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
+	Check,
+	ChevronDown,
 	GitMerge,
 	GitPullRequest,
+	GitPullRequestClosed,
 	Plus,
 	Search,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePullRequests } from "#/hooks/PRs/use-pull-requests";
+import { useUsers } from "#/hooks/useUsers";
+import type { PRFilters, PRSort } from "#/types/prs";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
+import type { Contributor } from "#/components/repo/contributor-avatars";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
 } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PullRequestItem from "./pr-item";
+
+const sortOptions: { value: PRSort; label: string }[] = [
+	{ value: "newest", label: "Newest" },
+	{ value: "oldest", label: "Oldest" },
+	{ value: "recently-updated", label: "Most recently updated" },
+	{ value: "least-updated", label: "Least recently updated" },
+	{ value: "most-commented", label: "Most commented" },
+	{ value: "least-commented", label: "Least commented" },
+	{ value: "source-branch", label: "Source branch" },
+	{ value: "target-branch", label: "Target branch" },
+];
+
+function getInitials(name: string): string {
+	return name.slice(0, 2).toUpperCase();
+}
+
+function matchQuery(users: Contributor[], query: string): Contributor[] {
+	const q = query.trim().toLowerCase();
+	if (!q) return users;
+	return users.filter((user) => user.username.toLowerCase().includes(q));
+}
+
+function UserAvatar({ user }: { user: Contributor }) {
+	return (
+		<Avatar size="sm">
+			{user.avatar ? (
+				<AvatarImage src={user.avatar} alt={user.username} />
+			) : null}
+			<AvatarFallback>{getInitials(user.username)}</AvatarFallback>
+		</Avatar>
+	);
+}
 
 interface PullRequestsProps {
 	owner: string;
 	repo: string;
 }
 
-const dummyPullRequests = [
-	{
-		number: 12,
-		title: "Add repository search",
-		description: "Add search functionality to repositories.",
-		author: {
-			id: 1,
-			username: "thefoxcost",
-			displayName: "The Fox Cost",
-			avatar: "",
-		},
-		sourceBranch: "feat/repository-search",
-		targetBranch: "main",
-		state: "open" as const,
-		createdAt: "2026-09-01T18:00:00Z",
-		updatedAt: "2026-09-01T19:00:00Z",
-		mergedAt: null,
-		closedAt: null,
-		commentCount: 4,
-	},
-	{
-		number: 11,
-		title: "Improve commit diff viewer",
-		description: "Improve the commit diff UI and navigation.",
-		author: {
-			id: 2,
-			username: "moh",
-			displayName: "Moh",
-			avatar: "",
-		},
-		sourceBranch: "feat/diff-viewer",
-		targetBranch: "main",
-		state: "open" as const,
-		createdAt: "2026-09-01T15:00:00Z",
-		updatedAt: "2026-09-01T17:00:00Z",
-		mergedAt: null,
-		closedAt: null,
-		commentCount: 2,
-	},
-	{
-		number: 10,
-		title: "Fix repository file tree navigation",
-		description: "Fix navigation when opening folders and files.",
-		author: {
-			id: 3,
-			username: "alex",
-			displayName: "Alex",
-			avatar: "",
-		},
-		sourceBranch: "fix/file-tree",
-		targetBranch: "main",
-		state: "open" as const,
-		createdAt: "2026-08-31T14:00:00Z",
-		updatedAt: "2026-08-31T18:00:00Z",
-		mergedAt: null,
-		closedAt: null,
-		commentCount: 7,
-	},
-	{
-		number: 9,
-		title: "Add pull request comments",
-		description: "Allow users to comment on pull requests.",
-		author: {
-			id: 4,
-			username: "sarah",
-			displayName: "Sarah",
-			avatar: "",
-		},
-		sourceBranch: "feat/pr-comments",
-		targetBranch: "main",
-		state: "closed" as const,
-		createdAt: "2026-08-29T12:00:00Z",
-		updatedAt: "2026-08-30T16:00:00Z",
-		mergedAt: null,
-		closedAt: "2026-08-30T16:00:00Z",
-		commentCount: 5,
-	},
-	{
-		number: 8,
-		title: "feat: implement pull requests feature with UI components and routing",
-		description: "Redesign the repository settings page.",
-		author: {
-			id: 5,
-			username: "john",
-			displayName: "John",
-			avatar: "",
-		},
-		sourceBranch: "refactor/settings",
-		targetBranch: "main",
-		state: "closed" as const,
-		createdAt: "2026-08-27T10:00:00Z",
-		updatedAt: "2026-08-28T13:00:00Z",
-		mergedAt: null,
-		closedAt: "2026-08-28T13:00:00Z",
-		commentCount: 3,
-	},
-];
-
-export default function PullRequests({
-	owner,
-	repo,
-}: PullRequestsProps) {
+export default function PullRequests({ owner, repo }: PullRequestsProps) {
 	const navigate = useNavigate();
 
-	const [tab, setTab] = useState<"open" | "closed">("open");
+	const [tab, setTab] = useState<"open" | "closed" | "merged">("open");
 	const [search, setSearch] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const [author, setAuthor] = useState<string | undefined>();
+	const [sort, setSort] = useState<PRSort>("newest");
+	const [authorQuery, setAuthorQuery] = useState("");
 
 	useEffect(() => {
-		const id = setTimeout(() => {
-			setDebouncedSearch(search);
-		}, 300);
-
+		const id = setTimeout(() => setDebouncedSearch(search), 300);
 		return () => clearTimeout(id);
 	}, [search]);
 
-	const pulls = dummyPullRequests.filter(
-		(pull) => pull.state === tab,
+	const filters: PRFilters = useMemo(
+		() => ({
+			state: tab,
+			search: debouncedSearch.trim() || undefined,
+			author,
+			sort,
+		}),
+		[tab, debouncedSearch, author, sort],
 	);
 
-	const openCount = dummyPullRequests.filter(
-		(pull) => pull.state === "open",
-	).length;
+	const { data, isLoading, isError, refetch } = usePullRequests(
+		owner,
+		repo,
+		filters,
+	);
+	const { data: users = [] } = useUsers();
 
-	const closedCount = dummyPullRequests.filter(
-		(pull) => pull.state === "closed",
-	).length;
+	const pulls = data?.pulls ?? [];
+	const openCount = data?.open ?? 0;
+	const closedCount = data?.closed ?? 0;
+	const mergedCount = data?.merged ?? 0;
 
-	const filteredPulls = pulls.filter((pull) => {
-		const query = debouncedSearch.trim().toLowerCase();
+	const activeAuthor = users.find((user) => user.id === author);
+	const activeSortLabel =
+		sortOptions.find((option) => option.value === sort)?.label ?? "Sort";
 
-		if (!query) {
-			return true;
-		}
-
-		return (
-			pull.title.toLowerCase().includes(query) ||
-			String(pull.number).includes(query) ||
-			pull.author.username.toLowerCase().includes(query) ||
-			pull.sourceBranch.toLowerCase().includes(query) ||
-			pull.targetBranch.toLowerCase().includes(query)
-		);
-	});
+	const authorList = matchQuery(users, authorQuery);
 
 	return (
 		<div className="my-5 mx-30 mb-10">
@@ -189,11 +139,7 @@ export default function PullRequests({
 				<Tabs
 					value={tab}
 					onValueChange={(value) =>
-						setTab(
-							value === "closed"
-								? "closed"
-								: "open",
-						)
+						setTab(value as "open" | "closed" | "merged")
 					}
 					className="w-auto"
 				>
@@ -204,20 +150,23 @@ export default function PullRequests({
 						</TabsTrigger>
 
 						<TabsTrigger value="closed">
-							<GitMerge />
+							<GitPullRequestClosed />
 							Closed ({closedCount})
+						</TabsTrigger>
+
+						<TabsTrigger value="merged">
+							<GitMerge />
+							Merged ({mergedCount})
 						</TabsTrigger>
 					</TabsList>
 				</Tabs>
 
-				<Field className=" w-full">
+				<Field className="w-full">
 					<InputGroup>
 						<InputGroupInput
 							placeholder="Search pull requests..."
 							value={search}
-							onChange={(e) =>
-								setSearch(e.target.value)
-							}
+							onChange={(e) => setSearch(e.target.value)}
 						/>
 
 						<InputGroupAddon>
@@ -225,33 +174,124 @@ export default function PullRequests({
 						</InputGroupAddon>
 
 						<InputGroupAddon align="inline-end">
-							{filteredPulls.length} result
-							{filteredPulls.length === 1
-								? ""
-								: "s"}
+							{pulls.length} result
+							{pulls.length === 1 ? "" : "s"}
 						</InputGroupAddon>
 					</InputGroup>
 				</Field>
+
+				<div className="flex flex-row items-center gap-2">
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant="outline">
+								{activeAuthor ? activeAuthor.username : "Author"}
+								<ChevronDown />
+							</Button>
+						</DropdownMenuTrigger>
+
+						<DropdownMenuContent className="w-auto">
+							<DropdownMenuGroup>
+								<Input
+									placeholder="Type to search"
+									className="w-[200px]"
+									value={authorQuery}
+									onChange={(e) => setAuthorQuery(e.target.value)}
+								/>
+							</DropdownMenuGroup>
+
+							<DropdownMenuSeparator className="my-2" />
+
+							<DropdownMenuGroup>
+								<DropdownMenuItem
+									onClick={() => {
+										setAuthor(undefined);
+										setAuthorQuery("");
+									}}
+								>
+									<span className="flex items-center gap-2">
+										{!activeAuthor && <Check size={14} />}
+										Any author
+									</span>
+								</DropdownMenuItem>
+
+								{authorList.map((user) => (
+									<DropdownMenuItem
+										key={user.id || user.username}
+										onClick={() => {
+											setAuthor(user.id);
+											setAuthorQuery("");
+										}}
+									>
+										<span className="flex items-center gap-2">
+											<UserAvatar user={user} />
+											<span className="ml-1">{user.username}</span>
+										</span>
+									</DropdownMenuItem>
+								))}
+
+								{authorList.length === 0 && (
+									<DropdownMenuItem disabled>No users found</DropdownMenuItem>
+								)}
+							</DropdownMenuGroup>
+						</DropdownMenuContent>
+					</DropdownMenu>
+
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant="outline">
+								{activeSortLabel}
+								<ChevronDown />
+							</Button>
+						</DropdownMenuTrigger>
+
+						<DropdownMenuContent className="w-auto">
+							<DropdownMenuGroup>
+								{sortOptions.map((option) => (
+									<DropdownMenuItem
+										key={option.value}
+										onClick={() => setSort(option.value)}
+									>
+										<span className="flex items-center gap-2">
+											{sort === option.value && <Check size={14} />}
+											{option.label}
+										</span>
+									</DropdownMenuItem>
+								))}
+							</DropdownMenuGroup>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
 			</div>
 
 			<div className="mt-4 overflow-hidden rounded-md border">
-				{filteredPulls.length === 0 ? (
-					<div className="flex flex-col items-center justify-center gap-2 p-10">
-						{tab === "open"
-							? <GitPullRequest className="size-8 text-muted-foreground" />
-
-							: <GitMerge className="size-8 text-muted-foreground" />
-						}
+				{isLoading && !data ? (
+					<div className="flex items-center justify-center p-10">
+						<Spinner />
+					</div>
+				) : isError ? (
+					<div className="flex flex-col items-center gap-2 p-10">
 						<p className="text-sm text-muted-foreground">
-							No{" "}
-							{tab === "open"
-								? "open"
-								: "closed"}{" "}
-							pull requests found.
+							Failed to load pull requests.
+						</p>
+						<Button variant="outline" onClick={() => refetch()}>
+							Retry
+						</Button>
+					</div>
+				) : pulls.length === 0 ? (
+					<div className="flex flex-col items-center justify-center gap-2 p-10">
+						{tab === "open" ? (
+							<GitPullRequest className="size-8 text-muted-foreground" />
+						) : tab === "closed" ? (
+							<GitPullRequestClosed className="size-8 text-muted-foreground" />
+						) : (
+							<GitMerge className="size-8 text-muted-foreground" />
+						)}
+						<p className="text-sm text-muted-foreground">
+							No {tab} pull requests found.
 						</p>
 					</div>
 				) : (
-					filteredPulls.map((pull) => (
+					pulls.map((pull) => (
 						<PullRequestItem
 							key={pull.number}
 							{...pull}
