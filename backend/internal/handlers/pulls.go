@@ -1296,6 +1296,15 @@ func PullFilesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	compare, err := gitrepo.CompareBranches(info.Owner, info.Name, pull.TargetBranch, pull.SourceBranch)
+
+	// After merge, the source branch is fully contained in the target branch,
+	// so CompareBranches returns ahead=0 and an empty diff. For merged PRs
+	// fall back to diffing the merge commit against its first parent to
+	// reconstruct the original PR diff.
+	if err == nil && compare.Ahead == 0 && !compare.Remerge && pull.State == "merged" && pull.MergeCommitHash != nil {
+		compare, err = gitrepo.CompareWithMergeCommit(info.Owner, info.Name, *pull.MergeCommitHash)
+	}
+
 	if err != nil {
 		// If the source branch was deleted after merge, fall back to
 		// diffing the merge commit against its first parent.
