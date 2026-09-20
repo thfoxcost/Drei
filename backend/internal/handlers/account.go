@@ -16,6 +16,42 @@ type AccountInfo struct {
 }
 
 // AccountHandler routes /api/user/account to the appropriate method.
+//
+//	@Summary		Get account info
+//	@Description	Returns the authenticated user's email
+//	@Tags			Authentication
+//	@Produce		json
+//	@Success		200	{object}	handlers.AccountInfo
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		500	{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/user/account [get]
+//
+//	@Summary		Update account email
+//	@Description	Updates the authenticated user's email address
+//	@Tags			Authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			account	body		object	true	"New email address"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/user/account [patch]
+//
+//	@Summary		Delete account
+//	@Description	Permanently deletes the authenticated user's account
+//	@Tags			Authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			account	body		object	true	"Password confirmation"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/user/account [delete]
 func AccountHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET, PATCH, DELETE")
 
@@ -43,6 +79,19 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // AccountPasswordHandler handles POST /api/user/account/password.
+//
+//	@Summary		Change password
+//	@Description	Changes the authenticated user's password after verifying the current one
+//	@Tags			Authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			password	body		object	true	"Current and new password"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/user/account/password [post]
 func AccountPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "POST")
 

@@ -135,6 +135,169 @@ func GetCommits(owner, repo, branch string) ([]CommitInfo, CommitInfo, error) {
 	return commits, lastCommit, nil
 }
 
+// CommitsBetweenBranches returns the commits on headBranch that are not
+// reachable from baseBranch (i.e., the commits a PR would contain). Commits
+// are returned newest first.
+func CommitsBetweenBranches(owner, repo, baseBranch, headBranch string) ([]CommitInfo, error) {
+	r, err := OpenRepo(owner, repo)
+	if err != nil {
+		return nil, fmt.Errorf("open repo: %w", err)
+	}
+
+	headCommit, err := ResolveBranch(r, headBranch)
+	if err != nil {
+		return nil, fmt.Errorf("resolve head branch %q: %w", headBranch, err)
+	}
+
+	baseCommit, err := ResolveBranch(r, baseBranch)
+	if err != nil {
+		return nil, fmt.Errorf("resolve base branch %q: %w", baseBranch, err)
+	}
+
+	mergeBases, err := headCommit.MergeBase(baseCommit)
+	if err != nil {
+		return nil, fmt.Errorf("find merge base: %w", err)
+	}
+
+	if len(mergeBases) == 0 {
+		return nil, fmt.Errorf("no common ancestor between %q and %q", baseBranch, headBranch)
+	}
+
+	stopHash := mergeBases[0].Hash
+
+	var raw []rawCommit
+
+	iter, err := r.Log(&git.LogOptions{From: headCommit.Hash})
+	if err != nil {
+		return nil, err
+	}
+
+	err = iter.ForEach(func(c *object.Commit) error {
+		if c.Hash == stopHash {
+			return fmt.Errorf("stop")
+		}
+
+		raw = append(raw, rawCommit{
+			hash:    c.Hash.String(),
+			message: c.Message,
+			name:    c.Author.Name,
+			email:   c.Author.Email,
+			when:    c.Author.When,
+		})
+
+		return nil
+	})
+
+	if err != nil && err.Error() != "stop" {
+		return nil, err
+	}
+
+	usernames, err := database.ResolveUsernamesByEmails(authorEmails(raw))
+	if err != nil {
+		return nil, err
+	}
+
+	commits := make([]CommitInfo, 0, len(raw))
+
+	for _, c := range raw {
+		commits = append(commits, CommitInfo{
+			Hash:    c.hash,
+			Message: c.message,
+			Author:  resolveAuthorName(c.name, c.email, usernames),
+			Date:    c.when.Format(time.RFC3339),
+		})
+	}
+
+	return commits, nil
+}
+
+// CommitsFromMergeCommit returns the PR commits from a merge commit by
+// walking from the second parent (source branch tip) back to the merge base
+// of the two parents. This correctly isolates only the source-branch commits
+// without leaking commits from the base branch's history.
+func CommitsFromMergeCommit(owner, repo, mergeCommitHash string) ([]CommitInfo, error) {
+	r, err := OpenRepo(owner, repo)
+	if err != nil {
+		return nil, fmt.Errorf("open repo: %w", err)
+	}
+
+	hash := plumbing.NewHash(mergeCommitHash)
+	mergeCommit, err := r.CommitObject(hash)
+	if err != nil {
+		return nil, fmt.Errorf("resolve merge commit: %w", err)
+	}
+
+	parents := mergeCommit.Parents()
+
+	firstParent, err := parents.Next()
+	if err != nil || firstParent == nil {
+		return nil, fmt.Errorf("merge commit has no first parent")
+	}
+
+	secondParent, err := parents.Next()
+	if err != nil || secondParent == nil {
+		return nil, fmt.Errorf("merge commit has no second parent")
+	}
+
+	// Find the merge base of the two parents. Using the merge base as the
+	// stop point ensures we only collect commits on the source branch that
+	// are not already in the base branch. Using firstParent as the stop
+	// would be wrong because firstParent is not an ancestor of
+	// secondParent — they diverge at the merge base, so the walk would
+	// never hit firstParent and would leak the entire base branch history.
+	mergeBases, err := secondParent.MergeBase(firstParent)
+	if err != nil || len(mergeBases) == 0 {
+		return nil, fmt.Errorf("find merge base between merge commit parents")
+	}
+
+	stopHash := mergeBases[0].Hash
+
+	var raw []rawCommit
+
+	iter, err := r.Log(&git.LogOptions{From: secondParent.Hash})
+	if err != nil {
+		return nil, err
+	}
+
+	err = iter.ForEach(func(c *object.Commit) error {
+		if c.Hash == stopHash {
+			return fmt.Errorf("stop")
+		}
+
+		raw = append(raw, rawCommit{
+			hash:    c.Hash.String(),
+			message: c.Message,
+			name:    c.Author.Name,
+			email:   c.Author.Email,
+			when:    c.Author.When,
+		})
+
+		return nil
+	})
+
+	if err != nil && err.Error() != "stop" {
+		return nil, err
+	}
+
+	usernames, err := database.ResolveUsernamesByEmails(authorEmails(raw))
+	if err != nil {
+		return nil, err
+	}
+
+	commits := make([]CommitInfo, 0, len(raw))
+
+	for _, c := range raw {
+		commits = append(commits, CommitInfo{
+			Hash:    c.hash,
+			Message: c.message,
+			Author:  resolveAuthorName(c.name, c.email, usernames),
+			Date:    c.when.Format(time.RFC3339),
+		})
+	}
+
+	return commits, nil
+}
+
 type CommitDetail struct {
 	FullHash     string `json:"fullHash"`
 	ShortHash    string `json:"shortHash"`
@@ -342,10 +505,6 @@ func resolveBranchForCommit(r *git.Repository, target plumbing.Hash) string {
 	return branchName
 }
 
-// emptyTreeHash is the SHA-1 of an empty tree, used as the base when computing
-// diff stats for root commits that have no parent.
-var emptyTreeHash = plumbing.NewHash("4b825dc642cb6eb9a060e54bf899d69f74d2e6e6")
-
 // computeCommitStats returns the number of changed files, total additions,
 // total deletions, and per-file changes for a commit by diffing its tree
 // against the first parent's tree (or an empty tree for root commits).
@@ -365,11 +524,7 @@ func computeCommitStats(r *git.Repository, commit *object.Commit) (int, int, int
 	}
 
 	if parentTree == nil {
-		parentTree, _ = r.TreeObject(emptyTreeHash)
-	}
-
-	if parentTree == nil {
-		return 0, 0, 0, nil
+		parentTree = &object.Tree{}
 	}
 
 	changes, err := object.DiffTree(parentTree, commitTree)
@@ -452,11 +607,7 @@ func computeFileDiffs(r *git.Repository, commit *object.Commit) []FileDiff {
 	}
 
 	if parentTree == nil {
-		parentTree, _ = r.TreeObject(emptyTreeHash)
-	}
-
-	if parentTree == nil {
-		return nil
+		parentTree = &object.Tree{}
 	}
 
 	changes, err := object.DiffTree(parentTree, commitTree)
@@ -495,6 +646,9 @@ func computeFileDiffs(r *git.Repository, commit *object.Commit) []FileDiff {
 
 		lines, additions, deletions := chunksToDiffLines(fp.Chunks())
 		hunks := groupHunks(lines)
+		if hunks == nil {
+			hunks = []DiffHunk{}
+		}
 
 		result = append(result, FileDiff{
 			Path:      path,

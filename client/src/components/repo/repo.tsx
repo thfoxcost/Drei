@@ -7,6 +7,7 @@ import Rightpanel from "./right-panel";
 import Cell from "./table/cell";
 import Mainheader from "./table/header";
 import Tableheader from "./table-header";
+import NewPrIndicator from "./pulls/new-pr-indicator";
 
 interface RepoProps {
 	owner: string;
@@ -110,6 +111,7 @@ function Repo({ owner, repo, branch }: RepoProps) {
 			<div className="mx-32 flex h-full flex-col overflow-y-auto overflow-x-hidden mb-20">
 				<div className="mt-2 flex flex-row justify-between">
 					<div className="mr-6 min-w-0 flex-1">
+						<NewPrIndicator owner={owner} repo={repo} branches={repoData.branches} branchDates={repoData.branchDates} defaultBranch={repoData.defaultBranch} />
 						<Tableheader
 							defaultBranch={repoData.defaultBranch}
 							activeBranch={branch ?? repoData.defaultBranch}
@@ -124,7 +126,7 @@ function Repo({ owner, repo, branch }: RepoProps) {
 							files={repoData.files}
 						/>
 
-						<Mainheader />
+						<Mainheader branch={branch} />
 
 					{repoData.files
 						.filter((file) => !file.isNested)
@@ -136,6 +138,11 @@ function Repo({ owner, repo, branch }: RepoProps) {
 									file.lastCommit.message.trim() === ""
 										? repoData.lastCommit.message
 										: file.lastCommit.message
+								}
+								commitHash={
+									file.lastCommit.hash.trim() === ""
+										? repoData.lastCommit.hash
+										: file.lastCommit.hash
 								}
 								date={
 									file.lastCommit.date.trim() === ""

@@ -38,6 +38,16 @@ type RepoInfo struct {
 	License string `json:"license"`
 }
 
+// GetRepos godoc
+//
+//	@Summary		List repositories for a user
+//	@Description	Returns all repositories owned by the specified user
+//	@Tags			Repositories
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner username"
+//	@Success		200		{object}	[]handlers.RepoInfo
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/users/{owner}/repos [get]
 func GetRepos(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set(

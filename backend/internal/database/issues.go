@@ -396,7 +396,9 @@ func CreateIssue(repoID int64, authorID, title, description string, labels, assi
 	}
 	defer tx.Rollback(ctx)
 
-	// Serialize issue number allocation per repository.
+	// Serialize issue/PR number allocation per repository. The lock on the
+	// repository row prevents two concurrent creates (issue or PR) from
+	// producing the same number.
 	_, err = tx.Exec(ctx, `SELECT id FROM repositories WHERE id = $1 FOR UPDATE`, repoID)
 	if err != nil {
 		return Issue{}, err
@@ -406,7 +408,13 @@ func CreateIssue(repoID int64, authorID, title, description string, labels, assi
 
 	err = tx.QueryRow(
 		ctx,
-		`SELECT COALESCE(MAX(number), 0) + 1 FROM issues WHERE repo_id = $1`,
+		`
+		SELECT COALESCE(MAX(n), 0) + 1 FROM (
+			SELECT MAX(number) AS n FROM issues       WHERE repo_id = $1
+			UNION ALL
+			SELECT MAX(number) AS n FROM pull_requests WHERE repo_id = $1
+		) combined
+		`,
 		repoID,
 	).Scan(&number)
 	if err != nil {

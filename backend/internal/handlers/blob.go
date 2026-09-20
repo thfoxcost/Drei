@@ -7,6 +7,21 @@ import (
 	"strings"
 )
 
+// BlobHandler godoc
+//
+//	@Summary		Get file blob
+//	@Description	Returns file content and metadata for a specific file in a repository
+//	@Tags			Files
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			branch	path		string	true	"Branch name"
+//	@Param			path	path		string	true	"File path within the repository"
+//	@Success		200		{object}	gitrepo.BlobFile
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/blob/{branch}/{path} [get]
 func BlobHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "GET")
 
