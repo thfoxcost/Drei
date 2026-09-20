@@ -1,60 +1,24 @@
+import { Link } from "@tanstack/react-router";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { Check, Code2, Copy, GitCommitHorizontal } from "lucide-react";
 import { useMemo } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
+import { Avatar, AvatarFallback } from "#/components/ui/avatar";
+import { Spinner } from "#/components/ui/spinner";
+import { usePRCommits } from "#/hooks/PRs/use-pr-commits";
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
-
-type MockCommit = {
-	hash: string;
-	message: string;
-	author: string;
-	avatar?: string;
-	date: string;
-	checksPassed: number;
-	checksTotal: number;
-};
+import type { Commit } from "#/types/repo";
 
 type DateGroup = {
 	dateKey: string;
 	label: string;
-	commits: MockCommit[];
+	commits: Commit[];
 };
-
-const MOCK_COMMITS: MockCommit[] = [
-	{
-		hash: "c33e686",
-		message:
-			"feat: implement pull requests feature with UI components and routing",
-		author: "thfoxcost",
-		date: "2026-09-01T10:20:00-07:00",
-		checksPassed: 1,
-		checksTotal: 1,
-	},
-	{
-		hash: "c1d4677",
-		message:
-			"feat: update New Pull Request indicator UI with improved messaging and icon",
-		author: "thfoxcost",
-		date: "2026-09-01T15:05:00-07:00",
-		checksPassed: 1,
-		checksTotal: 1,
-	},
-	{
-		hash: "907a1ed",
-		message:
-			"feat: implement pull requests feature with UI components, routing, and detailed views",
-		author: "thfoxcost",
-		date: "2026-09-02T18:40:00-07:00",
-		checksPassed: 1,
-		checksTotal: 1,
-	},
-];
 
 function getInitials(name: string) {
 	return name.slice(0, 2).toUpperCase();
 }
 
-function groupByDate(commits: MockCommit[]): DateGroup[] {
+function groupByDate(commits: Commit[]): DateGroup[] {
 	const groups: DateGroup[] = [];
 	const byKey = new Map<string, DateGroup>();
 
@@ -80,11 +44,17 @@ function groupByDate(commits: MockCommit[]): DateGroup[] {
 function CommitRow({
 	commit,
 	isLast,
+	owner,
+	repo,
 }: {
-	commit: MockCommit;
+	commit: Commit;
 	isLast: boolean;
+	owner: string;
+	repo: string;
 }) {
 	const { isCopied, copyToClipboard } = useCopyToClipboard();
+	const shortHash = commit.hash.slice(0, 7);
+	const title = commit.message.split("\n")[0];
 
 	return (
 		<div
@@ -92,20 +62,16 @@ function CommitRow({
 				!isLast ? "border-b" : ""
 			}`}
 		>
-			<div className="min-w-0">
-				<p className="truncate text-base font-medium leading-tight">
-					{commit.message}
-				</p>
+			<div className="min-w-0 flex-1">
+				<Link
+					to={`/${owner}/${repo}/commits/${commit.hash}`}
+					className="block truncate text-base font-medium leading-tight hover:text-blue-400 hover:underline"
+				>
+					{title}
+				</Link>
 
 				<div className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
 					<Avatar className="size-6">
-						{commit.avatar ? (
-							<AvatarImage
-								src={commit.avatar}
-								alt={commit.author}
-							/>
-						) : null}
-
 						<AvatarFallback className="text-[11px]">
 							{getInitials(commit.author)}
 						</AvatarFallback>
@@ -118,20 +84,17 @@ function CommitRow({
 						})}
 					</span>
 
-					<span className="mx-0.5">·</span>
 
-					<Check className="size-4 shrink-0 text-green-600" />
-
-					<span className="shrink-0">
-						{commit.checksPassed}/{commit.checksTotal}
-					</span>
 				</div>
 			</div>
 
 			<div className="flex shrink-0 items-center gap-2">
-				<span className="font-mono text-sm text-muted-foreground">
-					{commit.hash}
-				</span>
+				<Link
+					to={`/${owner}/${repo}/commits/${commit.hash}`}
+					className="font-mono text-sm text-muted-foreground hover:text-foreground"
+				>
+					{shortHash}
+				</Link>
 
 				<button
 					type="button"
@@ -146,32 +109,65 @@ function CommitRow({
 					)}
 				</button>
 
-				<button
-					type="button"
+				<Link
+					to={`/${owner}/${repo}/commits/${commit.hash}`}
 					aria-label="View commit"
 					className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 				>
 					<Code2 className="size-4" />
-				</button>
+				</Link>
 			</div>
 		</div>
 	);
 }
 
-function Commits() {
-	const groupedCommits = useMemo(
-		() => groupByDate(MOCK_COMMITS),
-		[],
-	);
+interface CommitsProps {
+	owner: string;
+	repo: string;
+	base: string;
+	head: string;
+	mergeCommitHash?: string | null;
+}
+
+function Commits({ owner, repo, base, head, mergeCommitHash }: CommitsProps) {
+	const {
+		data: commits,
+		isLoading,
+		isError,
+	} = usePRCommits(owner, repo, base, head, mergeCommitHash);
+
+	const groupedCommits = useMemo(() => groupByDate(commits ?? []), [commits]);
+
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center py-8 text-muted-foreground">
+				<Spinner className="mr-2" />
+				<span>Loading commits...</span>
+			</div>
+		);
+	}
+
+	if (isError) {
+		return (
+			<div className="py-8 text-center text-sm text-muted-foreground">
+				Failed to load commits.
+			</div>
+		);
+	}
+
+	if (!commits || commits.length === 0) {
+		return (
+			<div className="py-8 text-center text-sm text-muted-foreground">
+				No commits found between these branches.
+			</div>
+		);
+	}
 
 	return (
 		<div className="w-full">
 			<div className="space-y-[-4px]">
 				{groupedCommits.map((group, index) => (
-					<section
-						key={group.dateKey}
-						className="relative pl-6"
-					>
+					<section key={group.dateKey} className="relative pl-6">
 						<span
 							aria-hidden="true"
 							className={`absolute bottom-0 left-2.5 w-px bg-muted-foreground/40 ${
@@ -184,18 +180,16 @@ function Commits() {
 							className="absolute left-0 top-2 size-5 rounded-full bg-background text-muted-foreground"
 						/>
 
-						<p className="pt-2 text-sm text-muted-foreground">
-							{group.label}
-						</p>
+						<p className="pt-2 text-sm text-muted-foreground">{group.label}</p>
 
 						<div className="mt-1.5 overflow-hidden rounded-lg border">
 							{group.commits.map((commit, i) => (
 								<CommitRow
 									key={commit.hash}
 									commit={commit}
-									isLast={
-										i === group.commits.length - 1
-									}
+									owner={owner}
+									repo={repo}
+									isLast={i === group.commits.length - 1}
 								/>
 							))}
 						</div>

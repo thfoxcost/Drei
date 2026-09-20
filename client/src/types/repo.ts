@@ -47,6 +47,7 @@ export interface RepoData {
 	created: string;
 	langs: Lang[];
 	branches: string[];
+	branchDates: Record<string, string>;
 	defaultBranch: string;
 	tags: string[] | null;
 	cloneUrl: string;
