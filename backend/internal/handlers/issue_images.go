@@ -20,6 +20,21 @@ const maxIssueImageSize = 5 * 1024 * 1024
 // handler mounted at /uploads/issue-images/.
 //
 //	POST /api/repos/{owner}/{repo}/issues/images
+//
+//	@Summary		Upload issue image
+//	@Description	Uploads an image for use in issue descriptions
+//	@Tags			Issues
+//	@Accept			multipart/form-data
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			image	formData	file	true	"Image file (PNG, JPG, WebP, or GIF, max 5MB)"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Security		SessionAuth
+//	@Router			/repos/{owner}/{repo}/issues/images [post]
 func IssueImageHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "POST")
 

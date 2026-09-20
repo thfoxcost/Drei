@@ -6,9 +6,9 @@ import { absoluteDate, timeAgo } from "#/lib/time-ago"
 import { useParams } from "@tanstack/react-router"
 import { RotateCcwClock } from "lucide-react"
 
-function Mainheader() {
+function Mainheader({ branch }: { branch?: string }) {
     const { username, repo } = useParams({ strict: false });
-    const { data: repoData, isLoading } = useRepoData(username, repo)
+    const { data: repoData, isLoading } = useRepoData(username, repo, branch)
 
     if (isLoading || !repoData) {
         return (

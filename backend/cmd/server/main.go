@@ -8,7 +8,21 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+
+	_ "backend/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+//	@title						Drei API
+//	@version					1.0.0
+//	@description				API for Drei, a self-hosted Git repository platform
+//	@host						localhost:3200
+//	@BasePath					/api
+//	@securityDefinitions.apikey	SessionAuth
+//	@in							cookie
+//	@name						better-auth.session_token
+//	@description				Better-auth session cookie for authenticated requests
 
 func main() {
 	if err := config.Load(); err != nil {
@@ -29,6 +43,7 @@ func main() {
 	http.HandleFunc("/api/users", handlers.UsersHandler)
 	http.HandleFunc("/api/users/{owner}/repos", handlers.GetRepos)
 	http.HandleFunc("/api/issues", handlers.AllIssuesHandler)
+	http.HandleFunc("/api/pulls", handlers.AllPullsHandler)
 	http.HandleFunc("/api/status", handlers.Status)
 	http.HandleFunc("/api/profile", handlers.ProfileHandler)
 	http.HandleFunc("/api/user/account/password", handlers.AccountPasswordHandler)
@@ -55,6 +70,29 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}/comments/{commentId}", handlers.IssueCommentHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/labels", handlers.IssueLabelsHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/labels/{labelId}", handlers.IssueLabelHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/duplicate", handlers.PullDuplicateHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/compare/commits", handlers.PullCompareCommitsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/compare", handlers.PullCompareHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls", handlers.PullsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/images", handlers.PullImageHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}", handlers.PullHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/close", handlers.PullCloseHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/reopen", handlers.PullReopenHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/merge", handlers.PullMergeHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/revert", handlers.PullRevertHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/mergeability", handlers.PullMergeabilityHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/source-branch", handlers.PullDeleteSourceBranchHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/comments", handlers.PullCommentsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/comments/{commentId}", handlers.PullCommentHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/reviews", handlers.PullReviewsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/reviews/{reviewId}", handlers.PullReviewHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/events", handlers.PullEventsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/assignee", handlers.PRAssigneeHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/reviewers", handlers.PRReviewerHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/labels", handlers.PRLabelHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/files", handlers.PullFilesHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/viewed", handlers.PullViewedFilesHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/notifications", handlers.PRNotificationsHandler)
 	http.HandleFunc("/api/notifications", handlers.NotificationsHandler)
 	http.HandleFunc("/api/notifications/{id}", handlers.NotificationItemHandler)
 	http.HandleFunc("/api/notifications/test", handlers.NotificationTestHandler)
@@ -70,6 +108,16 @@ func main() {
 	// takes precedence over the logo file server.
 	issueImagesDir := filepath.Join(config.App.ReposPath, "issue-images")
 	http.Handle("/uploads/issue-images/", http.StripPrefix("/uploads/issue-images/", http.FileServer(http.Dir(issueImagesDir))))
+
+	// Serve uploaded PR images from <REPOS_PATH>/pr-images under
+	// /uploads/pr-images/.
+	prImagesDir := filepath.Join(config.App.ReposPath, "pr-images")
+	http.Handle("/uploads/pr-images/", http.StripPrefix("/uploads/pr-images/", http.FileServer(http.Dir(prImagesDir))))
+
+	// Swagger UI
+	http.Handle("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	fmt.Printf("[OK] Server listening on :%s\n", config.App.Port)
 

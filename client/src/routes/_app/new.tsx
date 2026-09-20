@@ -158,7 +158,7 @@ function New() {
         <section className="space-y-4">
           <p className="text-md mb-0 font-bold">General</p>
           <div className="flex flex-wrap items-end gap-3">
-            <DropdownMenu>            
+            <DropdownMenu>
               <Button variant="outline">
                 <UserAvatar
                   src={session?.user.image}

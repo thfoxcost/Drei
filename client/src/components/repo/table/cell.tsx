@@ -1,5 +1,5 @@
 import { getIconUrlForFilePath } from "vscode-material-icons";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { timeAgo, absoluteDate } from "#/lib/time-ago";
 import { getFolderIcon } from "#/lib/folder-icons";
 
@@ -16,6 +16,7 @@ function getFileIcon(filename: string, isFile: boolean): string {
 interface CellProps {
   filename: string;
   commitmessage: string;
+  commitHash?: string;
   date: string;
   isFile: boolean;
   path?: string;
@@ -27,6 +28,7 @@ interface CellProps {
 function Cell({
   filename,
   commitmessage,
+  commitHash,
   date,
   isFile,
   path,
@@ -79,17 +81,31 @@ function Cell({
         </span>
       </div>
 
-      <span
-        className="min-w-0 flex-1 truncate text-muted-foreground text-sm group-hover:text-foreground
-        pl-20
-        "
-        title={message}
-      >
-        {message}
-      </span>
+      {commitHash && owner && repo ? (
+        <Link
+          to={`/${owner}/${repo}/commits/${commitHash}`}
+          className="min-w-0 flex-1 truncate text-muted-foreground text-sm group-hover:text-foreground
+          pl-20
+          hover:underline
+          "
+          title={message}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {message}
+        </Link>
+      ) : (
+        <span
+          className="min-w-0 flex-1 truncate text-muted-foreground text-sm group-hover:text-foreground
+          pl-20
+          "
+          title={message}
+        >
+          {message}
+        </span>
+      )}
 
       <span
-        className="shrink-0 whitespace-nowrap text-xs tabular-nums text-muted-foreground"
+        className="shrink-0 whitespace-nowrap text-sm tabular-nums text-muted-foreground"
         title={absoluteDate(date)}
       >
         {timeAgo(date)}

@@ -67,6 +67,36 @@ func GetBranches(owner, repo string) ([]string, string, error) {
 	return branches, defaultBranch, nil
 }
 
+func GetBranchDates(owner, repo string) (map[string]string, error) {
+	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
+
+	r, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	dates := make(map[string]string)
+
+	iter, err := r.Branches()
+	if err != nil {
+		return nil, err
+	}
+
+	err = iter.ForEach(func(ref *plumbing.Reference) error {
+		commit, err := r.CommitObject(ref.Hash())
+		if err != nil {
+			return nil
+		}
+		dates[ref.Name().Short()] = commit.Committer.When.UTC().Format("2006-01-02T15:04:05Z")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return dates, nil
+}
+
 func DefaultBranch(owner, repo string) (string, error) {
 	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
 
@@ -128,6 +158,38 @@ func RenameDefaultBranch(owner, repo, newName string) error {
 	cmd := exec.Command("git", "--git-dir="+repoPath, "branch", "-m", newName)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("git branch -m: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	return nil
+}
+
+// DeleteBranch deletes a local branch from the bare repository. It refuses to
+// delete the default branch (HEAD). If the branch does not exist, it returns
+// nil (idempotent).
+func DeleteBranch(owner, repo, branch string) error {
+	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
+
+	r, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return fmt.Errorf("open repo: %w", err)
+	}
+
+	head, err := r.Head()
+	if err != nil {
+		return fmt.Errorf("read HEAD: %w", err)
+	}
+
+	if head.Name().Short() == branch {
+		return fmt.Errorf("cannot delete the default branch")
+	}
+
+	cmd := exec.Command("git", "--git-dir="+repoPath, "branch", "-d", branch)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		msg := strings.TrimSpace(string(out))
+		if strings.Contains(msg, "not found") {
+			return nil
+		}
+		return fmt.Errorf("git branch -d: %w: %s", err, msg)
 	}
 
 	return nil

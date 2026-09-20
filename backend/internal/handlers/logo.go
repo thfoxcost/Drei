@@ -16,6 +16,19 @@ const maxLogoSize = 2 * 1024 * 1024
 // LogoHandler accepts a single image upload for a repository logo, stores it
 // under <REPOS_PATH>/logos/<owner>/<repo>.<ext> and persists the relative path
 // on the repositories row. It returns the public URL for the stored logo.
+//
+//	@Summary		Upload repository logo
+//	@Description	Uploads an image as the repository logo
+//	@Tags			Settings
+//	@Accept			multipart/form-data
+//	@Produce		json
+//	@Param			owner	path		string	true	"Repository owner"
+//	@Param			repo	path		string	true	"Repository name"
+//	@Param			logo formData	file	true	"Logo image (PNG, JPG, WebP, or GIF, max 2MB)"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/repos/{owner}/{repo}/logo [post]
 func LogoHandler(w http.ResponseWriter, r *http.Request) {
 	setCORS(w, r, "POST")
 
