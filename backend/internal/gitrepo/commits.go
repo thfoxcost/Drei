@@ -212,9 +212,9 @@ func CommitsBetweenBranches(owner, repo, baseBranch, headBranch string) ([]Commi
 }
 
 // CommitsFromMergeCommit returns the PR commits from a merge commit by
-// walking from the second parent (source branch tip) back to the first parent
-// (target branch state before merge). Used when the source branch has been
-// deleted after merge.
+// walking from the second parent (source branch tip) back to the merge base
+// of the two parents. This correctly isolates only the source-branch commits
+// without leaking commits from the base branch's history.
 func CommitsFromMergeCommit(owner, repo, mergeCommitHash string) ([]CommitInfo, error) {
 	r, err := OpenRepo(owner, repo)
 	if err != nil {
@@ -239,7 +239,18 @@ func CommitsFromMergeCommit(owner, repo, mergeCommitHash string) ([]CommitInfo, 
 		return nil, fmt.Errorf("merge commit has no second parent")
 	}
 
-	stopHash := firstParent.Hash
+	// Find the merge base of the two parents. Using the merge base as the
+	// stop point ensures we only collect commits on the source branch that
+	// are not already in the base branch. Using firstParent as the stop
+	// would be wrong because firstParent is not an ancestor of
+	// secondParent — they diverge at the merge base, so the walk would
+	// never hit firstParent and would leak the entire base branch history.
+	mergeBases, err := secondParent.MergeBase(firstParent)
+	if err != nil || len(mergeBases) == 0 {
+		return nil, fmt.Errorf("find merge base between merge commit parents")
+	}
+
+	stopHash := mergeBases[0].Hash
 
 	var raw []rawCommit
 

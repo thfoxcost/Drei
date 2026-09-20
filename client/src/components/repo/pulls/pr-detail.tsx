@@ -943,6 +943,7 @@ function PRdetail({ pull }: { pull: string }) {
 								repo={repo}
 								base={pr.targetBranch}
 								head={pr.sourceBranch}
+								mergeCommitHash={pr.mergeCommitHash}
 							/>
 						</TabsContent>
 

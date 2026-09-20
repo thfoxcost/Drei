@@ -126,14 +126,15 @@ interface CommitsProps {
 	repo: string;
 	base: string;
 	head: string;
+	mergeCommitHash?: string | null;
 }
 
-function Commits({ owner, repo, base, head }: CommitsProps) {
+function Commits({ owner, repo, base, head, mergeCommitHash }: CommitsProps) {
 	const {
 		data: commits,
 		isLoading,
 		isError,
-	} = usePRCommits(owner, repo, base, head);
+	} = usePRCommits(owner, repo, base, head, mergeCommitHash);
 
 	const groupedCommits = useMemo(() => groupByDate(commits ?? []), [commits]);
 

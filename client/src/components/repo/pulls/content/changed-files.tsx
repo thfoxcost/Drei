@@ -537,6 +537,7 @@ function Changedfiles({
     repo,
     pr?.targetBranch ?? "",
     pr?.sourceBranch ?? "",
+    pr?.mergeCommitHash,
   )
 
   const commits = prCommits ?? []
@@ -1263,9 +1264,7 @@ function Changedfiles({
                       </span>
 
                       <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                        {
-                          commit.message
-                        }
+                        {commit.message.split("\n")[0]}
                       </span>
 
                       <span className="shrink-0 font-mono text-xs text-muted-foreground">

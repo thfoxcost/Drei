@@ -95,10 +95,12 @@ func CompareBranches(owner, repo, baseBranch, headBranch string) (*BranchCompare
 		return nil, fmt.Errorf("count commits behind: %w", err)
 	}
 
-	// When ahead=0 and behind=0 the branch was likely already merged (or
-	// reverted). Look for a merge commit on the base that brought in the
-	// head branch and show those changes so the user can re-merge.
-	if ahead == 0 && behind == 0 {
+	// When ahead=0 the head branch is fully contained in the base branch.
+	// This means it was already merged. Look for a merge commit on the base
+	// that brought in the head branch and show those changes so the user can
+	// re-merge. Note: behind is typically > 0 after a merge (the merge
+	// commit itself is on base but not head), so we only check ahead.
+	if ahead == 0 {
 		mergeHash, err := FindMergeCommit(r, baseCommit, headCommit)
 		if err == nil {
 			result, err := CompareWithMergeCommit(owner, repo, mergeHash.String())
