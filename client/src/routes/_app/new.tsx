@@ -56,8 +56,17 @@ function New() {
   async function createRepository() {
     setLoading(true)
 
-    if (name === "" || description === "" || visibility === "") {
+    const trimmedName = name.trim()
+    if (trimmedName === "" || description === "" || visibility === "") {
       toast.error("Please fill all the fields")
+      setLoading(false)
+      return
+    }
+    if (name !== trimmedName) {
+      setName(trimmedName)
+    }
+    if (/^\s/.test(name)) {
+      toast.error("Repository name cannot start with a space")
       setLoading(false)
       return
     }
@@ -185,8 +194,10 @@ function New() {
                 name="name"
                 placeholder="awesome-project"
                 required
+                pattern="[^\s].*"
+                title="Name cannot start with a space"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setName(e.target.value.replace(/^\s+/, ""))}
               />
             </Field>
           </div>
