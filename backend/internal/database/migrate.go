@@ -575,5 +575,112 @@ func Migrate() error {
 		return err
 	}
 
+	// Platform owner flag on the better-auth "user" table. Used to
+	// automatically verify organizations created by platform owners.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS platform_owner BOOLEAN NOT NULL DEFAULT FALSE;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Organizations table. slug is the URL-safe unique identifier derived
+	// from the display name.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS organizations (
+			id BIGSERIAL PRIMARY KEY,
+			name TEXT NOT NULL,
+			slug TEXT NOT NULL,
+			description TEXT,
+			visibility TEXT NOT NULL DEFAULT 'public',
+			email TEXT,
+			purpose TEXT,
+			avatar TEXT,
+			verified BOOLEAN NOT NULL DEFAULT FALSE,
+			created_by TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			UNIQUE(slug)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS organizations_slug_idx
+		ON organizations (slug);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS organizations_created_by_idx
+		ON organizations (created_by);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Organization members — many-to-many between organizations and users.
+	// The creator is always inserted with role 'owner'. pinned is a per-user
+	// preference for pinning the org to the top of their list.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS organization_members (
+			id BIGSERIAL PRIMARY KEY,
+			organization_id BIGINT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+			user_id TEXT NOT NULL,
+			role TEXT NOT NULL DEFAULT 'member',
+			pinned BOOLEAN NOT NULL DEFAULT FALSE,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			UNIQUE(organization_id, user_id)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS organization_members_user_id_idx
+		ON organization_members (user_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS organization_members_org_id_idx
+		ON organization_members (organization_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Organization tags — scoped per organization.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS organization_tags (
+			id BIGSERIAL PRIMARY KEY,
+			organization_id BIGINT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+			tag TEXT NOT NULL,
+
+			UNIQUE(organization_id, tag)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS organization_tags_org_id_idx
+		ON organization_tags (organization_id);
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
