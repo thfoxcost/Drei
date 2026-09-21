@@ -1,5 +1,5 @@
 import { useForm } from "@tanstack/react-form";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Building2,
   Check,
@@ -37,20 +37,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/ui/tag-input";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { authClient } from "@/lib/auth-client";
+import { authMiddleware } from "@/lib/middleware";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
+import { useCreateOrganization } from "@/hooks/useOrganizations";
 
 const organizationSchema = z.object({
-  owner: z.string().min(1, "Please select an owner"),
   name: z.string().trim().min(1, "Organization name is required").regex(/^[^\s]/, "Name cannot start with a space"),
   description: z.string().optional(),
   visibility: z.enum(["public", "members"]),
@@ -59,29 +56,6 @@ const organizationSchema = z.object({
   tags: z.array(z.string()).optional(),
   pinned: z.boolean(),
 });
-
-const owners = [
-  {
-    value: "alex",
-    label: "Alex Johnson",
-    avatar: "https://api.dicebear.com/10.x/avataaars/svg?seed=alex",
-  },
-  {
-    value: "sarah",
-    label: "Sarah Chen",
-    avatar: "https://api.dicebear.com/10.x/avataaars/svg?seed=sarah",
-  },
-  {
-    value: "michael",
-    label: "Michael Rodriguez",
-    avatar: "https://api.dicebear.com/10.x/avataaars/svg?seed=michael",
-  },
-  {
-    value: "thefoxcost",
-    label: "theFoxCost",
-    avatar: "https://api.dicebear.com/10.x/avataaars/svg?seed=thefoxcost",
-  },
-];
 
 const reasons = [
   { value: "company", label: "Company", icon: Building2 },
@@ -94,16 +68,22 @@ const reasons = [
 
 export const Route = createFileRoute("/_app/orgs/new")({
   component: RouteComponent,
+  server: {
+    middleware: [authMiddleware],
+  },
 });
 
 function RouteComponent() {
+  const navigate = useNavigate();
+  const { data: session } = authClient.useSession();
+  const createOrganization = useCreateOrganization();
+
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [orgName, setOrgName] = useState("");
-  const [selectedOwner, setSelectedOwner] = useState("");
 
   const form = useForm({
     defaultValues: {
-      owner: "",
       name: "",
       description: "",
       visibility: "public" as "public" | "members",
@@ -116,19 +96,55 @@ function RouteComponent() {
       onSubmit: organizationSchema,
     },
     onSubmit: async ({ value }) => {
-      console.log({ ...value, avatar: avatarPreview });
+      try {
+        const org = await createOrganization.mutateAsync({
+          name: value.name,
+          description: value.description ?? "",
+          visibility: value.visibility,
+          email: value.email,
+          purpose: value.reason,
+          tags: value.tags ?? [],
+          pinned: value.pinned,
+        });
+
+        if (avatarFile) {
+          const formData = new FormData();
+          formData.append("avatar", avatarFile);
+
+          await fetch(
+            `http://localhost:3200/api/orgs/${org.slug}/avatar`,
+            {
+              method: "POST",
+              credentials: "include",
+              body: formData,
+            },
+          );
+        }
+
+        toast.success("Organization created");
+        navigate({ to: "/$username", params: { username: session!.user.name } });
+      } catch (err) {
+        if (err instanceof Error) {
+          toast.error(err.message);
+        } else {
+          toast.error("Something went wrong");
+        }
+      }
     },
   });
 
   function handleAvatarSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setAvatarFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       setAvatarPreview(ev.target?.result as string);
     };
     reader.readAsDataURL(file);
   }
+
+  const isSubmitting = createOrganization.isPending;
 
   return (
     <div className="mx-auto my-10 w-full max-w-3xl px-4">
@@ -175,7 +191,7 @@ function RouteComponent() {
 
         <h1 className="mb-3 flex items-center gap-2 pl-24 text-5xl font-bold">
           {orgName || "New Organization"}
-          {selectedOwner === "thefoxcost" && (
+          {session?.user.name === "thefoxcost" && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5 mt-2">
@@ -207,50 +223,21 @@ function RouteComponent() {
       >
         <FieldGroup className="gap-4">
           <div className="flex flex-wrap items-end gap-3">
-            <form.Field
-              name="owner"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid} className="w-1/4">
-                    <FieldLabel>Owner *</FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(v) => {
-                        field.handleChange(v);
-                        setSelectedOwner(v);
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select an owner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {owners.map((owner) => (
-                          <SelectItem key={owner.value} value={owner.value}>
-                            <span className="flex items-center gap-2">
-                              <Avatar size="sm">
-                                <AvatarImage
-                                  src={owner.avatar}
-                                  alt={owner.label}
-                                />
-                                <AvatarFallback>
-                                  {owner.label[0]}
-                                </AvatarFallback>
-                              </Avatar>
-                              {owner.label}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            />
+            <Field className="w-1/4">
+              <FieldLabel>Owner</FieldLabel>
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <Avatar size="sm">
+                  <AvatarImage
+                    src={session?.user.image ?? undefined}
+                    alt={session?.user.name ?? ""}
+                  />
+                  <AvatarFallback>
+                    {session?.user.name?.[0]?.toUpperCase() ?? "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-muted-foreground">@{session?.user.name ?? "Unknown"}</span>
+              </div>
+            </Field>
 
             <form.Field
               name="name"
@@ -502,12 +489,19 @@ function RouteComponent() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => (window.location.href = "/")}
+              onClick={() => navigate({ to: "/" })}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={form.state.isSubmitting}>
-              {form.state.isSubmitting ? "Creating..." : "Create organization"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Spinner />
+                  <span className="ml-2">Creating...</span>
+                </>
+              ) : (
+                "Create organization"
+              )}
             </Button>
           </div>
         </FieldGroup>

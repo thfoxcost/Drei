@@ -93,6 +93,9 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/files", handlers.PullFilesHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/viewed", handlers.PullViewedFilesHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/notifications", handlers.PRNotificationsHandler)
+	http.HandleFunc("/api/orgs", handlers.OrganizationsHandler)
+	http.HandleFunc("/api/orgs/{slug}", handlers.GetOrganizationHandler)
+	http.HandleFunc("/api/orgs/{slug}/avatar", handlers.OrganizationAvatarHandler)
 	http.HandleFunc("/api/notifications", handlers.NotificationsHandler)
 	http.HandleFunc("/api/notifications/{id}", handlers.NotificationItemHandler)
 	http.HandleFunc("/api/notifications/test", handlers.NotificationTestHandler)
@@ -113,6 +116,10 @@ func main() {
 	// /uploads/pr-images/.
 	prImagesDir := filepath.Join(config.App.ReposPath, "pr-images")
 	http.Handle("/uploads/pr-images/", http.StripPrefix("/uploads/pr-images/", http.FileServer(http.Dir(prImagesDir))))
+
+	// Serve uploaded organization avatars from <REPOS_PATH>/orgs under /uploads/orgs/.
+	orgAvatarsDir := filepath.Join(config.App.ReposPath, "orgs")
+	http.Handle("/uploads/orgs/", http.StripPrefix("/uploads/orgs/", http.FileServer(http.Dir(orgAvatarsDir))))
 
 	// Swagger UI
 	http.Handle("/swagger/", httpSwagger.Handler(
