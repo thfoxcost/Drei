@@ -6,12 +6,15 @@ import Profile from "./profile";
 import Repos from "./repos";
 import Weather from "./weather-07";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { useNavigate } from "@tanstack/react-router";
 
 interface MainProps {
 	repos: Repo[];
 }
 
 function Main({ repos }: MainProps) {
+	const navigate = useNavigate()
+
 	return (
 		<div className="flex flex-1 min-h-0 gap-6 p-6 overflow-hidden">
 			<div className="flex flex-col gap-3">
@@ -35,9 +38,19 @@ function Main({ repos }: MainProps) {
 
 						<button
 							type="button"
-							className="ml-auto p-1 rounded-sm flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+							onClick={() => navigate({ to: "/orgs/new" })}
+							className="ml-auto flex items-center justify-center rounded-sm p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" className="size-3" viewBox="0 0 24 24"><path fill="currentColor" d="M3 13h8v8h2v-8h8v-2h-8V3h-2v8H3z" /></svg>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								className="size-3"
+								viewBox="0 0 24 24"
+							>
+								<path
+									fill="currentColor"
+									d="M3 13h8v8h2v-8h8v-2h-8V3h-2v8H3z"
+								/>
+							</svg>
 						</button>
 					</div>
 					<div className="flex gap-4">
@@ -81,7 +94,7 @@ function Main({ repos }: MainProps) {
 								className="rounded-md"
 							/>
 							<AvatarFallback className="rounded-md">EW</AvatarFallback>
-						</Avatar>						
+						</Avatar>
 					</div>
 				</div>
 			</div>

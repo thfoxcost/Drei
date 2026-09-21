@@ -24,6 +24,7 @@ import { Route as AppIssuesRouteImport } from './routes/_app/issues'
 import { Route as UsernameRepoRouteRouteImport } from './routes/$username/$repo/route'
 import { Route as UsernameRepoIndexRouteImport } from './routes/$username/$repo/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AppOrgsNewRouteImport } from './routes/_app/orgs/new'
 import { Route as UsernameRepoForksRouteImport } from './routes/$username/$repo/forks'
 import { Route as UsernameRepoCommitsRouteImport } from './routes/$username/$repo/commits'
 import { Route as UsernameRepoCodeRouteImport } from './routes/$username/$repo/code'
@@ -116,6 +117,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppOrgsNewRoute = AppOrgsNewRouteImport.update({
+  id: '/orgs/new',
+  path: '/orgs/new',
+  getParentRoute: () => AppRoute,
 } as any)
 const UsernameRepoForksRoute = UsernameRepoForksRouteImport.update({
   id: '/forks',
@@ -239,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
+  '/orgs/new': typeof AppOrgsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo/': typeof UsernameRepoIndexRoute
   '/$username/$repo/branch/$branchName': typeof UsernameRepoBranchBranchNameRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
+  '/orgs/new': typeof AppOrgsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo': typeof UsernameRepoIndexRoute
   '/$username/$repo/branch/$branchName': typeof UsernameRepoBranchBranchNameRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
+  '/_app/orgs/new': typeof AppOrgsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo/': typeof UsernameRepoIndexRoute
   '/$username/$repo/branch/$branchName': typeof UsernameRepoBranchBranchNameRoute
@@ -342,6 +351,7 @@ export interface FileRouteTypes {
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
     | '/$username/$repo/forks'
+    | '/orgs/new'
     | '/api/auth/$'
     | '/$username/$repo/'
     | '/$username/$repo/branch/$branchName'
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
     | '/$username/$repo/forks'
+    | '/orgs/new'
     | '/api/auth/$'
     | '/$username/$repo'
     | '/$username/$repo/branch/$branchName'
@@ -408,6 +419,7 @@ export interface FileRouteTypes {
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
     | '/$username/$repo/forks'
+    | '/_app/orgs/new'
     | '/api/auth/$'
     | '/$username/$repo/'
     | '/$username/$repo/branch/$branchName'
@@ -541,6 +553,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/orgs/new': {
+      id: '/_app/orgs/new'
+      path: '/orgs/new'
+      fullPath: '/orgs/new'
+      preLoaderRoute: typeof AppOrgsNewRouteImport
+      parentRoute: typeof AppRoute
     }
     '/$username/$repo/forks': {
       id: '/$username/$repo/forks'
@@ -684,6 +703,7 @@ interface AppRouteChildren {
   AppPullsRoute: typeof AppPullsRoute
   AppReposRoute: typeof AppReposRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppOrgsNewRoute: typeof AppOrgsNewRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -692,6 +712,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPullsRoute: AppPullsRoute,
   AppReposRoute: AppReposRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppOrgsNewRoute: AppOrgsNewRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
