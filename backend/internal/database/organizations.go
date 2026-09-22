@@ -18,6 +18,7 @@ type Organization struct {
 	Purpose     *string `json:"purpose"`
 	Avatar      *string `json:"avatar"`
 	Verified    bool    `json:"verified"`
+	Status      string  `json:"status"`
 	CreatedBy   string  `json:"createdBy"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   string  `json:"updatedAt"`
@@ -38,6 +39,7 @@ type OrganizationListItem struct {
 	Slug        string  `json:"slug"`
 	Avatar      *string `json:"avatar"`
 	Verified    bool    `json:"verified"`
+	Status      string  `json:"status"`
 	Role        string  `json:"role"`
 	Pinned      bool    `json:"pinned"`
 	MemberCount int     `json:"memberCount"`
@@ -54,6 +56,7 @@ type OrganizationDetail struct {
 	Purpose     *string  `json:"purpose"`
 	Avatar      *string  `json:"avatar"`
 	Verified    bool     `json:"verified"`
+	Status      string   `json:"status"`
 	CreatedBy   UserRef  `json:"createdBy"`
 	MemberCount int      `json:"memberCount"`
 	Tags        []string `json:"tags"`
@@ -100,8 +103,8 @@ func CreateOrganization(org Organization) (int64, error) {
 	err := DB.QueryRow(
 		context.Background(),
 		`
-		INSERT INTO organizations (name, slug, description, visibility, email, purpose, verified, created_by)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO organizations (name, slug, description, visibility, email, purpose, verified, status, created_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 		`,
 		org.Name,
@@ -111,6 +114,7 @@ func CreateOrganization(org Organization) (int64, error) {
 		org.Email,
 		org.Purpose,
 		org.Verified,
+		org.Status,
 		org.CreatedBy,
 	).Scan(&id)
 
@@ -209,7 +213,7 @@ func GetOrganizationBySlug(slug string) (*OrganizationDetail, error) {
 		`
 		SELECT
 			o.id, o.name, o.slug, o.description, o.visibility,
-			o.email, o.purpose, o.avatar, o.verified,
+			o.email, o.purpose, o.avatar, o.verified, o.status,
 			u.id, COALESCE(u.name, ''), u.image,
 			(SELECT COUNT(*) FROM organization_members WHERE organization_id = o.id),
 			o.created_at, o.updated_at
@@ -220,7 +224,7 @@ func GetOrganizationBySlug(slug string) (*OrganizationDetail, error) {
 		slug,
 	).Scan(
 		&org.ID, &org.Name, &org.Slug, &org.Description, &org.Visibility,
-		&org.Email, &org.Purpose, &org.Avatar, &org.Verified,
+		&org.Email, &org.Purpose, &org.Avatar, &org.Verified, &org.Status,
 		&org.CreatedBy.ID, &org.CreatedBy.Name, &org.CreatedBy.Image,
 		&org.MemberCount,
 		&createdAt, &updatedAt,
@@ -249,7 +253,7 @@ func GetUserOrganizations(userID string) ([]OrganizationListItem, error) {
 		context.Background(),
 		`
 		SELECT
-			o.id, o.name, o.slug, o.avatar, o.verified,
+			o.id, o.name, o.slug, o.avatar, o.verified, o.status,
 			om.role, om.pinned,
 			(SELECT COUNT(*) FROM organization_members WHERE organization_id = o.id),
 			o.created_at
@@ -272,7 +276,7 @@ func GetUserOrganizations(userID string) ([]OrganizationListItem, error) {
 		var createdAt time.Time
 
 		if err := rows.Scan(
-			&org.ID, &org.Name, &org.Slug, &org.Avatar, &org.Verified,
+			&org.ID, &org.Name, &org.Slug, &org.Avatar, &org.Verified, &org.Status,
 			&org.Role, &org.Pinned,
 			&org.MemberCount,
 			&createdAt,
@@ -339,8 +343,8 @@ func CreateOrganizationInTx(ctx context.Context, tx pgx.Tx, org Organization) (i
 	err := tx.QueryRow(
 		ctx,
 		`
-		INSERT INTO organizations (name, slug, description, visibility, email, purpose, verified, created_by)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO organizations (name, slug, description, visibility, email, purpose, verified, status, created_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 		`,
 		org.Name,
@@ -350,6 +354,7 @@ func CreateOrganizationInTx(ctx context.Context, tx pgx.Tx, org Organization) (i
 		org.Email,
 		org.Purpose,
 		org.Verified,
+		org.Status,
 		org.CreatedBy,
 	).Scan(&id)
 
