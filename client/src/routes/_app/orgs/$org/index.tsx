@@ -1,6 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { GraduationCap, Mail, TriangleAlert, Users } from "lucide-react";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { GraduationCap, Mail, Users } from "lucide-react";
 import { RepoList } from "#/components/organization/repo-card";
+import { Frame, FramePanel } from "#/components/reui/frame";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "#/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -44,7 +51,9 @@ function RouteComponent() {
   const avatarUrl = data.avatar
     ? `${import.meta.env.VITE_BACKEND_URL}/uploads/${data.avatar}`
     : null;
+
   const isUserAdmin = session?.user.id === data.createdBy.id;
+
   const createdAt = new Date(data.createdAt).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
@@ -69,14 +78,18 @@ function RouteComponent() {
             )}
 
             <span
-              className={`absolute right-[-12px] bottom-[-7px] size-7 rounded-full border-4 border-background ${data.status === "active"
-                ? "bg-green-600 dark:bg-green-500"
-                : "bg-gray-400 dark:bg-gray-500"
-                }`}
+              className={`absolute right-[-12px] bottom-[-7px] size-7 rounded-full border-4 border-background ${
+                data.status === "active"
+                  ? "bg-green-600 dark:bg-green-500"
+                  : "bg-gray-400 dark:bg-gray-500"
+              }`}
             >
-              <span className="sr-only">Away</span>
+              <span className="sr-only">
+                {data.status === "active" ? "Active" : "Suspended"}
+              </span>
             </span>
           </div>
+
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <h1 className="text-5xl font-bold">{data.name}</h1>
@@ -89,7 +102,9 @@ function RouteComponent() {
                       className="text-muted-foreground transition-colors hover:text-foreground"
                     >
                       <GraduationCap className="size-6" />
-                      <span className="sr-only">Verified organization</span>
+                      <span className="sr-only">
+                        Verified organization
+                      </span>
                     </button>
                   </TooltipTrigger>
 
@@ -99,6 +114,7 @@ function RouteComponent() {
                 </Tooltip>
               )}
             </div>
+
             <div className="flex flex-wrap gap-2">
               {data.tags.map((tag) => (
                 <Badge key={tag} variant="secondary">
@@ -106,9 +122,11 @@ function RouteComponent() {
                 </Badge>
               ))}
             </div>
-            <span className="text-sm text-muted-foreground max-w-6xl">
+
+            <span className="max-w-6xl text-sm text-muted-foreground">
               {data.description}
             </span>
+
             <div className="mt-auto flex items-center gap-3">
               <Button
                 variant="outline"
@@ -122,6 +140,7 @@ function RouteComponent() {
                       alt={`@${data.createdBy.name}`}
                     />
                   )}
+
                   <AvatarFallback>
                     {data.createdBy.name?.[0]?.toUpperCase() ?? "?"}
                   </AvatarFallback>
@@ -129,9 +148,12 @@ function RouteComponent() {
 
                 <span className="text-xs">@{data.createdBy.name}</span>
               </Button>
+
               <div className="h-5 w-px bg-border" />
+
               <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
                 <Users className="size-4" />
+
                 <span>
                   <span className="text-foreground">{data.memberCount}</span>{" "}
                   members
@@ -152,7 +174,8 @@ function RouteComponent() {
                 <span className="mx-1 text-muted-foreground/60">•</span>
 
                 <span>
-                  Created: <span className="text-foreground">{createdAt}</span>
+                  Created:{" "}
+                  <span className="text-foreground">{createdAt}</span>
                 </span>
               </div>
             </div>
@@ -160,10 +183,7 @@ function RouteComponent() {
         </div>
 
         {isUserAdmin ? (
-          <Button>
-            <TriangleAlert />
-            New Repository
-          </Button>
+          <Button>New Repository</Button>
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -171,15 +191,246 @@ function RouteComponent() {
                 <Button disabled>New Repository</Button>
               </span>
             </TooltipTrigger>
+
             <TooltipContent align="end">
               <p>Only organization admins can create repositories</p>
             </TooltipContent>
           </Tooltip>
         )}
       </div>
+
       <Separator className="my-5" />
-      <div className="flex gap-10 w-full max-w-6xl">
+
+      <div className="flex gap-5">
         <RepoList />
+<div className="h-auto border border-dashed" />
+        <div className="min-w-sm">
+          <div className="flex flex-col gap-2">
+            {/* Members */}
+            <div className="flex flex-col gap-2">
+              <Link
+                to="/orgs/$org/people"
+                params={{ org }}
+                className="font-medium hover:underline"
+              >
+                Members
+              </Link>
+
+              <Frame>
+                <FramePanel className="flex max-w-[375px] flex-wrap items-center gap-2 p-2!">
+                  <Avatar className="size-8 shrink-0 ring-2 ring-green-500 ring-offset-2 ring-offset-background">
+                    <AvatarImage
+                      src="https://static0.polygonimages.com/wordpress/wp-content/uploads/chorus/uploads/chorus_asset/file/14202130/far-cry-3-review-hero-b.0.1488319844.jpg?w=1600&h=1600&fit=crop"
+                      alt="avatar"
+                    />
+                    <AvatarFallback>FC</AvatarFallback>
+                  </Avatar>
+
+                  <Avatar className="size-8 shrink-0">
+                    <AvatarImage
+                      src="https://i.pravatar.cc/150?img=12"
+                      alt="avatar"
+                    />
+                    <AvatarFallback>JD</AvatarFallback>
+                  </Avatar>
+
+                  <Avatar className="size-8 shrink-0">
+                    <AvatarImage
+                      src="https://i.pravatar.cc/150?img=32"
+                      alt="avatar"
+                    />
+                    <AvatarFallback>AM</AvatarFallback>
+                  </Avatar>
+
+                  <Avatar className="size-8 shrink-0">
+                    <AvatarImage
+                      src="https://i.pravatar.cc/150?img=11"
+                      alt="avatar"
+                    />
+                    <AvatarFallback>MK</AvatarFallback>
+                  </Avatar>
+                </FramePanel>
+              </Frame>
+            </div>
+
+            <Separator className="my-3" />
+
+            {/* Teams */}
+            <div className="flex flex-col gap-2">
+              <span className="font-medium">Teams</span>
+
+              <Accordion
+                multiple={false}
+                className="overflow-hidden rounded-lg border"
+              >
+                <AccordionItem
+                  value="frontend"
+                  className="data-open:bg-muted/50 **:data-[slot=accordion-content]:p-0!"
+                >
+                  <AccordionTrigger className="px-3 py-3 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <span>Frontend</span>
+
+                      <span className="text-muted-foreground">
+                        3 members
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+
+                  <AccordionContent className="px-3! pt-0 pb-3">
+                    <div className="flex flex-col gap-3">
+                      <span className="text-sm text-muted-foreground">
+                        Web application and user interface.
+                      </span>
+
+                      <div className="flex -space-x-2">
+                        <Avatar className="size-8 border-2 border-background">
+                          <AvatarImage
+                            src="https://github.com/shadcn.png"
+                            alt="Frontend member"
+                          />
+                          <AvatarFallback>FC</AvatarFallback>
+                        </Avatar>
+
+                        <Avatar className="size-8 border-2 border-background">
+                          <AvatarImage
+                            src="https://i.pravatar.cc/150?img=12"
+                            alt="Frontend member"
+                          />
+                          <AvatarFallback>AL</AvatarFallback>
+                        </Avatar>
+
+                        <Avatar className="size-8 border-2 border-background">
+                          <AvatarImage
+                            src="https://i.pravatar.cc/150?img=32"
+                            alt="Frontend member"
+                          />
+                          <AvatarFallback>SR</AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem
+                  value="backend"
+                  className="data-open:bg-muted/50 **:data-[slot=accordion-content]:p-0!"
+                >
+                  <AccordionTrigger className="px-3 py-3 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <span>Backend</span>
+
+                      <span className="text-muted-foreground">
+                        2 members
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+
+                  <AccordionContent className="px-3! pt-0 pb-3">
+                    <div className="flex flex-col gap-3">
+                      <span className="text-sm text-muted-foreground">
+                        APIs, databases, and server infrastructure.
+                      </span>
+
+                      <div className="flex -space-x-2">
+                        <Avatar className="size-8 border-2 border-background">
+                          <AvatarImage
+                            src="https://github.com/shadcn.png"
+                            alt="Backend member"
+                          />
+                          <AvatarFallback>FC</AvatarFallback>
+                        </Avatar>
+
+                        <Avatar className="size-8 border-2 border-background">
+                          <AvatarImage
+                            src="https://i.pravatar.cc/150?img=11"
+                            alt="Backend member"
+                          />
+                          <AvatarFallback>MK</AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem
+                  value="design"
+                  className="data-open:bg-muted/50 **:data-[slot=accordion-content]:p-0!"
+                >
+                  <AccordionTrigger className="px-3 py-3 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <span>Design</span>
+
+                      <span className="text-muted-foreground">
+                        2 members
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+
+                  <AccordionContent className="px-3! pt-0 pb-3">
+                    <div className="flex flex-col gap-3">
+                      <span className="text-sm text-muted-foreground">
+                        Product design and user experience.
+                      </span>
+
+                      <div className="flex -space-x-2">
+                        <Avatar className="size-8 border-2 border-background">
+                          <AvatarImage
+                            src="https://i.pravatar.cc/150?img=32"
+                            alt="Design member"
+                          />
+                          <AvatarFallback>SR</AvatarFallback>
+                        </Avatar>
+
+                        <Avatar className="size-8 border-2 border-background">
+                          <AvatarImage
+                            src="https://i.pravatar.cc/150?img=47"
+                            alt="Design member"
+                          />
+                          <AvatarFallback>EM</AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+
+            <Separator className="my-3" />
+
+            {/* Top languages */}
+            <div className="flex flex-col gap-2">
+              <span className="font-medium">Top languages</span>
+
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <div className="size-3 rounded-full bg-green-500" />
+                  <span>C#</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <div className="size-3 rounded-full bg-blue-500" />
+                  <span>TypeScript</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <div className="size-3 rounded-full bg-yellow-500" />
+                  <span>JavaScript</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <div className="size-3 rounded-full bg-orange-500" />
+                  <span>Python</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <div className="size-3 rounded-full bg-cyan-500" />
+                  <span>Go</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

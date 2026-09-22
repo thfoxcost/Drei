@@ -444,7 +444,7 @@ function RepoList() {
     language == null ? "Languages" : language === "all" ? "All" : language;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 w-full">
       <div className="flex flex-wrap items-center gap-2">
         <InputGroup className="min-w-52 flex-1">
           <InputGroupInput
