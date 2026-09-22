@@ -3,6 +3,9 @@ package database
 import (
 	"context"
 	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type Organization struct {
@@ -199,6 +202,7 @@ func GetOrganizationTags(orgID int64) ([]string, error) {
 // GetOrganizationBySlug returns the organization detail for the given slug.
 func GetOrganizationBySlug(slug string) (*OrganizationDetail, error) {
 	var org OrganizationDetail
+	var createdAt, updatedAt time.Time
 
 	err := DB.QueryRow(
 		context.Background(),
@@ -219,12 +223,15 @@ func GetOrganizationBySlug(slug string) (*OrganizationDetail, error) {
 		&org.Email, &org.Purpose, &org.Avatar, &org.Verified,
 		&org.CreatedBy.ID, &org.CreatedBy.Name, &org.CreatedBy.Image,
 		&org.MemberCount,
-		&org.CreatedAt, &org.UpdatedAt,
+		&createdAt, &updatedAt,
 	)
 
 	if err != nil {
 		return nil, err
 	}
+
+	org.CreatedAt = createdAt.UTC().Format(time.RFC3339)
+	org.UpdatedAt = updatedAt.UTC().Format(time.RFC3339)
 
 	tags, err := GetOrganizationTags(org.ID)
 	if err != nil {
@@ -262,16 +269,18 @@ func GetUserOrganizations(userID string) ([]OrganizationListItem, error) {
 
 	for rows.Next() {
 		var org OrganizationListItem
+		var createdAt time.Time
 
 		if err := rows.Scan(
 			&org.ID, &org.Name, &org.Slug, &org.Avatar, &org.Verified,
 			&org.Role, &org.Pinned,
 			&org.MemberCount,
-			&org.CreatedAt,
+			&createdAt,
 		); err != nil {
 			return nil, err
 		}
 
+		org.CreatedAt = createdAt.UTC().Format(time.RFC3339)
 		orgs = append(orgs, org)
 	}
 
@@ -321,4 +330,81 @@ func UpdateOrganizationAvatar(slug, avatar string) error {
 	)
 
 	return err
+}
+
+// CreateOrganizationInTx inserts a new organization inside the given transaction.
+func CreateOrganizationInTx(ctx context.Context, tx pgx.Tx, org Organization) (int64, error) {
+	var id int64
+
+	err := tx.QueryRow(
+		ctx,
+		`
+		INSERT INTO organizations (name, slug, description, visibility, email, purpose, verified, created_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id
+		`,
+		org.Name,
+		org.Slug,
+		org.Description,
+		org.Visibility,
+		org.Email,
+		org.Purpose,
+		org.Verified,
+		org.CreatedBy,
+	).Scan(&id)
+
+	return id, err
+}
+
+// AddOrganizationMemberInTx adds a user to an organization inside the given transaction.
+func AddOrganizationMemberInTx(ctx context.Context, tx pgx.Tx, orgID int64, userID, role string, pinned bool) error {
+	_, err := tx.Exec(
+		ctx,
+		`
+		INSERT INTO organization_members (organization_id, user_id, role, pinned)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (organization_id, user_id) DO NOTHING
+		`,
+		orgID,
+		userID,
+		role,
+		pinned,
+	)
+
+	return err
+}
+
+// SetOrganizationTagsInTx replaces all tags for an organization inside the given transaction.
+func SetOrganizationTagsInTx(ctx context.Context, tx pgx.Tx, orgID int64, tags []string) error {
+	if len(tags) == 0 {
+		return nil
+	}
+
+	_, err := tx.Exec(
+		ctx,
+		`DELETE FROM organization_tags WHERE organization_id = $1`,
+		orgID,
+	)
+	if err != nil {
+		return err
+	}
+
+	for _, tag := range tags {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed == "" {
+			continue
+		}
+
+		_, err := tx.Exec(
+			ctx,
+			`INSERT INTO organization_tags (organization_id, tag) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+			orgID,
+			trimmed,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

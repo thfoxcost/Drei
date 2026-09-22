@@ -4,13 +4,18 @@ import (
 	"backend/internal/config"
 	"backend/internal/database"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type CreateOrganizationRequest struct {
@@ -188,7 +193,17 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 		purpose = &req.Purpose
 	}
 
-	orgID, err := database.CreateOrganization(database.Organization{
+	ctx := r.Context()
+
+	tx, err := database.DB.Begin(ctx)
+	if err != nil {
+		log.Printf("ERROR: failed to begin transaction: %v", err)
+		writeError(w, http.StatusInternalServerError, "failed to create organization")
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	orgID, err := database.CreateOrganizationInTx(ctx, tx, database.Organization{
 		Name:        req.Name,
 		Slug:        slug,
 		Description: description,
@@ -199,34 +214,64 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 		CreatedBy:   user.ID,
 	})
 	if err != nil {
+		log.Printf("ERROR: failed to create organization: %v", err)
 		writeError(w, http.StatusInternalServerError, "failed to create organization")
 		return
 	}
 
-	if err := database.CreateOrganizationMember(orgID, user.ID, "owner", req.Pinned); err != nil {
+	if err := database.AddOrganizationMemberInTx(ctx, tx, orgID, user.ID, "owner", req.Pinned); err != nil {
+		log.Printf("ERROR: failed to add owner as member: %v", err)
 		writeError(w, http.StatusInternalServerError, "failed to add owner as member")
 		return
 	}
 
-	if len(req.Tags) > 0 {
-		if err := database.SetOrganizationTags(orgID, req.Tags); err != nil {
+	var cleanTags []string
+	for _, tag := range req.Tags {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed != "" {
+			cleanTags = append(cleanTags, trimmed)
+		}
+	}
+	if len(cleanTags) > 0 {
+		if err := database.SetOrganizationTagsInTx(ctx, tx, orgID, cleanTags); err != nil {
+			log.Printf("ERROR: failed to set organization tags: %v", err)
 			writeError(w, http.StatusInternalServerError, "failed to set organization tags")
 			return
 		}
 	}
 
-	org, err := database.GetOrganizationBySlug(slug)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to fetch created organization")
+	if err := tx.Commit(ctx); err != nil {
+		log.Printf("ERROR: failed to commit transaction: %v", err)
+		writeError(w, http.StatusInternalServerError, "failed to create organization")
 		return
 	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
 	json.NewEncoder(w).Encode(map[string]any{
-		"success":      true,
-		"organization": org,
+		"success": true,
+		"organization": &database.OrganizationDetail{
+			ID:          orgID,
+			Name:        req.Name,
+			Slug:        slug,
+			Description: description,
+			Visibility:  req.Visibility,
+			Email:       email,
+			Purpose:     purpose,
+			Verified:    verified,
+			CreatedBy: database.UserRef{
+				ID:    user.ID,
+				Name:  user.Name,
+				Image: user.Image,
+			},
+			MemberCount: 1,
+			Tags:        cleanTags,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		},
 	})
 }
 
@@ -259,7 +304,12 @@ func GetOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 
 	org, err := database.GetOrganizationBySlug(slug)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "organization not found")
+			return
+		}
+		log.Printf("ERROR: failed to fetch organization %q: %v", slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to fetch organization")
 		return
 	}
 
@@ -318,6 +368,7 @@ func ListUserOrganizationsHandler(w http.ResponseWriter, r *http.Request) {
 
 	orgs, err := database.GetUserOrganizations(user.ID)
 	if err != nil {
+		log.Printf("ERROR: failed to fetch organizations for user %s: %v", user.ID, err)
 		writeError(w, http.StatusInternalServerError, "failed to fetch organizations")
 		return
 	}
@@ -414,12 +465,26 @@ func OrganizationAvatarHandler(w http.ResponseWriter, r *http.Request) {
 
 	org, err := database.GetOrganizationBySlug(slug)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "organization not found")
+			return
+		}
+		log.Printf("ERROR: failed to fetch organization %q for avatar upload: %v", slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to fetch organization")
 		return
 	}
 
 	role, err := database.GetOrganizationMemberRole(org.ID, user.ID)
-	if err != nil || (role != "owner" && role != "admin") {
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			log.Printf("ERROR: failed to fetch member role for org %q: %v", slug, err)
+			writeError(w, http.StatusInternalServerError, "failed to verify organization role")
+			return
+		}
+		writeError(w, http.StatusForbidden, "only owners and admins can upload an avatar")
+		return
+	}
+	if role != "owner" && role != "admin" {
 		writeError(w, http.StatusForbidden, "only owners and admins can upload an avatar")
 		return
 	}
@@ -457,20 +522,23 @@ func OrganizationAvatarHandler(w http.ResponseWriter, r *http.Request) {
 
 	avatarsDir := filepath.Join(config.App.ReposPath, "orgs")
 	if err := os.MkdirAll(avatarsDir, 0755); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		log.Printf("ERROR: failed to create org avatars directory: %v", err)
+		writeError(w, http.StatusInternalServerError, "failed to store avatar")
 		return
 	}
 
 	target := filepath.Join(avatarsDir, slug+ext)
 	if err := os.WriteFile(target, data, 0644); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		log.Printf("ERROR: failed to write org avatar %q: %v", target, err)
+		writeError(w, http.StatusInternalServerError, "failed to store avatar")
 		return
 	}
 
 	avatar := fmt.Sprintf("orgs/%s%s", slug, ext)
 
 	if err := database.UpdateOrganizationAvatar(slug, avatar); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		log.Printf("ERROR: failed to persist org avatar for %q: %v", slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to save avatar")
 		return
 	}
 
