@@ -111,7 +111,7 @@ function RouteComponent() {
           const formData = new FormData();
           formData.append("avatar", avatarFile);
 
-          await fetch(
+          const avatarRes = await fetch(
             `http://localhost:3200/api/orgs/${org.slug}/avatar`,
             {
               method: "POST",
@@ -119,10 +119,16 @@ function RouteComponent() {
               body: formData,
             },
           );
+
+          if (!avatarRes.ok) {
+            const body = await avatarRes.json().catch(() => null);
+            throw new Error(
+              body?.error ?? "Failed to upload organization avatar",
+            );
+          }
         }
 
         toast.success("Organization created");
-        navigate({ to: "/$username", params: { username: session!.user.name } });
       } catch (err) {
         if (err instanceof Error) {
           toast.error(err.message);
@@ -223,9 +229,9 @@ function RouteComponent() {
       >
         <FieldGroup className="gap-4">
           <div className="flex flex-wrap items-end gap-3">
-            <Field className="w-1/4">
+            <Field className="w-1/5">
               <FieldLabel>Owner</FieldLabel>
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+              <div className="flex items-center gap-2 rounded-md border p-1 text-sm">
                 <Avatar size="sm">
                   <AvatarImage
                     src={session?.user.image ?? undefined}
