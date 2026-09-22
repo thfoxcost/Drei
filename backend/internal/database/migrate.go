@@ -598,12 +598,22 @@ func Migrate() error {
 			purpose TEXT,
 			avatar TEXT,
 			verified BOOLEAN NOT NULL DEFAULT FALSE,
+			status TEXT NOT NULL DEFAULT 'active',
 			created_by TEXT NOT NULL,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
 			UNIQUE(slug)
 		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Organization lifecycle status: 'active' or 'suspended'.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE organizations
+		ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
 	`)
 	if err != nil {
 		return err

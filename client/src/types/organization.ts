@@ -14,6 +14,7 @@ export interface OrganizationDetail {
 	purpose: string | null;
 	avatar: string | null;
 	verified: boolean;
+	status: "active" | "suspended";
 	createdBy: OrganizationUser;
 	memberCount: number;
 	tags: string[];
@@ -27,6 +28,7 @@ export interface OrganizationListItem {
 	slug: string;
 	avatar: string | null;
 	verified: boolean;
+	status: "active" | "suspended";
 	role: "owner" | "admin" | "member";
 	pinned: boolean;
 	memberCount: number;

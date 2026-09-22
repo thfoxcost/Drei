@@ -13,6 +13,7 @@ import {
 	UsersRound,
 } from "lucide-react";
 import OrgMainHeader from "#/components/organization/header";
+import { useOrganization } from "#/hooks/useOrganizations";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_app/orgs/$org")({
@@ -69,6 +70,7 @@ const tabRouteTo = {
 function RouteComponent() {
 	const { org } = Route.useParams();
 	const { pathname } = useLocation();
+	const { data: orgData } = useOrganization(org);
 
 	const activeValue =
 		tabs.find((tab) => {
@@ -78,7 +80,7 @@ function RouteComponent() {
 
 	return (
 		<div className="w-full">
-			<OrgMainHeader OrgName={org}/>
+			<OrgMainHeader OrgName={orgData?.name ?? org} />
 
 			<Tabs value={activeValue} className="gap-4">
 				<div className="w-full border-b bg-muted/10 pb-1">

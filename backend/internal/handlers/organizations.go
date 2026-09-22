@@ -211,6 +211,7 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 		Email:       email,
 		Purpose:     purpose,
 		Verified:    verified,
+		Status:      "active",
 		CreatedBy:   user.ID,
 	})
 	if err != nil {
@@ -262,6 +263,7 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 			Email:       email,
 			Purpose:     purpose,
 			Verified:    verified,
+			Status:      "active",
 			CreatedBy: database.UserRef{
 				ID:    user.ID,
 				Name:  user.Name,
