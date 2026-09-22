@@ -1,19 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  Avatar,
-  AvatarBadge,
-  AvatarFallback,
-  AvatarImage,
-} from "#/components/ui/avatar";
-import { useInitials } from "#/hooks/useInitials";
-import { Button } from "#/components/ui/button";
 import { GraduationCap, Mail, TriangleAlert, Users } from "lucide-react";
+import { RepoList } from "#/components/organization/repo-card";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "#/components/ui/tooltip";
+import { Button } from "#/components/ui/button";
 import { Separator } from "#/components/ui/separator";
 import { Spinner } from "#/components/ui/spinner";
-import { authClient } from "#/lib/auth-client";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "#/components/ui/tooltip";
+import { useInitials } from "#/hooks/useInitials";
 import { useOrganization } from "#/hooks/useOrganizations";
+import { authClient } from "#/lib/auth-client";
 
 export const Route = createFileRoute("/_app/orgs/$org/")({
   component: RouteComponent,
@@ -45,7 +45,6 @@ function RouteComponent() {
     ? `${import.meta.env.VITE_BACKEND_URL}/uploads/${data.avatar}`
     : null;
   const isUserAdmin = session?.user.id === data.createdBy.id;
-  const isFollowing = true;
   const createdAt = new Date(data.createdAt).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
@@ -53,7 +52,7 @@ function RouteComponent() {
   });
 
   return (
-    <div className="mx-5 my-5">
+    <div className="mx-15 my-5">
       <div className="flex justify-between">
         <div className="flex gap-5">
           <div className="relative size-40">
@@ -70,9 +69,9 @@ function RouteComponent() {
             )}
 
             <span
-              className={`absolute right-[-8px] bottom-[-4px] size-5 rounded-full border-2 border-background ${data.status === "active"
-                  ? "bg-green-600 dark:bg-green-500"
-                  : "bg-gray-400 dark:bg-gray-500"
+              className={`absolute right-[-12px] bottom-[-7px] size-7 rounded-full border-4 border-background ${data.status === "active"
+                ? "bg-green-600 dark:bg-green-500"
+                : "bg-gray-400 dark:bg-gray-500"
                 }`}
             >
               <span className="sr-only">Away</span>
@@ -107,7 +106,9 @@ function RouteComponent() {
                 </Badge>
               ))}
             </div>
-            <span className="text-sm text-muted-foreground max-w-4xl">{data.description}</span>
+            <span className="text-sm text-muted-foreground max-w-6xl">
+              {data.description}
+            </span>
             <div className="mt-auto flex items-center gap-3">
               <Button
                 variant="outline"
@@ -116,7 +117,10 @@ function RouteComponent() {
               >
                 <Avatar className="size-6 border-2 border-background">
                   {data.createdBy.image && (
-                    <AvatarImage src={data.createdBy.image} alt={`@${data.createdBy.name}`} />
+                    <AvatarImage
+                      src={data.createdBy.image}
+                      alt={`@${data.createdBy.name}`}
+                    />
                   )}
                   <AvatarFallback>
                     {data.createdBy.name?.[0]?.toUpperCase() ?? "?"}
@@ -129,7 +133,8 @@ function RouteComponent() {
               <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
                 <Users className="size-4" />
                 <span>
-                  <span className="text-foreground">{data.memberCount}</span> members
+                  <span className="text-foreground">{data.memberCount}</span>{" "}
+                  members
                 </span>
 
                 {data.email && (
@@ -154,22 +159,27 @@ function RouteComponent() {
           </div>
         </div>
 
-        {isFollowing ?
-          <Button variant="destructive" disabled={isUserAdmin}>
+        {isUserAdmin ? (
+          <Button>
             <TriangleAlert />
-            Following
+            New Repository
           </Button>
-          :
-          <Button disabled={isUserAdmin}>
-            Follow
-          </Button>
-        }
-
-
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button disabled>New Repository</Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent align="end">
+              <p>Only organization admins can create repositories</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
       <Separator className="my-5" />
-      <div className="">
-
+      <div className="flex gap-10 w-full max-w-6xl">
+        <RepoList />
       </div>
     </div>
   );
