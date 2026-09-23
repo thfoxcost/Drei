@@ -45,6 +45,17 @@ func LogoHandler(w http.ResponseWriter, r *http.Request) {
 	owner := r.PathValue("owner")
 	repo := r.PathValue("repo")
 
+	info, err := database.GetRepository(owner, repo)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "repository not found")
+		return
+	}
+
+	// Organization repositories require an owner/admin role to change the logo.
+	if !authorizeOrgRepo(w, r, info, "admin") {
+		return
+	}
+
 	// Cap the request body at the max logo size plus room for the multipart
 	// overhead, then validate the file contents below.
 	r.Body = http.MaxBytesReader(w, r.Body, maxLogoSize+(1<<20))

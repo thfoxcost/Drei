@@ -8,10 +8,30 @@ export function useRepoData(owner: string, repo: string, branch?: string) {
 			const query = branch ? `?branch=${encodeURIComponent(branch)}` : "";
 			const res = await fetch(
 				`http://localhost:3200/api/repos/${owner}/${repo}${query}`,
+				{ credentials: "include" },
 			);
-			if (!res.ok) throw new Error("Failed to fetch repository");
+			if (!res.ok) {
+				// The backend reports failures as plain text (http.Error) or
+				// JSON ({error}); surface the real message instead of a
+				// generic one so error states are diagnosable.
+				const text = await res.text().catch(() => "");
+				let message = "";
+				try {
+					const body = JSON.parse(text);
+					message = body?.error ?? body?.message ?? "";
+				} catch {
+					message = text;
+				}
+				throw new Error(message || "Failed to fetch repository");
+			}
 			return res.json();
 		},
 		staleTime: 60_000,
+		// Self-healing for freshly created repositories: keep polling every
+		// 5 seconds while the repo has no commits (e.g. the user just pushed
+		// the first commit from the NoRepo instructions). Polling stops
+		// automatically once hasCommits becomes true.
+		refetchInterval: (query) =>
+			query.state.data?.hasCommits ? false : 5_000,
 	});
 }

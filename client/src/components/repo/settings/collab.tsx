@@ -62,6 +62,7 @@ function Collab() {
 				`http://localhost:3200/api/repos/${username}/${repo}/collaborators`,
 				{
 					method: "POST",
+					credentials: "include",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						id: user.id,
@@ -96,6 +97,7 @@ function Collab() {
 				`http://localhost:3200/api/repos/${username}/${repo}/collaborators`,
 				{
 					method: "DELETE",
+					credentials: "include",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ username: contributor.username }),
 				},

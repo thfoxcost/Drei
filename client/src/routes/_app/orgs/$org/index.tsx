@@ -1,13 +1,10 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { GraduationCap, Mail, Users } from "lucide-react";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Mail, Users } from "lucide-react";
+import { toast } from "sonner";
+import { getPurposeMeta } from "#/components/organization/purpose";
 import { RepoList } from "#/components/organization/repo-card";
 import { Frame, FramePanel } from "#/components/reui/frame";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "#/components/ui/accordion";
+import { getLanguageColor } from "#/lib/language-color";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -19,17 +16,37 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip";
 import { useInitials } from "#/hooks/useInitials";
-import { useOrganization } from "#/hooks/useOrganizations";
+import {
+  useJoinOrganization,
+  useLeaveOrganization,
+  useOrganization,
+  useOrganizationLanguages,
+  useOrganizationMembers,
+  useOrganizationRepositories,
+} from "#/hooks/useOrganizations";
 import { authClient } from "#/lib/auth-client";
 
 export const Route = createFileRoute("/_app/orgs/$org/")({
   component: RouteComponent,
 });
 
+
 function RouteComponent() {
   const { org } = Route.useParams();
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useOrganization(org);
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: isSessionPending } =
+    authClient.useSession();
+  const { data: members = [], isLoading: isMembersLoading } =
+    useOrganizationMembers(org);
+  const {
+    data: repoData,
+    isLoading: isReposLoading,
+    isError: isReposError,
+  } = useOrganizationRepositories(org);
+  const { data: languages = [] } = useOrganizationLanguages(org);
+  const joinOrganization = useJoinOrganization(org);
+  const leaveOrganization = useLeaveOrganization(org);
   const orgInitials = useInitials(data?.name ?? org);
 
   if (isLoading) {
@@ -54,11 +71,19 @@ function RouteComponent() {
 
   const isUserAdmin = session?.user.id === data.createdBy.id;
 
+  const isMember = members.some((member) => member.id === session?.user.id);
+  const isMembershipLoading = isSessionPending || isMembersLoading;
+  const isMembershipMutating =
+    joinOrganization.isPending || leaveOrganization.isPending;
+
   const createdAt = new Date(data.createdAt).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
+
+  const purposeMeta = getPurposeMeta(data.purpose);
+  const PurposeIcon = purposeMeta?.icon;
 
   return (
     <div className="mx-15 my-5">
@@ -78,11 +103,10 @@ function RouteComponent() {
             )}
 
             <span
-              className={`absolute right-[-12px] bottom-[-7px] size-7 rounded-full border-4 border-background ${
-                data.status === "active"
-                  ? "bg-green-600 dark:bg-green-500"
-                  : "bg-gray-400 dark:bg-gray-500"
-              }`}
+              className={`absolute right-[-12px] bottom-[-7px] size-7 rounded-full border-4 border-background ${data.status === "active"
+                ? "bg-green-600 dark:bg-green-500"
+                : "bg-gray-400 dark:bg-gray-500"
+                }`}
             >
               <span className="sr-only">
                 {data.status === "active" ? "Active" : "Suspended"}
@@ -91,25 +115,22 @@ function RouteComponent() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-row items-center gap-2">
               <h1 className="text-5xl font-bold">{data.name}</h1>
 
-              {data.verified && (
+              {PurposeIcon && purposeMeta && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
                       className="text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      <GraduationCap className="size-6" />
-                      <span className="sr-only">
-                        Verified organization
-                      </span>
+                      <PurposeIcon className="mt-3 size-6" />
                     </button>
                   </TooltipTrigger>
 
                   <TooltipContent>
-                    <p>Verified organization</p>
+                    <p>{purposeMeta.label}</p>
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -182,28 +203,78 @@ function RouteComponent() {
           </div>
         </div>
 
-        {isUserAdmin ? (
-          <Button>New Repository</Button>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button disabled>New Repository</Button>
-              </span>
-            </TooltipTrigger>
+        <div className="flex items-start gap-2">
+          {!isUserAdmin && !isMembershipLoading && (
+            isMember ? (
+              <Button
+                variant="outline"
+                disabled={isMembershipMutating}
+                onClick={() => {
+                  leaveOrganization.mutate(undefined, {
+                    onSuccess: () => toast.success("Left organization"),
+                    onError: (err) =>
+                      toast.error(
+                        err instanceof Error
+                          ? err.message
+                          : "Failed to leave organization",
+                      ),
+                  });
+                }}
+              >
+                {leaveOrganization.isPending ? "Leaving..." : "Leave organization"}
+              </Button>
+            ) : (
+              <Button
+                disabled={isMembershipMutating}
+                onClick={() => {
+                  joinOrganization.mutate(undefined, {
+                    onSuccess: () => toast.success("Joined organization"),
+                    onError: (err) =>
+                      toast.error(
+                        err instanceof Error
+                          ? err.message
+                          : "Failed to join organization",
+                      ),
+                  });
+                }}
+              >
+                {joinOrganization.isPending ? "Joining..." : "Join organization"}
+              </Button>
+            )
+          )}
 
-            <TooltipContent align="end">
-              <p>Only organization admins can create repositories</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
+          {isUserAdmin ? (
+            <Button
+              onClick={() => navigate({ to: "/new", search: { org } })}
+            >
+              New Repository
+            </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button disabled>New Repository</Button>
+                </span>
+              </TooltipTrigger>
+
+              <TooltipContent align="end">
+                <p>Only organization admins can create repositories</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
       </div>
 
       <Separator className="my-5" />
 
       <div className="flex gap-5">
-        <RepoList />
-<div className="h-auto border border-dashed" />
+        <RepoList
+          owner={org}
+          repos={repoData?.repositories ?? []}
+          isLoading={isReposLoading}
+          isError={isReposError}
+        />
+        <div className="h-auto border border-dashed" />
         <div className="min-w-sm">
           <div className="flex flex-col gap-2">
             {/* Members */}
@@ -218,217 +289,44 @@ function RouteComponent() {
 
               <Frame>
                 <FramePanel className="flex max-w-[375px] flex-wrap items-center gap-2 p-2!">
-                  <Avatar className="size-8 shrink-0 ring-2 ring-green-500 ring-offset-2 ring-offset-background">
-                    <AvatarImage
-                      src="https://static0.polygonimages.com/wordpress/wp-content/uploads/chorus/uploads/chorus_asset/file/14202130/far-cry-3-review-hero-b.0.1488319844.jpg?w=1600&h=1600&fit=crop"
-                      alt="avatar"
-                    />
-                    <AvatarFallback>FC</AvatarFallback>
-                  </Avatar>
-
-                  <Avatar className="size-8 shrink-0">
-                    <AvatarImage
-                      src="https://i.pravatar.cc/150?img=12"
-                      alt="avatar"
-                    />
-                    <AvatarFallback>JD</AvatarFallback>
-                  </Avatar>
-
-                  <Avatar className="size-8 shrink-0">
-                    <AvatarImage
-                      src="https://i.pravatar.cc/150?img=32"
-                      alt="avatar"
-                    />
-                    <AvatarFallback>AM</AvatarFallback>
-                  </Avatar>
-
-                  <Avatar className="size-8 shrink-0">
-                    <AvatarImage
-                      src="https://i.pravatar.cc/150?img=11"
-                      alt="avatar"
-                    />
-                    <AvatarFallback>MK</AvatarFallback>
-                  </Avatar>
+                  {members.slice(0, 8).map((member) => (
+                    <Avatar key={member.id} className="size-8 shrink-0">
+                      {member.image && (
+                        <AvatarImage src={member.image} alt={member.name} />
+                      )}
+                      <AvatarFallback>
+                        {member.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
                 </FramePanel>
               </Frame>
             </div>
 
             <Separator className="my-3" />
 
-            {/* Teams */}
-            <div className="flex flex-col gap-2">
-              <span className="font-medium">Teams</span>
+            {languages.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <span className="font-medium">Top languages</span>
 
-              <Accordion
-                multiple={false}
-                className="overflow-hidden rounded-lg border"
-              >
-                <AccordionItem
-                  value="frontend"
-                  className="data-open:bg-muted/50 **:data-[slot=accordion-content]:p-0!"
-                >
-                  <AccordionTrigger className="px-3 py-3 text-sm hover:no-underline">
-                    <div className="flex items-center gap-2">
-                      <span>Frontend</span>
-
-                      <span className="text-muted-foreground">
-                        3 members
-                      </span>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
+                  {languages.map((language) => (
+                    <div
+                      key={language.name}
+                      className="flex items-center gap-1.5"
+                    >
+                      <div
+                        className="size-3 rounded-full"
+                        style={{
+                          backgroundColor: getLanguageColor(language.name),
+                        }}
+                      />
+                      <span>{language.name}</span>
                     </div>
-                  </AccordionTrigger>
-
-                  <AccordionContent className="px-3! pt-0 pb-3">
-                    <div className="flex flex-col gap-3">
-                      <span className="text-sm text-muted-foreground">
-                        Web application and user interface.
-                      </span>
-
-                      <div className="flex -space-x-2">
-                        <Avatar className="size-8 border-2 border-background">
-                          <AvatarImage
-                            src="https://github.com/shadcn.png"
-                            alt="Frontend member"
-                          />
-                          <AvatarFallback>FC</AvatarFallback>
-                        </Avatar>
-
-                        <Avatar className="size-8 border-2 border-background">
-                          <AvatarImage
-                            src="https://i.pravatar.cc/150?img=12"
-                            alt="Frontend member"
-                          />
-                          <AvatarFallback>AL</AvatarFallback>
-                        </Avatar>
-
-                        <Avatar className="size-8 border-2 border-background">
-                          <AvatarImage
-                            src="https://i.pravatar.cc/150?img=32"
-                            alt="Frontend member"
-                          />
-                          <AvatarFallback>SR</AvatarFallback>
-                        </Avatar>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem
-                  value="backend"
-                  className="data-open:bg-muted/50 **:data-[slot=accordion-content]:p-0!"
-                >
-                  <AccordionTrigger className="px-3 py-3 text-sm hover:no-underline">
-                    <div className="flex items-center gap-2">
-                      <span>Backend</span>
-
-                      <span className="text-muted-foreground">
-                        2 members
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-
-                  <AccordionContent className="px-3! pt-0 pb-3">
-                    <div className="flex flex-col gap-3">
-                      <span className="text-sm text-muted-foreground">
-                        APIs, databases, and server infrastructure.
-                      </span>
-
-                      <div className="flex -space-x-2">
-                        <Avatar className="size-8 border-2 border-background">
-                          <AvatarImage
-                            src="https://github.com/shadcn.png"
-                            alt="Backend member"
-                          />
-                          <AvatarFallback>FC</AvatarFallback>
-                        </Avatar>
-
-                        <Avatar className="size-8 border-2 border-background">
-                          <AvatarImage
-                            src="https://i.pravatar.cc/150?img=11"
-                            alt="Backend member"
-                          />
-                          <AvatarFallback>MK</AvatarFallback>
-                        </Avatar>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem
-                  value="design"
-                  className="data-open:bg-muted/50 **:data-[slot=accordion-content]:p-0!"
-                >
-                  <AccordionTrigger className="px-3 py-3 text-sm hover:no-underline">
-                    <div className="flex items-center gap-2">
-                      <span>Design</span>
-
-                      <span className="text-muted-foreground">
-                        2 members
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-
-                  <AccordionContent className="px-3! pt-0 pb-3">
-                    <div className="flex flex-col gap-3">
-                      <span className="text-sm text-muted-foreground">
-                        Product design and user experience.
-                      </span>
-
-                      <div className="flex -space-x-2">
-                        <Avatar className="size-8 border-2 border-background">
-                          <AvatarImage
-                            src="https://i.pravatar.cc/150?img=32"
-                            alt="Design member"
-                          />
-                          <AvatarFallback>SR</AvatarFallback>
-                        </Avatar>
-
-                        <Avatar className="size-8 border-2 border-background">
-                          <AvatarImage
-                            src="https://i.pravatar.cc/150?img=47"
-                            alt="Design member"
-                          />
-                          <AvatarFallback>EM</AvatarFallback>
-                        </Avatar>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </div>
-
-            <Separator className="my-3" />
-
-            {/* Top languages */}
-            <div className="flex flex-col gap-2">
-              <span className="font-medium">Top languages</span>
-
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <div className="size-3 rounded-full bg-green-500" />
-                  <span>C#</span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <div className="size-3 rounded-full bg-blue-500" />
-                  <span>TypeScript</span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <div className="size-3 rounded-full bg-yellow-500" />
-                  <span>JavaScript</span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <div className="size-3 rounded-full bg-orange-500" />
-                  <span>Python</span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <div className="size-3 rounded-full bg-cyan-500" />
-                  <span>Go</span>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

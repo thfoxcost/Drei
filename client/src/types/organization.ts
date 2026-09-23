@@ -35,12 +35,58 @@ export interface OrganizationListItem {
 	createdAt: string;
 }
 
+export interface OrganizationMember {
+  id: string;
+  name: string;
+  image: string | null;
+  role: string;
+  joinedAt: string;
+}
+
 export interface OrganizationCreateRequest {
-	name: string;
-	description: string;
-	visibility: "public" | "members";
-	email: string;
-	purpose: string;
-	tags: string[];
-	pinned: boolean;
+  name: string;
+  description: string;
+  visibility: "public" | "members";
+  email: string;
+  purpose: string;
+  tags: string[];
+  pinned: boolean;
+}
+
+export interface OrganizationUpdateRequest {
+  name: string;
+  description: string;
+  purpose: string;
+  email: string;
+  status: "active" | "suspended";
+  tags: string[];
+}
+
+export interface OrganizationRepo {
+  id: number;
+  name: string;
+  description: string;
+  visibility: boolean;
+  archived: boolean;
+  forked: boolean;
+  forkedFromOwner: string;
+  forkedFromName: string;
+  language: string | null;
+  lastUpdatedAt: string;
+  forks: number;
+  openPRs: number;
+  size: number;
+  activity: number[];
+}
+
+export interface OrganizationLanguage {
+  name: string;
+  bytes: number;
+  percent: number;
+}
+
+export interface CreateOrganizationRepoRequest {
+  name: string;
+  description: string;
+  visibility: boolean;
 }

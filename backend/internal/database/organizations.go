@@ -324,6 +324,129 @@ func GetOrganizationMemberRole(orgID int64, userID string) (string, error) {
 	return role, nil
 }
 
+// OrganizationMemberDetail is a single organization member joined with the
+// better-auth user record. JoinedAt comes from organization_members.created_at.
+type OrganizationMemberDetail struct {
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	Image    *string `json:"image"`
+	Role     string  `json:"role"`
+	JoinedAt string  `json:"joinedAt"`
+}
+
+// GetOrganizationMembers returns all members of the organization ordered by
+// join date (oldest first).
+func GetOrganizationMembers(orgID int64) ([]OrganizationMemberDetail, error) {
+	rows, err := DB.Query(
+		context.Background(),
+		`
+		SELECT u.id, COALESCE(u.name, ''), u.image, om.role, om.created_at
+		FROM organization_members om
+		JOIN "user" u ON u.id = om.user_id
+		WHERE om.organization_id = $1
+		ORDER BY om.created_at ASC
+		`,
+		orgID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var members []OrganizationMemberDetail
+
+	for rows.Next() {
+		var member OrganizationMemberDetail
+		var joinedAt time.Time
+
+		if err := rows.Scan(
+			&member.ID, &member.Name, &member.Image, &member.Role,
+			&joinedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		member.JoinedAt = joinedAt.UTC().Format(time.RFC3339)
+		members = append(members, member)
+	}
+
+	if members == nil {
+		members = []OrganizationMemberDetail{}
+	}
+
+	return members, rows.Err()
+}
+
+// RemoveOrganizationMember deletes a user's membership in the organization.
+func RemoveOrganizationMember(orgID int64, userID string) error {
+	_, err := DB.Exec(
+		context.Background(),
+		`DELETE FROM organization_members WHERE organization_id = $1 AND user_id = $2`,
+		orgID,
+		userID,
+	)
+
+	return err
+}
+
+// UpdateOrganization updates the organization's editable fields and replaces
+// its tags. The slug is intentionally left untouched so existing routes and
+// references (including the avatar file path, which is derived from the slug)
+// keep working after a rename.
+func UpdateOrganization(orgID int64, name string, description, email, purpose *string, status string, tags []string) error {
+	ctx := context.Background()
+
+	tx, err := DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(
+		ctx,
+		`UPDATE organizations
+		SET name = $1, description = $2, email = $3, purpose = $4, status = $5, updated_at = NOW()
+		WHERE id = $6`,
+		name,
+		description,
+		email,
+		purpose,
+		status,
+		orgID,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		`DELETE FROM organization_tags WHERE organization_id = $1`,
+		orgID,
+	)
+	if err != nil {
+		return err
+	}
+
+	for _, tag := range tags {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed == "" {
+			continue
+		}
+
+		_, err := tx.Exec(
+			ctx,
+			`INSERT INTO organization_tags (organization_id, tag) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+			orgID,
+			trimmed,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
 // UpdateOrganizationAvatar sets the avatar path for an organization.
 func UpdateOrganizationAvatar(slug, avatar string) error {
 	_, err := DB.Exec(

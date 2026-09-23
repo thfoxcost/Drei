@@ -3,6 +3,7 @@ package handlers
 import (
 	"backend/internal/config"
 	"backend/internal/database"
+	"backend/internal/gitrepo"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,9 +13,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/go-git/go-git/v6"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -290,10 +293,19 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 //	@Failure		404		{object}	map[string]interface{}
 //	@Router			/orgs/{slug} [get]
 func GetOrganizationHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, r, "GET, OPTIONS")
+	setCORS(w, r, "GET, PATCH, OPTIONS")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
+		return
+	}
+
+	// Updates share this path; PATCH is dispatched here so the CORS
+	// preflight (OPTIONS, which carries no method) lands on a handler that
+	// advertises PATCH. A separate "PATCH /api/orgs/{slug}" pattern would
+	// never see the preflight and the browser would block the request.
+	if r.Method == http.MethodPatch {
+		UpdateOrganizationHandler(w, r)
 		return
 	}
 
@@ -338,6 +350,840 @@ func GetOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(org)
+}
+
+// getOrganizationBySlugOr404 fetches the organization for the given slug and
+// writes a 404/500 response when it cannot be resolved. It reports whether
+// the caller may continue.
+func getOrganizationBySlugOr404(w http.ResponseWriter, slug string) (*database.OrganizationDetail, bool) {
+	org, err := database.GetOrganizationBySlug(slug)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "organization not found")
+			return nil, false
+		}
+		log.Printf("ERROR: failed to fetch organization %q: %v", slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to fetch organization")
+		return nil, false
+	}
+
+	return org, true
+}
+
+// orgRoleRank orders organization roles for minimum-role checks.
+func orgRoleRank(role string) int {
+	switch role {
+	case "owner":
+		return 3
+	case "admin":
+		return 2
+	case "member":
+		return 1
+	default:
+		return 0
+	}
+}
+
+// requireOrgRole authenticates the caller and requires at least minRole
+// ("member", "admin", or "owner") in the given organization. It writes the
+// error response itself and reports whether the caller may continue.
+func requireOrgRole(w http.ResponseWriter, r *http.Request, org *database.OrganizationDetail, minRole string) (*AuthUser, bool) {
+	user, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "not authenticated")
+		return nil, false
+	}
+
+	role, err := database.GetOrganizationMemberRole(org.ID, user.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusForbidden, "you are not a member of this organization")
+			return nil, false
+		}
+		writeError(w, http.StatusInternalServerError, "failed to check membership")
+		return nil, false
+	}
+
+	if orgRoleRank(role) < orgRoleRank(minRole) {
+		if minRole == "owner" {
+			writeError(w, http.StatusForbidden, "only organization owners can perform this action")
+		} else {
+			writeError(w, http.StatusForbidden, "only organization owners and admins can perform this action")
+		}
+		return nil, false
+	}
+
+	return user, true
+}
+
+// authorizeOrgRepo enforces minRole on an organization-owned repository.
+// Personal repositories (OrganizationID == nil) keep their existing behavior
+// and are always allowed through.
+func authorizeOrgRepo(w http.ResponseWriter, r *http.Request, info *database.RepoInfo, minRole string) bool {
+	if info.OrganizationID == nil {
+		return true
+	}
+
+	org, ok := getOrganizationBySlugOr404(w, info.Owner)
+	if !ok {
+		return false
+	}
+
+	_, ok = requireOrgRole(w, r, org, minRole)
+
+	return ok
+}
+
+// authorizeOrgRepoView enforces the view rules for an organization-owned
+// repository: members-only organizations require membership, and private
+// repositories are hidden from non-members. Personal repositories are always
+// allowed through, preserving existing behavior.
+func authorizeOrgRepoView(w http.ResponseWriter, r *http.Request, info *database.RepoInfo) bool {
+	if info.OrganizationID == nil {
+		return true
+	}
+
+	org, ok := getOrganizationBySlugOr404(w, info.Owner)
+	if !ok {
+		return false
+	}
+
+	var isMember bool
+
+	if user, err := authenticate(r); err == nil {
+		if member, err := database.IsOrganizationMember(org.ID, user.ID); err == nil && member {
+			isMember = true
+		}
+	}
+
+	if org.Visibility == "members" && !isMember {
+		writeError(w, http.StatusUnauthorized, "authentication required for private organizations")
+		return false
+	}
+
+	if !info.Visibility && !isMember {
+		writeError(w, http.StatusForbidden, "this repository is private")
+		return false
+	}
+
+	return true
+}
+
+// GetOrganizationMembersHandler godoc
+//
+//	@Summary		List organization members
+//	@Description	Returns all members of the organization ordered by join date
+//	@Tags			Organizations
+//	@Produce		json
+//	@Param			slug	path		string	true	"Organization slug"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		403		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Router			/orgs/{slug}/members [get]
+func GetOrganizationMembersHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "GET, OPTIONS")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	slug := r.PathValue("slug")
+
+	org, ok := getOrganizationBySlugOr404(w, slug)
+	if !ok {
+		return
+	}
+
+	// Members-only orgs require authentication and membership, mirroring
+	// GetOrganizationHandler so private orgs never expose their member list.
+	if org.Visibility == "members" {
+		user, err := authenticate(r)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "authentication required for private organizations")
+			return
+		}
+
+		member, err := database.IsOrganizationMember(org.ID, user.ID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to check membership")
+			return
+		}
+
+		if !member {
+			writeError(w, http.StatusForbidden, "you are not a member of this organization")
+			return
+		}
+	}
+
+	members, err := database.GetOrganizationMembers(org.ID)
+	if err != nil {
+		log.Printf("ERROR: failed to fetch members for organization %q: %v", slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to fetch organization members")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"members": members,
+	})
+}
+
+// JoinOrganizationHandler godoc
+//
+//	@Summary		Join an organization
+//	@Description	Creates an organization_members row for the authenticated user
+//	@Tags			Organizations
+//	@Produce		json
+//	@Param			slug	path		string	true	"Organization slug"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		409		{object}	map[string]interface{}
+//	@Router			/orgs/{slug}/join [post]
+func JoinOrganizationHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "POST, OPTIONS")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	user, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+
+	slug := r.PathValue("slug")
+
+	org, ok := getOrganizationBySlugOr404(w, slug)
+	if !ok {
+		return
+	}
+
+	member, err := database.IsOrganizationMember(org.ID, user.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to check membership")
+		return
+	}
+
+	if member {
+		writeError(w, http.StatusConflict, "already a member of this organization")
+		return
+	}
+
+	if err := database.CreateOrganizationMember(org.ID, user.ID, "member", false); err != nil {
+		log.Printf("ERROR: failed to add member %s to organization %q: %v", user.ID, slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to join organization")
+		return
+	}
+
+	writeSuccess(w, map[string]any{
+		"success": true,
+	})
+}
+
+// LeaveOrganizationHandler godoc
+//
+//	@Summary		Leave an organization
+//	@Description	Removes the authenticated user's organization_members row
+//	@Tags			Organizations
+//	@Produce		json
+//	@Param			slug	path		string	true	"Organization slug"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		403		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Router			/orgs/{slug}/leave [post]
+func LeaveOrganizationHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "POST, OPTIONS")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	user, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+
+	slug := r.PathValue("slug")
+
+	org, ok := getOrganizationBySlugOr404(w, slug)
+	if !ok {
+		return
+	}
+
+	role, err := database.GetOrganizationMemberRole(org.ID, user.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "not a member of this organization")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed to check membership")
+		return
+	}
+
+	// The organization creator (always an owner) must never be able to leave
+	// through this path, and no other owner may orphan the organization either.
+	if user.ID == org.CreatedBy.ID || role == "owner" {
+		writeError(w, http.StatusForbidden, "organization owners cannot leave the organization")
+		return
+	}
+
+	if err := database.RemoveOrganizationMember(org.ID, user.ID); err != nil {
+		log.Printf("ERROR: failed to remove member %s from organization %q: %v", user.ID, slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to leave organization")
+		return
+	}
+
+	writeSuccess(w, map[string]any{
+		"success": true,
+	})
+}
+
+// UpdateOrganizationRequest carries the editable organization fields. The
+// slug and ownership are intentionally absent: the slug stays immutable so
+// existing routes keep working, and ownership can never change here.
+type UpdateOrganizationRequest struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Purpose     string   `json:"purpose"`
+	Email       string   `json:"email"`
+	Status      string   `json:"status"`
+	Tags        []string `json:"tags"`
+}
+
+// allowedOrganizationPurposes mirrors the client-side organizationPurposes
+// definition (client/src/components/organization/purpose.ts).
+var allowedOrganizationPurposes = map[string]bool{
+	"work":         true,
+	"school":       true,
+	"hardware":     true,
+	"software":     true,
+	"recreational": true,
+}
+
+// UpdateOrganizationHandler godoc
+//
+//	@Summary		Update an organization
+//	@Description	Updates the organization's editable fields; creator/owner only
+//	@Tags			Organizations
+//	@Accept			json
+//	@Produce		json
+//	@Param			slug	path		string						true	"Organization slug"
+//	@Param			org		body		UpdateOrganizationRequest	true	"Updated organization fields"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		403		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Router			/orgs/{slug} [patch]
+func UpdateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "PATCH, OPTIONS")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPatch {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	user, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+
+	slug := r.PathValue("slug")
+
+	org, ok := getOrganizationBySlugOr404(w, slug)
+	if !ok {
+		return
+	}
+
+	// Only the organization creator/owner may edit settings for now.
+	role, err := database.GetOrganizationMemberRole(org.ID, user.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusForbidden, "only organization owners can edit settings")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed to check membership")
+		return
+	}
+
+	if role != "owner" || user.ID != org.CreatedBy.ID {
+		writeError(w, http.StatusForbidden, "only organization owners can edit settings")
+		return
+	}
+
+	var req UpdateOrganizationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	req.Description = strings.TrimSpace(req.Description)
+	req.Purpose = strings.TrimSpace(req.Purpose)
+	req.Email = strings.TrimSpace(req.Email)
+	req.Status = strings.TrimSpace(req.Status)
+
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "organization name is required")
+		return
+	}
+
+	if len(req.Name) > 100 {
+		writeError(w, http.StatusBadRequest, "organization name must be 100 characters or less")
+		return
+	}
+
+	if req.Status != "active" && req.Status != "suspended" {
+		writeError(w, http.StatusBadRequest, "status must be 'active' or 'suspended'")
+		return
+	}
+
+	if req.Email != "" && !strings.Contains(req.Email, "@") {
+		writeError(w, http.StatusBadRequest, "invalid email address")
+		return
+	}
+
+	if req.Purpose != "" && !allowedOrganizationPurposes[req.Purpose] {
+		writeError(w, http.StatusBadRequest, "invalid purpose")
+		return
+	}
+
+	var description *string
+	if req.Description != "" {
+		description = &req.Description
+	}
+
+	var email *string
+	if req.Email != "" {
+		email = &req.Email
+	}
+
+	var purpose *string
+	if req.Purpose != "" {
+		purpose = &req.Purpose
+	}
+
+	var cleanTags []string
+	for _, tag := range req.Tags {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed != "" {
+			cleanTags = append(cleanTags, trimmed)
+		}
+	}
+
+	if err := database.UpdateOrganization(org.ID, req.Name, description, email, purpose, req.Status, cleanTags); err != nil {
+		log.Printf("ERROR: failed to update organization %q: %v", slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to update organization")
+		return
+	}
+
+	updated, err := database.GetOrganizationBySlug(slug)
+	if err != nil {
+		log.Printf("ERROR: failed to fetch updated organization %q: %v", slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to fetch updated organization")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"success":      true,
+		"organization": updated,
+	})
+}
+
+// OrganizationRepoItem is a single repository in an organization listing.
+// Language is null when no language could be detected (e.g. empty repos).
+type OrganizationRepoItem struct {
+	ID              int64   `json:"id"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description"`
+	Visibility      bool    `json:"visibility"`
+	Archived        bool    `json:"archived"`
+	Forked          bool    `json:"forked"`
+	ForkedFromOwner string  `json:"forkedFromOwner"`
+	ForkedFromName  string  `json:"forkedFromName"`
+	Language        *string `json:"language"`
+	LastUpdatedAt   string  `json:"lastUpdatedAt"`
+	Forks           int64   `json:"forks"`
+	OpenPRs         int     `json:"openPRs"`
+	Size            int64   `json:"size"`
+	Activity        []int   `json:"activity"`
+}
+
+// listVisibleOrgRepos returns the organization's repositories visible to the
+// caller. Members-only organizations require authentication and membership
+// (mirroring GetOrganizationHandler); private repositories are hidden from
+// non-members. The second return value reports whether the caller may
+// continue (false after an error response has been written).
+func listVisibleOrgRepos(w http.ResponseWriter, r *http.Request, org *database.OrganizationDetail) ([]database.RepoInfo, bool) {
+	var isMember bool
+
+	if org.Visibility == "members" {
+		user, err := authenticate(r)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "authentication required for private organizations")
+			return nil, false
+		}
+
+		member, err := database.IsOrganizationMember(org.ID, user.ID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to check membership")
+			return nil, false
+		}
+
+		if !member {
+			writeError(w, http.StatusForbidden, "you are not a member of this organization")
+			return nil, false
+		}
+
+		isMember = true
+	} else if user, err := authenticate(r); err == nil {
+		if member, err := database.IsOrganizationMember(org.ID, user.ID); err == nil && member {
+			isMember = true
+		}
+	}
+
+	repos, err := database.GetOrganizationRepositories(org.ID)
+	if err != nil {
+		log.Printf("ERROR: failed to fetch repositories for organization %q: %v", org.Slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to fetch organization repositories")
+		return nil, false
+	}
+
+	visible := repos[:0]
+	for _, repo := range repos {
+		if !repo.Visibility && !isMember {
+			continue
+		}
+		visible = append(visible, repo)
+	}
+
+	return visible, true
+}
+
+// repoHeadTime returns the HEAD commit time of the repository, or false when
+// the repository has no reachable commits (e.g. freshly created).
+func repoHeadTime(owner, name string) (time.Time, bool) {
+	repoPath := filepath.Join(config.App.ReposPath, owner, name+".git")
+
+	repo, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return time.Time{}, false
+	}
+
+	head, err := repo.Head()
+	if err != nil {
+		return time.Time{}, false
+	}
+
+	commit, err := repo.CommitObject(head.Hash())
+	if err != nil {
+		return time.Time{}, false
+	}
+
+	return commit.Author.When, true
+}
+
+// OrganizationReposHandler is the dispatcher for /api/orgs/{slug}/repos. A
+// single handler serves both methods so the CORS preflight (OPTIONS, which
+// carries no method) lands on a handler that advertises GET and POST —
+// separate method-qualified patterns would hide POST from the preflight and
+// browsers would block the request.
+func OrganizationReposHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "GET, POST, OPTIONS")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		GetOrganizationReposHandler(w, r)
+	case http.MethodPost:
+		CreateOrganizationRepoHandler(w, r)
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+// GetOrganizationReposHandler godoc
+//
+//	@Summary		List organization repositories
+//	@Description	Returns real repository data for the organization, DB-driven so empty repositories are included
+//	@Tags			Organizations
+//	@Produce		json
+//	@Param			slug	path		string	true	"Organization slug"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		403		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Router			/orgs/{slug}/repos [get]
+func GetOrganizationReposHandler(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+
+	org, ok := getOrganizationBySlugOr404(w, slug)
+	if !ok {
+		return
+	}
+
+	repos, ok := listVisibleOrgRepos(w, r, org)
+	if !ok {
+		return
+	}
+
+	items := make([]OrganizationRepoItem, 0, len(repos))
+
+	for _, meta := range repos {
+		item := OrganizationRepoItem{
+			ID:              meta.ID,
+			Name:            meta.Name,
+			Description:     meta.Description,
+			Visibility:      meta.Visibility,
+			Archived:        meta.Archived,
+			Forked:          meta.ForkedFromID != nil,
+			ForkedFromOwner: meta.ForkedFromOwner,
+			ForkedFromName:  meta.ForkedFromName,
+			LastUpdatedAt:   meta.CreatedAt.UTC().Format(time.RFC3339),
+			Activity:        make([]int, gitrepo.DefaultActivityWeeks),
+		}
+
+		if headTime, ok := repoHeadTime(slug, meta.Name); ok {
+			item.LastUpdatedAt = headTime.UTC().Format(time.RFC3339)
+		}
+
+		if langs, err := gitrepo.GetLang(slug, meta.Name, ""); err == nil && len(langs) > 0 {
+			language := langs[0].Name
+			item.Language = &language
+		}
+
+		if forks, err := database.CountForks(meta.ID); err == nil {
+			item.Forks = forks
+		}
+
+		if open, _, _, err := database.CountPullRequests(meta.ID, database.PullRequestFilter{}); err == nil {
+			item.OpenPRs = open
+		}
+
+		if size, err := gitrepo.CalcRepoSize(slug, meta.Name, ""); err == nil {
+			item.Size = size
+		}
+
+		if activity, err := gitrepo.GetCommitActivityWindow(slug, meta.Name, "", gitrepo.DefaultActivityWeeks); err == nil {
+			item.Activity = activity
+		}
+
+		items = append(items, item)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"repositories": items,
+		"total":        len(items),
+	})
+}
+
+// GetOrganizationLanguagesHandler godoc
+//
+//	@Summary		Organization top languages
+//	@Description	Aggregates language bytes across the organization's visible repositories using the existing GetLang detection
+//	@Tags			Organizations
+//	@Produce		json
+//	@Param			slug	path		string	true	"Organization slug"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		403		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Router			/orgs/{slug}/languages [get]
+func GetOrganizationLanguagesHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "GET, OPTIONS")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	slug := r.PathValue("slug")
+
+	org, ok := getOrganizationBySlugOr404(w, slug)
+	if !ok {
+		return
+	}
+
+	repos, ok := listVisibleOrgRepos(w, r, org)
+	if !ok {
+		return
+	}
+
+	langBytes := make(map[string]int64)
+	var totalBytes int64
+
+	for _, meta := range repos {
+		langs, err := gitrepo.GetLang(slug, meta.Name, "")
+		if err != nil || len(langs) == 0 {
+			continue
+		}
+
+		for _, lang := range langs {
+			langBytes[lang.Name] += lang.Bytes
+			totalBytes += lang.Bytes
+		}
+	}
+
+	type orgLanguage struct {
+		Name    string  `json:"name"`
+		Bytes   int64   `json:"bytes"`
+		Percent float64 `json:"percent"`
+	}
+
+	languages := make([]orgLanguage, 0, len(langBytes))
+
+	for name, bytes := range langBytes {
+		percent := 0.0
+		if totalBytes > 0 {
+			percent = (float64(bytes) / float64(totalBytes)) * 100
+		}
+
+		languages = append(languages, orgLanguage{
+			Name:    name,
+			Bytes:   bytes,
+			Percent: percent,
+		})
+	}
+
+	sort.Slice(languages, func(i, j int) bool {
+		return languages[i].Bytes > languages[j].Bytes
+	})
+
+	if len(languages) > 5 {
+		languages = languages[:5]
+	}
+
+	if languages == nil {
+		languages = []orgLanguage{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"languages": languages,
+	})
+}
+
+// CreateOrganizationRepoRequest carries the fields for a new organization
+// repository. The namespace always comes from the URL slug, never the body.
+type CreateOrganizationRepoRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Visibility  bool   `json:"visibility"`
+}
+
+// CreateOrganizationRepoHandler godoc
+//
+//	@Summary		Create an organization repository
+//	@Description	Creates a bare repository under the organization namespace; owner/admin only
+//	@Tags			Organizations
+//	@Accept			json
+//	@Produce		json
+//	@Param			slug	path		string							true	"Organization slug"
+//	@Param			repo	body		CreateOrganizationRepoRequest	true	"Repository details"
+//	@Success		201		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		403		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		409		{object}	map[string]interface{}
+//	@Router			/orgs/{slug}/repos [post]
+func CreateOrganizationRepoHandler(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+
+	org, ok := getOrganizationBySlugOr404(w, slug)
+	if !ok {
+		return
+	}
+
+	user, ok := requireOrgRole(w, r, org, "admin")
+	if !ok {
+		return
+	}
+
+	var req CreateOrganizationRepoRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	name := strings.TrimSpace(req.Name)
+	description := strings.TrimSpace(req.Description)
+
+	if name == "" {
+		writeError(w, http.StatusBadRequest, "repository name is required")
+		return
+	}
+
+	if strings.HasPrefix(req.Name, " ") {
+		writeError(w, http.StatusBadRequest, "repository name cannot start with a space")
+		return
+	}
+
+	if _, err := createBareRepository(org.Slug, user.ID, user.Name, &org.ID, name, description, req.Visibility, user.Image); err != nil {
+		if errors.Is(err, errRepositoryExists) {
+			writeError(w, http.StatusConflict, "repository already exists")
+			return
+		}
+		log.Printf("ERROR: failed to create repository %q for organization %q: %v", name, slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to create repository")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"success": true,
+		"message": "Repository created successfully",
+		"repository": map[string]any{
+			"owner": org.Slug,
+			"name":  name,
+		},
+	})
 }
 
 // ListUserOrganizationsHandler godoc

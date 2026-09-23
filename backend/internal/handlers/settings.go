@@ -80,6 +80,17 @@ func ArchiveHandler(w http.ResponseWriter, r *http.Request) {
 	owner := r.PathValue("owner")
 	repo := r.PathValue("repo")
 
+	info, err := database.GetRepository(owner, repo)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "repository not found")
+		return
+	}
+
+	// Organization repositories require an owner/admin role to archive.
+	if !authorizeOrgRepo(w, r, info, "admin") {
+		return
+	}
+
 	var archivedAt *time.Time
 	if req.Archived {
 		now := time.Now()
@@ -135,6 +146,17 @@ func VisibilityHandler(w http.ResponseWriter, r *http.Request) {
 
 	owner := r.PathValue("owner")
 	repo := r.PathValue("repo")
+
+	info, err := database.GetRepository(owner, repo)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "repository not found")
+		return
+	}
+
+	// Organization repositories require an owner/admin role to change visibility.
+	if !authorizeOrgRepo(w, r, info, "admin") {
+		return
+	}
 
 	if err := database.UpdateRepositoryVisibility(owner, repo, req.Visibility); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())

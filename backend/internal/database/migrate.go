@@ -692,5 +692,54 @@ func Migrate() error {
 		return err
 	}
 
+	// Organization-owned repositories. organization_id is NULL for personal
+	// repositories (including all pre-existing rows — no backfill). owner
+	// remains the namespace (username or organization slug) used for disk
+	// paths, URLs, and every owner/name lookup, so existing code paths work
+	// unchanged for organization repositories.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE repositories
+		ADD COLUMN IF NOT EXISTS organization_id BIGINT REFERENCES organizations(id) ON DELETE CASCADE;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Uniqueness follows the namespace, not the creator: the disk layout
+	// (REPOS_PATH/<owner>/<repo>.git) already enforces one repo per
+	// owner/name pair, so the same user can own e.g. "api" in two different
+	// organizations they created.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE repositories
+		DROP CONSTRAINT IF EXISTS repositories_owner_id_name_key;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// ADD CONSTRAINT has no IF NOT EXISTS form, so guard with a catalog check.
+	_, err = DB.Exec(context.Background(), `
+		DO $$
+		BEGIN
+			IF NOT EXISTS (
+				SELECT 1 FROM pg_constraint WHERE conname = 'repositories_owner_name_key'
+			) THEN
+				ALTER TABLE repositories
+				ADD CONSTRAINT repositories_owner_name_key UNIQUE(owner, name);
+			END IF;
+		END $$;
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS repositories_organization_id_idx
+		ON repositories (organization_id);
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
