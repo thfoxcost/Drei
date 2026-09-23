@@ -1,54 +1,35 @@
 import { useEffect, useState } from "react"
-import { Separator } from "@/components/ui/separator"
-import { Button } from "@/components/ui/button"
-import { Link, useNavigate } from "@tanstack/react-router"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { authClient } from "#/lib/auth-client"
-import { useUserOrganizations } from "@/hooks/useOrganizations"
-import { ORGANIZATIONS } from "@/data/organizations"
-import type { LucideIcon } from "lucide-react"
 import {
   ArrowLeftRight,
   BookMarked,
-  BookPlus,
-  Bug,
-  Plus,
   Building2,
+  ChevronDown,
+  CircleDot,
   CircleQuestionMark,
-  GitPullRequest,
+  FolderPlus,
+  Plus,
   LogOut,
-  Menu,
   Settings,
   User,
-} from "lucide-react"
-import { Cmd } from "./cmd"
+} from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu"
+import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
+import { authClient } from "#/lib/auth-client"
 import { UserAvatar } from "@/components/UserAvatar"
+import { Cmd } from "../cmd"
+import { useUserOrganizations } from "@/hooks/useOrganizations"
+import { ORGANIZATIONS } from "@/data/organizations"
+import { OrganizationMenu } from "@/components/organization/organization-menu"
+import {
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from "../ui/dropdown-menu"
 
-const NAV_ITEMS: {
-  label: string
-  icon: LucideIcon
-  to?: "/repos" | "/issues" | "/orgs" | "/pulls"
-  disabled?: boolean
-}[] = [
-    { label: "Repositories", icon: BookMarked, to: "/repos" },
-    { label: "Issues", icon: Bug, to: "/issues" },
-    { label: "Organizations", icon: Building2, to: "/orgs" },
-    { label: "Pulls", icon: GitPullRequest, to: "/pulls" },
-  ]
 
-export default function Header() {
+export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
   const { data: session } = authClient.useSession()
-  const navigate = useNavigate()
   const [biography, setBiography] = useState<string | null>(null)
   const { data: orgs, isError: orgsError } = useUserOrganizations()
   const organizationList = orgsError ? ORGANIZATIONS : (orgs ?? [])
@@ -59,7 +40,6 @@ export default function Header() {
         const res = await fetch("http://localhost:3200/api/profile", {
           credentials: "include",
         })
-
         if (res.ok) {
           const data = await res.json()
           setBiography(data.biography ?? null)
@@ -68,14 +48,13 @@ export default function Header() {
         // Silently ignore — biography is non-critical
       }
     }
-
     fetchBiography()
   }, [])
 
   return (
-    <header className="flex items-center justify-between gap-2 border-b bg-muted/10 px-3 py-2 sm:px-2 sm:py-1">
+    <header className="mr-3 flex items-center justify-between gap-2 bg-muted/10 py-2 sm:px-2 sm:py-1">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <Link to="/" aria-label="Home">
+        <a href="/" aria-label="Home">
           <img
             draggable={false}
             src="/logo-light.svg"
@@ -89,54 +68,42 @@ export default function Header() {
             alt="Logo"
             className="hidden h-6 w-6 shrink-0 dark:block sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
           />
-        </Link>
+        </a>
 
-        <nav className="hidden items-center gap-1 pb-1 md:flex">
-          {NAV_ITEMS.map(({ label, icon: Icon, to }) => (
-            <Button key={label} variant="ghost" asChild>
-              <Link to={to}>
-                <Icon />
-                {label}
-              </Link>
-            </Button>
-          ))}
-        </nav>
-
-        <div className="md:hidden">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="start">
-              {NAV_ITEMS.map(({ label, icon: Icon, to }) => (
-                <DropdownMenuItem
-                  key={label}
-                  onClick={() => to && navigate({ to })}
-                >
-                  <Icon className="mr-2 h-4 w-4" />
-                  {label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <p className="hidden text-sm font-semibold sm:block">
+          {OrgName}
+        </p>
       </div>
 
-      <div className="flex items-center gap-1 sm:gap-3">
-        <div>
-          <Cmd />
-        </div>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <Cmd />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default">
+              <Plus className=" h-4 w-4" />
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
 
-        <a href="/new">
-          <Button size="default">
-            <BookPlus className="h-4 w-4 sm:mr-1" />
-            <span className="hidden sm:inline">Create</span>
-          </Button>
-        </a>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Create</DropdownMenuLabel>
+
+            <DropdownMenuItem>
+              <a href="/new" className="flex items-center gap-1">
+                <FolderPlus className="mr-1.5 h-4 w-4" />
+                New repository
+              </a>
+
+            </DropdownMenuItem>
+
+            <DropdownMenuItem>
+              <CircleDot className="mr-1.5 h-4 w-4" />
+              <a href="/issues" className="flex items-center gap-1">
+                New issue
+              </a>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Separator
           orientation="vertical"
@@ -213,33 +180,7 @@ export default function Header() {
               </DropdownMenuSubTrigger>
 
               <DropdownMenuSubContent className="w-56">
-                {organizationList.map((org) => (
-                  <DropdownMenuItem
-                    key={org.slug}
-                    onClick={() =>
-                      navigate({
-                        to: "/orgs/$org",
-                        params: { org: org.slug },
-                      })
-                    }
-                  >
-                    <Building2 className="mr-2 h-4 w-4" />
-                    {org.name}
-                  </DropdownMenuItem>
-                ))}
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  onClick={() =>
-                    navigate({
-                      to: "/orgs/new",
-                    })
-                  }
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add new organization
-                </DropdownMenuItem>
+                <OrganizationMenu organizations={organizationList} />
               </DropdownMenuSubContent>
             </DropdownMenuSub>
 
@@ -252,7 +193,7 @@ export default function Header() {
               </a>
             </DropdownMenuItem>
 
-            <DropdownMenuSub>
+            <DropdownMenuSub >
               <DropdownMenuSubTrigger>
                 <CircleQuestionMark className="mr-1 h-4 w-4" />
                 Help
@@ -280,11 +221,7 @@ export default function Header() {
                 </DropdownMenuItem>
 
                 <DropdownMenuItem asChild>
-                  <a
-                    href="https://github.com/thfoxcost/Drei"
-                    target="_blank"
-                    rel="drei github repo"
-                  >
+                  <a href="https://github.com/thfoxcost/Drei" target="_blank" rel="drei github repo">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"

@@ -19,6 +19,7 @@ type RepoInfo struct {
 	DefaultBranch   string
 	Path            string
 	CreatedAt       time.Time
+	OrganizationID  *int64
 	ForkedFromID    *int64
 	ForkedFromOwner string
 	ForkedFromName  string
@@ -44,12 +45,13 @@ func GetRepository(owner, name string) (*RepoInfo, error) {
 			r.default_branch,
 			r.path,
 			r.created_at,
+			r.organization_id,
 			r.forked_from_id,
 			COALESCE(src.owner, ''),
 			COALESCE(src.name, '')
 		FROM repositories r
 		LEFT JOIN repositories src ON r.forked_from_id = src.id
-		WHERE r.owner = $1 AND r.name = $2
+		WHERE lower(r.owner) = lower($1) AND lower(r.name) = lower($2)
 		`,
 		owner,
 		name,
@@ -67,6 +69,7 @@ func GetRepository(owner, name string) (*RepoInfo, error) {
 		&repo.DefaultBranch,
 		&repo.Path,
 		&repo.CreatedAt,
+		&repo.OrganizationID,
 		&repo.ForkedFromID,
 		&repo.ForkedFromOwner,
 		&repo.ForkedFromName,

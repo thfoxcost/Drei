@@ -1,0 +1,40 @@
+import type { OrganizationListItem } from "#/types/organization"
+
+export const ORGANIZATIONS: OrganizationListItem[] = [
+	{
+		id: 1,
+		name: "Kernwerk",
+		slug: "kernwerk",
+		avatar: "https://api.dicebear.com/10.x/planets/svg?seed=Felix",
+		verified: false,
+		status: "active",
+		role: "owner",
+		pinned: true,
+		memberCount: 3,
+		createdAt: "2024-01-01T00:00:00Z",
+	},
+	{
+		id: 2,
+		name: "Wolkenwerk",
+		slug: "wolkenwerk",
+		avatar: "https://api.dicebear.com/10.x/planets/svg?seed=sh92f3ya",
+		verified: false,
+		status: "active",
+		role: "admin",
+		pinned: false,
+		memberCount: 2,
+		createdAt: "2024-02-01T00:00:00Z",
+	},
+	{
+		id: 3,
+		name: "Eisenfeld",
+		slug: "eisenfeld",
+		avatar: "https://api.dicebear.com/10.x/planets/svg?seed=2zyz4h37",
+		verified: false,
+		status: "active",
+		role: "member",
+		pinned: false,
+		memberCount: 4,
+		createdAt: "2024-03-01T00:00:00Z",
+	},
+]

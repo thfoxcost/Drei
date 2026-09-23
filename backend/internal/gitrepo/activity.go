@@ -15,6 +15,60 @@ type CommitDay struct {
 	Count int    `json:"count"`
 }
 
+// DefaultActivityWeeks is the default window for bounded activity queries.
+const DefaultActivityWeeks = 16
+
+// GetCommitActivityWindow returns per-week commit counts for the last
+// <weeks> weeks (oldest first). Unlike GetCommitActivity the output is
+// bounded, making it cheap enough to fan out across repository lists for
+// sparklines. Repositories without reachable commits yield all zeros.
+func GetCommitActivityWindow(owner, repo, branch string, weeks int) ([]int, error) {
+	if weeks <= 0 {
+		weeks = DefaultActivityWeeks
+	}
+
+	zeros := make([]int, weeks)
+
+	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
+
+	r, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return zeros, nil
+	}
+
+	commit, err := ResolveBranch(r, branch)
+	if err != nil {
+		return zeros, nil
+	}
+
+	commitIter, err := r.Log(&git.LogOptions{
+		From: commit.Hash,
+	})
+	if err != nil {
+		return zeros, nil
+	}
+
+	now := time.Now().UTC()
+	week := 7 * 24 * time.Hour
+
+	err = commitIter.ForEach(func(commit *object.Commit) error {
+		age := now.Sub(commit.Author.When.UTC())
+		if age < 0 {
+			age = 0
+		}
+		index := weeks - 1 - int(age/week)
+		if index >= 0 && index < weeks {
+			zeros[index]++
+		}
+		return nil
+	})
+	if err != nil {
+		return zeros, nil
+	}
+
+	return zeros, nil
+}
+
 // GetCommitActivity walks the repository history and returns the number of
 // commits per day. Every day from the first commit through today is
 // represented, including days with zero commits.

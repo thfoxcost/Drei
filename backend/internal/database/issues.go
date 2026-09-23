@@ -679,9 +679,9 @@ func SetIssueAssignees(repoID int64, number int, userIDs []string) error {
 	return tx.Commit(ctx)
 }
 
-// IsRepoMember reports whether the given user is the repository owner or one
-// of its contributors, i.e. someone allowed to create issues and be assigned
-// to them.
+// IsRepoMember reports whether the given user is the repository owner, one
+// of its contributors, or a member of the owning organization, i.e. someone
+// allowed to create issues and be assigned to them.
 func IsRepoMember(repoID int64, userID string) (bool, error) {
 	var member bool
 
@@ -697,6 +697,11 @@ func IsRepoMember(repoID int64, userID string) (bool, error) {
 			FROM contributors c
 			JOIN "user" u ON lower(u.name) = lower(c.username)
 			WHERE c.repo_id = $1 AND u.id = $2
+			UNION ALL
+			SELECT 1
+			FROM repositories r
+			JOIN organization_members om ON om.organization_id = r.organization_id
+			WHERE r.id = $1 AND om.user_id = $2
 		)
 		`,
 		repoID,

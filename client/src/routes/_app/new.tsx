@@ -1,6 +1,7 @@
 import { Spinner } from "#/components/ui/spinner"
 
 import { useNavigate } from "@tanstack/react-router"
+import { Separator } from "#/components/ui/separator"
 import {
   Globe,
   Lock,
@@ -10,6 +11,7 @@ import {
 import { createFileRoute } from "@tanstack/react-router"
 
 import { UserAvatar } from "#/components/UserAvatar"
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar"
 import { Button } from "#/components/ui/button"
 import {
   DropdownMenu,
@@ -27,12 +29,19 @@ import { Textarea } from "#/components/ui/textarea"
 
 import { authClient } from "#/lib/auth-client"
 import { authMiddleware } from "#/lib/middleware"
+import { useUserOrganizations } from "#/hooks/useOrganizations"
 import { Card, CardContent } from "#/components/ui/card"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import * as z from "zod"
+
+const newRepoSearchSchema = z.object({
+  org: z.string().optional(),
+})
 
 export const Route = createFileRoute("/_app/new")({
   component: New,
+  validateSearch: newRepoSearchSchema,
   server: {
     middleware: [authMiddleware],
   },
@@ -52,32 +61,85 @@ function New() {
 
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
+  // Selected namespace: empty string = personal account, otherwise org slug.
+  // May be preselected via the ?org= search param (e.g. from an org page).
+  const { org: preselectedOrg } = Route.useSearch()
+  const [ownerSlug, setOwnerSlug] = useState(preselectedOrg ?? "")
+  const { data: userOrganizations = [] } = useUserOrganizations()
+
+  // Only organizations where the user is owner/admin can own repositories.
+  const creatableOrganizations = userOrganizations.filter(
+    (org) => org.role === "owner" || org.role === "admin",
+  )
+
+  const selectedOrganization = creatableOrganizations.find(
+    (org) => org.slug === ownerSlug,
+  )
+
+  // Organization repositories are public for now: selecting an organization
+  // locks visibility to Public.
+  const isOrgSelected = !!selectedOrganization
+
+  useEffect(() => {
+    if (isOrgSelected) {
+      setVisibility("Public")
+    }
+  }, [isOrgSelected])
 
   async function createRepository() {
     setLoading(true)
 
-    if (name === "" || description === "" || visibility === "") {
+    const trimmedName = name.trim()
+    if (trimmedName === "" || description === "" || visibility === "") {
       toast.error("Please fill all the fields")
       setLoading(false)
       return
     }
+    if (name !== trimmedName) {
+      setName(trimmedName)
+    }
+    if (/^\s/.test(name)) {
+      toast.error("Repository name cannot start with a space")
+      setLoading(false)
+      return
+    }
+
+    // Namespace display used in validation messages: username/repository
+    // for personal repos, org-slug/repository for organization repos.
+    const namespace = selectedOrganization?.slug ?? session?.user.name ?? ""
 
     try {
-      const res = await fetch("http://localhost:3200/api/repos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userid: session?.user.id,
-          userEmail: session?.user.email,
-          username: session?.user.name,
-          avatar: session?.user.image ?? "",
-          reponame: name,
-          description,
-          visibility: visibility === "Public",
-        }),
-      })
+      const res = selectedOrganization
+        ? await fetch(
+            `http://localhost:3200/api/orgs/${encodeURIComponent(selectedOrganization.slug)}/repos`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                name: trimmedName,
+                description,
+                visibility: visibility === "Public",
+              }),
+            },
+          )
+        : await fetch("http://localhost:3200/api/repos", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userid: session?.user.id,
+              userEmail: session?.user.email,
+              username: session?.user.name,
+              avatar: session?.user.image ?? "",
+              reponame: trimmedName,
+              description,
+              visibility: visibility === "Public",
+            }),
+          })
 
       const data = await res.json()
 
@@ -87,11 +149,21 @@ function New() {
 
       toast.success(data.message)
       console.log(data)
+
+      // Navigate using the server-returned owner/name (source of truth),
+      // falling back to the submitted values.
+      const createdOwner = data.repository?.owner ?? namespace
+      const createdName = data.repository?.name ?? trimmedName
+
+      if (!createdOwner) {
+        throw new Error("Repository created, but the owner is unknown")
+      }
+
       navigate({
         to: "/$username/$repo",
         params: {
-          username: session!.user.name,
-          repo: name,
+          username: createdOwner,
+          repo: createdName,
         },
       })
 
@@ -137,7 +209,7 @@ function New() {
   const SelectedIcon = selectedVisibility.icon
 
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-8 p-6">
+    <main className="mx-auto w-full max-w-4xl space-y-4 p-6">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold">
           Create a new repository
@@ -148,6 +220,7 @@ function New() {
         </p>
       </header>
 
+      <Separator />
       <form
         className="space-y-8"
         onSubmit={async (e) => {
@@ -156,24 +229,90 @@ function New() {
         }}
       >
         <section className="space-y-4">
-          <p className="text-md mb-0 font-bold">General</p>
           <div className="flex flex-wrap items-end gap-3">
-            <DropdownMenu>
-              <Button variant="outline">
-                <UserAvatar
-                  src={session?.user.image}
-                  name={session?.user.name}
-                  className="size-5.5"
-                />
-                <span className="text-xs">@{session?.user.name ?? "Unknown User"}</span>
-              </Button>
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium">Owner *</span>
 
-              <DropdownMenuContent className="w-auto">
-                <p className="p-2 text-sm text-muted-foreground">
-                  Organization selector coming soon.
-                </p>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    {selectedOrganization ? (
+                      <>
+                        <Avatar className="size-5.5">
+                          {selectedOrganization.avatar && (
+                            <AvatarImage
+                              src={`${import.meta.env.VITE_BACKEND_URL}/uploads/${selectedOrganization.avatar}`}
+                              alt={selectedOrganization.name}
+                            />
+                          )}
+                          <AvatarFallback>
+                            {selectedOrganization.name.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs">
+                          {selectedOrganization.name}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <UserAvatar
+                          src={session?.user.image}
+                          name={session?.user.name}
+                          className="size-5.5"
+                        />
+                        <span className="text-xs">
+                          @{session?.user.name ?? "Unknown User"}
+                        </span>
+                      </>
+                    )}
+                    <ChevronDown className="size-4 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent className="w-64 p-1">
+                  <DropdownMenuItem
+                    onClick={() => setOwnerSlug("")}
+                    className="flex items-center gap-2 p-2 cursor-pointer"
+                  >
+                    <UserAvatar
+                      src={session?.user.image}
+                      name={session?.user.name}
+                      className="size-5.5"
+                    />
+                    <span className="text-xs flex-1">
+                      @{session?.user.name ?? "Unknown User"}
+                    </span>
+                    {ownerSlug === "" && (
+                      <Check className="size-4 text-primary shrink-0" />
+                    )}
+                  </DropdownMenuItem>
+
+                  {creatableOrganizations.map((org) => (
+                    <DropdownMenuItem
+                      key={org.slug}
+                      onClick={() => setOwnerSlug(org.slug)}
+                      className="flex items-center gap-2 p-2 cursor-pointer"
+                    >
+                      <Avatar className="size-5.5">
+                        {org.avatar && (
+                          <AvatarImage
+                            src={`${import.meta.env.VITE_BACKEND_URL}/uploads/${org.avatar}`}
+                            alt={org.name}
+                          />
+                        )}
+                        <AvatarFallback>
+                          {org.name.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs flex-1">{org.name}</span>
+                      {ownerSlug === org.slug && (
+                        <Check className="size-4 text-primary shrink-0" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
 
             <Field className="flex-1">
@@ -185,8 +324,10 @@ function New() {
                 name="name"
                 placeholder="awesome-project"
                 required
+                pattern="[^\s].*"
+                title="Name cannot start with a space"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setName(e.target.value.replace(/^\s+/, ""))}
               />
             </Field>
           </div>
@@ -234,6 +375,11 @@ function New() {
                 Choose visibility
               </p>
               <span className="text-muted-foreground">Choose who can see and commit to this repository</span>
+              {isOrgSelected && (
+                <span className="block text-xs text-muted-foreground">
+                  Organization repositories are public for now.
+                </span>
+              )}
             </div>
 
             <DropdownMenu>
@@ -250,10 +396,13 @@ function New() {
                 {visibilityOptions.map((option) => {
                   const Icon = option.icon
                   const active = visibility === option.value
+                  const disabled =
+                    option.value === "Private" && isOrgSelected
 
                   return (
                     <DropdownMenuItem
                       key={option.value}
+                      disabled={disabled}
                       onClick={() => setVisibility(option.value)}
                       className="flex items-start gap-3 p-3 cursor-pointer"
                     >
