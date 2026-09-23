@@ -7,19 +7,20 @@ import {
   CircleDot,
   CircleQuestionMark,
   FolderPlus,
-  LogOut,
   Plus,
+  LogOut,
   Settings,
   User,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { Link } from "@tanstack/react-router"
 import { authClient } from "#/lib/auth-client"
 import { UserAvatar } from "@/components/UserAvatar"
 import { Cmd } from "../cmd"
-
+import { useUserOrganizations } from "@/hooks/useOrganizations"
+import { ORGANIZATIONS } from "@/data/organizations"
+import { OrganizationMenu } from "@/components/organization/organization-menu"
 import {
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -27,30 +28,11 @@ import {
 } from "../ui/dropdown-menu"
 
 
-const ORGANIZATIONS = [
-  {
-    name: "Kernwerk",
-    avatar: "https://api.dicebear.com/10.x/planets/svg?seed=Felix",
-    teams: ["Engineering", "Design", "Infrastructure"],
-  },
-  {
-    name: "Wolkenwerk",
-    avatar: "https://api.dicebear.com/10.x/planets/svg?seed=sh92f3ya",
-    teams: ["Development", "Security"],
-  },
-  {
-    name: "Eisenfeld",
-    avatar: "https://api.dicebear.com/10.x/planets/svg?seed=2zyz4h37",
-    teams: ["Core", "Frontend", "Backend", "DevOps"],
-  },
-]
-
-interface HeaderProps{
-  OrgName: string
-}
-export default function OrgMainHeader({ OrgName }: HeaderProps) {
+export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
   const { data: session } = authClient.useSession()
   const [biography, setBiography] = useState<string | null>(null)
+  const { data: orgs, isError: orgsError } = useUserOrganizations()
+  const organizationList = orgsError ? ORGANIZATIONS : (orgs ?? [])
 
   useEffect(() => {
     async function fetchBiography() {
@@ -72,7 +54,7 @@ export default function OrgMainHeader({ OrgName }: HeaderProps) {
   return (
     <header className="mr-3 flex items-center justify-between gap-2 bg-muted/10 py-2 sm:px-2 sm:py-1">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <Link to="/" aria-label="Home">
+        <a href="/" aria-label="Home">
           <img
             draggable={false}
             src="/logo-light.svg"
@@ -86,7 +68,7 @@ export default function OrgMainHeader({ OrgName }: HeaderProps) {
             alt="Logo"
             className="hidden h-6 w-6 shrink-0 dark:block sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
           />
-        </Link>
+        </a>
 
         <p className="hidden text-sm font-semibold sm:block">
           {OrgName}
@@ -198,30 +180,7 @@ export default function OrgMainHeader({ OrgName }: HeaderProps) {
               </DropdownMenuSubTrigger>
 
               <DropdownMenuSubContent className="w-56">
-                {ORGANIZATIONS.map((organization) => (
-                  <DropdownMenuItem key={organization.name}>
-                    <img
-                      src={organization.avatar}
-                      alt={`${organization.name} avatar`}
-                      className="mr-2 h-5 w-5 shrink-0 rounded-md object-cover"
-                    />
-
-                    <span className="truncate">
-                      {organization.name}
-                    </span>
-
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {organization.teams.length}
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add new organization
-                </DropdownMenuItem>
+                <OrganizationMenu organizations={organizationList} />
               </DropdownMenuSubContent>
             </DropdownMenuSub>
 

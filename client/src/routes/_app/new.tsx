@@ -1,6 +1,7 @@
 import { Spinner } from "#/components/ui/spinner"
 
 import { useNavigate } from "@tanstack/react-router"
+import { Separator } from "#/components/ui/separator"
 import {
   Globe,
   Lock,
@@ -146,7 +147,7 @@ function New() {
   const SelectedIcon = selectedVisibility.icon
 
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-8 p-6">
+    <main className="mx-auto w-full max-w-4xl space-y-4 p-6">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold">
           Create a new repository
@@ -157,6 +158,7 @@ function New() {
         </p>
       </header>
 
+      <Separator />
       <form
         className="space-y-8"
         onSubmit={async (e) => {
@@ -165,24 +167,29 @@ function New() {
         }}
       >
         <section className="space-y-4">
-          <p className="text-md mb-0 font-bold">General</p>
           <div className="flex flex-wrap items-end gap-3">
-            <DropdownMenu>
-              <Button variant="outline">
-                <UserAvatar
-                  src={session?.user.image}
-                  name={session?.user.name}
-                  className="size-5.5"
-                />
-                <span className="text-xs">@{session?.user.name ?? "Unknown User"}</span>
-              </Button>
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium">Owner *</span>
 
-              <DropdownMenuContent className="w-auto">
-                <p className="p-2 text-sm text-muted-foreground">
-                  Organization selector coming soon.
-                </p>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <DropdownMenu>
+                <Button variant="outline">
+                  <UserAvatar
+                    src={session?.user.image}
+                    name={session?.user.name}
+                    className="size-5.5"
+                  />
+                  <span className="text-xs">
+                    @{session?.user.name ?? "Unknown User"}
+                  </span>
+                </Button>
+
+                <DropdownMenuContent className="w-auto">
+                  <p className="p-2 text-sm text-muted-foreground">
+                    Organization selector coming soon.
+                  </p>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
 
             <Field className="flex-1">
