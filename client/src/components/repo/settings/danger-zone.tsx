@@ -39,6 +39,7 @@ const DangerZone = () => {
         `http://localhost:3200/api/repos/${username}/${repo}/visibility`,
         {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ visibility: next }),
         },
@@ -68,6 +69,7 @@ const DangerZone = () => {
         `http://localhost:3200/api/repos/${username}/${repo}/archive`,
         {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ archived: next }),
         },
@@ -94,6 +96,7 @@ const DangerZone = () => {
     try {
       const res = await fetch(`http://localhost:3200/api/repos/${username}/${repo}`, {
         method: "DELETE",
+        credentials: "include",
       })
 
       const result = await res.json()

@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FolderGit2 } from "lucide-react";
 import { RepoList } from "#/components/organization/repo-card";
-import { Separator } from "#/components/ui/separator";
 import { Spinner } from "#/components/ui/spinner";
-import { useOrganization } from "#/hooks/useOrganizations";
+import {
+  useOrganization,
+  useOrganizationRepositories,
+} from "#/hooks/useOrganizations";
 
 export const Route = createFileRoute("/_app/orgs/$org/repositories")({
   component: RouteComponent,
@@ -12,6 +13,11 @@ export const Route = createFileRoute("/_app/orgs/$org/repositories")({
 function RouteComponent() {
   const { org } = Route.useParams();
   const { data, isLoading, isError } = useOrganization(org);
+  const {
+    data: repoData,
+    isLoading: isReposLoading,
+    isError: isReposError,
+  } = useOrganizationRepositories(org);
 
   if (isLoading) {
     return (
@@ -41,7 +47,12 @@ function RouteComponent() {
         </p>
       </div>
 
-      <RepoList />
+      <RepoList
+        owner={org}
+        repos={repoData?.repositories ?? []}
+        isLoading={isReposLoading}
+        isError={isReposError}
+      />
     </div>
   );
 }

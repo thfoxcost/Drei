@@ -5,6 +5,7 @@ import (
 	"backend/internal/database"
 	"backend/internal/gitrepo"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -54,6 +55,67 @@ func createRepoFiles(userPath, repoPath string) error {
 	return nil
 }
 
+// errRepositoryExists signals a namespace/name collision on disk.
+var errRepositoryExists = errors.New("repository already exists")
+
+// createBareRepository is the shared implementation behind personal and
+// organization repository creation. namespace is the disk/URL owner (a
+// username or an organization slug), ownerID is the creating user's ID, and
+// organizationID is nil for personal repositories.
+func createBareRepository(namespace, ownerID, creatorName string, organizationID *int64, name, description string, visibility bool, avatar *string) (int64, error) {
+	userPath := filepath.Join(config.App.ReposPath, namespace)
+	repoPath := filepath.Join(userPath, name+".git")
+
+	if repoExists(repoPath) {
+		return 0, errRepositoryExists
+	}
+
+	if err := createRepoFiles(userPath, repoPath); err != nil {
+		return 0, err
+	}
+
+	base := database.Repository{
+		OwnerID:       ownerID,
+		Owner:         namespace,
+		Name:          name,
+		Description:   description,
+		Visibility:    visibility,
+		Path:          repoPath,
+		DefaultBranch: "main",
+	}
+
+	var repoID int64
+
+	var err error
+
+	if organizationID != nil {
+		repoID, err = database.CreateOrganizationRepository(base, *organizationID)
+	} else {
+		repoID, err = database.CreateRepository(base)
+	}
+
+	if err != nil {
+		// Remove the repository from disk if the database insert failed.
+		_ = os.RemoveAll(repoPath)
+
+		return 0, err
+	}
+
+	// Add the repository creator as the first contributor.
+	if err := database.CreateContributor(repoID, database.Contributor{
+		ID:       ownerID,
+		Username: creatorName,
+		Avatar:   avatar,
+	}); err != nil {
+		// Remove the repository from disk if the contributor insert failed.
+		_ = os.RemoveAll(repoPath)
+
+		return 0, err
+	}
+
+	return repoID, nil
+}
+
 // CreateRepo godoc
 //
 //	@Summary		Create a new repository
@@ -68,13 +130,12 @@ func createRepoFiles(userPath, repoPath string) error {
 //	@Failure		500		{object}	map[string]interface{}
 //	@Router			/repos [post]
 func CreateRepo(w http.ResponseWriter, r *http.Request) {
-	// CORS
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	// Credential-aware CORS (echo origin + allow credentials): browsers
+	// reject credentialed requests answered with a "*" origin.
+	setCORS(w, r, "POST")
 
 	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
+		handleOptions(w, r)
 		return
 	}
 
@@ -89,51 +150,17 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userPath := filepath.Join(config.App.ReposPath, current.Username)
-	repoPath := filepath.Join(userPath, current.Reponame+".git")
+	// Normalize the repository name so the stored owner/name always matches
+	// the URL namespace (no leading/trailing whitespace divergence).
+	current.Reponame = strings.TrimSpace(current.Reponame)
 
-	if repoExists(repoPath) {
+	if current.Reponame == "" {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusConflict)
+		w.WriteHeader(http.StatusBadRequest)
 
 		json.NewEncoder(w).Encode(map[string]any{
 			"success": false,
-			"message": "Repository already exists",
-		})
-		return
-	}
-
-	if err := createRepoFiles(userPath, repoPath); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	// store the repo in the pg DB
-	repoID, err := database.CreateRepository(database.Repository{
-		OwnerID:       current.UserId,
-		Owner:         current.Username,
-		Name:          current.Reponame,
-		Description:   current.Description,
-		Visibility:    current.Visibility,
-		Path:          repoPath,
-		DefaultBranch: "main",
-	})
-	if err != nil {
-		// Remove the repository from disk if the database insert failed.
-		_ = os.RemoveAll(repoPath)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   err.Error(),
+			"error":   "repository name is required",
 		})
 		return
 	}
@@ -145,14 +172,20 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 		avatar = &current.Avatar
 	}
 
-	if err := database.CreateContributor(repoID, database.Contributor{
-		ID:       current.UserId,
-		Username: current.Username,
-		Avatar:   avatar,
-	}); err != nil {
-		// Remove the repository from disk if the contributor insert failed.
-		_ = os.RemoveAll(repoPath)
+	_, err := createBareRepository(current.Username, current.UserId, current.Username, nil, current.Reponame, current.Description, current.Visibility, avatar)
+	if err != nil {
+		if errors.Is(err, errRepositoryExists) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
 
+			json.NewEncoder(w).Encode(map[string]any{
+				"success": false,
+				"message": "Repository already exists",
+			})
+			return
+		}
+
+		// Disk cleanup on failure happens inside createBareRepository.
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 
@@ -168,6 +201,10 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Repository created successfully",
+		"repository": map[string]any{
+			"owner": current.Username,
+			"name":  current.Reponame,
+		},
 	})
 }
 
@@ -205,6 +242,11 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
 		writeErr(http.StatusNotFound, "repository not found")
+		return
+	}
+
+	// Organization repositories require an owner/admin role to edit.
+	if !authorizeOrgRepo(w, r, info, "admin") {
 		return
 	}
 
@@ -308,6 +350,11 @@ func deleteRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 		return
 	}
 
+	// Organization repositories require the owner role to delete.
+	if !authorizeOrgRepo(w, r, info, "owner") {
+		return
+	}
+
 	if err := gitrepo.RemoveRepository(owner, repo, info.Logo); err != nil {
 		writeErr(http.StatusInternalServerError, err.Error())
 		return
@@ -366,12 +413,10 @@ func deleteRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 //	@Failure		500		{object}	map[string]interface{}
 //	@Router			/repos/{owner}/{repo} [delete]
 func RepoHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, PATCH, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	setCORS(w, r, "GET, PATCH, DELETE")
 
 	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
+		handleOptions(w, r)
 		return
 	}
 
@@ -387,6 +432,14 @@ func RepoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodDelete {
 		deleteRepository(w, r, owner, repo)
 		return
+	}
+
+	// Organization-owned private repositories (and members-only orgs) are
+	// hidden from non-members. Personal repositories keep existing behavior.
+	if info, err := database.GetRepository(owner, repo); err == nil {
+		if !authorizeOrgRepoView(w, r, info) {
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
