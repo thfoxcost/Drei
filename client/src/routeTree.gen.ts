@@ -26,9 +26,11 @@ import { Route as AppOrgsIndexRouteImport } from './routes/_app/orgs/index'
 import { Route as UsernameRepoIndexRouteImport } from './routes/$username/$repo/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AppOrgsNewRouteImport } from './routes/_app/orgs/new'
+import { Route as UsernameRepoSecurityRouteImport } from './routes/$username/$repo/security'
 import { Route as UsernameRepoForksRouteImport } from './routes/$username/$repo/forks'
 import { Route as UsernameRepoCommitsRouteImport } from './routes/$username/$repo/commits'
 import { Route as UsernameRepoCodeRouteImport } from './routes/$username/$repo/code'
+import { Route as UsernameRepoActionsRouteImport } from './routes/$username/$repo/actions'
 import { Route as AppOrgsOrgRouteRouteImport } from './routes/_app/orgs/$org/route'
 import { Route as UsernameRepoSettingsRouteRouteImport } from './routes/$username/$repo/settings/route'
 import { Route as UsernameRepoIssuesRouteRouteImport } from './routes/$username/$repo/issues/route'
@@ -135,6 +137,11 @@ const AppOrgsNewRoute = AppOrgsNewRouteImport.update({
   path: '/orgs/new',
   getParentRoute: () => AppRoute,
 } as any)
+const UsernameRepoSecurityRoute = UsernameRepoSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => UsernameRepoRouteRoute,
+} as any)
 const UsernameRepoForksRoute = UsernameRepoForksRouteImport.update({
   id: '/forks',
   path: '/forks',
@@ -148,6 +155,11 @@ const UsernameRepoCommitsRoute = UsernameRepoCommitsRouteImport.update({
 const UsernameRepoCodeRoute = UsernameRepoCodeRouteImport.update({
   id: '/code',
   path: '/code',
+  getParentRoute: () => UsernameRepoRouteRoute,
+} as any)
+const UsernameRepoActionsRoute = UsernameRepoActionsRouteImport.update({
+  id: '/actions',
+  path: '/actions',
   getParentRoute: () => UsernameRepoRouteRoute,
 } as any)
 const AppOrgsOrgRouteRoute = AppOrgsOrgRouteRouteImport.update({
@@ -285,9 +297,11 @@ export interface FileRoutesByFullPath {
   '/$username/$repo/issues': typeof UsernameRepoIssuesRouteRouteWithChildren
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/orgs/$org': typeof AppOrgsOrgRouteRouteWithChildren
+  '/$username/$repo/actions': typeof UsernameRepoActionsRoute
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
+  '/$username/$repo/security': typeof UsernameRepoSecurityRoute
   '/orgs/new': typeof AppOrgsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo/': typeof UsernameRepoIndexRoute
@@ -323,9 +337,11 @@ export interface FileRoutesByTo {
   '/signup': typeof AuthSignupRoute
   '/$username': typeof UsernameIndexRoute
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
+  '/$username/$repo/actions': typeof UsernameRepoActionsRoute
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
+  '/$username/$repo/security': typeof UsernameRepoSecurityRoute
   '/orgs/new': typeof AppOrgsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo': typeof UsernameRepoIndexRoute
@@ -367,9 +383,11 @@ export interface FileRoutesById {
   '/$username/$repo/issues': typeof UsernameRepoIssuesRouteRouteWithChildren
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/_app/orgs/$org': typeof AppOrgsOrgRouteRouteWithChildren
+  '/$username/$repo/actions': typeof UsernameRepoActionsRoute
   '/$username/$repo/code': typeof UsernameRepoCodeRoute
   '/$username/$repo/commits': typeof UsernameRepoCommitsRouteWithChildren
   '/$username/$repo/forks': typeof UsernameRepoForksRoute
+  '/$username/$repo/security': typeof UsernameRepoSecurityRoute
   '/_app/orgs/new': typeof AppOrgsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$username/$repo/': typeof UsernameRepoIndexRoute
@@ -411,9 +429,11 @@ export interface FileRouteTypes {
     | '/$username/$repo/issues'
     | '/$username/$repo/settings'
     | '/orgs/$org'
+    | '/$username/$repo/actions'
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
     | '/$username/$repo/forks'
+    | '/$username/$repo/security'
     | '/orgs/new'
     | '/api/auth/$'
     | '/$username/$repo/'
@@ -449,9 +469,11 @@ export interface FileRouteTypes {
     | '/signup'
     | '/$username'
     | '/$username/$repo/settings'
+    | '/$username/$repo/actions'
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
     | '/$username/$repo/forks'
+    | '/$username/$repo/security'
     | '/orgs/new'
     | '/api/auth/$'
     | '/$username/$repo'
@@ -492,9 +514,11 @@ export interface FileRouteTypes {
     | '/$username/$repo/issues'
     | '/$username/$repo/settings'
     | '/_app/orgs/$org'
+    | '/$username/$repo/actions'
     | '/$username/$repo/code'
     | '/$username/$repo/commits'
     | '/$username/$repo/forks'
+    | '/$username/$repo/security'
     | '/_app/orgs/new'
     | '/api/auth/$'
     | '/$username/$repo/'
@@ -650,6 +674,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrgsNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/$username/$repo/security': {
+      id: '/$username/$repo/security'
+      path: '/security'
+      fullPath: '/$username/$repo/security'
+      preLoaderRoute: typeof UsernameRepoSecurityRouteImport
+      parentRoute: typeof UsernameRepoRouteRoute
+    }
     '/$username/$repo/forks': {
       id: '/$username/$repo/forks'
       path: '/forks'
@@ -669,6 +700,13 @@ declare module '@tanstack/react-router' {
       path: '/code'
       fullPath: '/$username/$repo/code'
       preLoaderRoute: typeof UsernameRepoCodeRouteImport
+      parentRoute: typeof UsernameRepoRouteRoute
+    }
+    '/$username/$repo/actions': {
+      id: '/$username/$repo/actions'
+      path: '/actions'
+      fullPath: '/$username/$repo/actions'
+      preLoaderRoute: typeof UsernameRepoActionsRouteImport
       parentRoute: typeof UsernameRepoRouteRoute
     }
     '/_app/orgs/$org': {
@@ -949,9 +987,11 @@ interface UsernameRepoRouteRouteChildren {
   UsernameRepoCompareRouteRoute: typeof UsernameRepoCompareRouteRouteWithChildren
   UsernameRepoIssuesRouteRoute: typeof UsernameRepoIssuesRouteRouteWithChildren
   UsernameRepoSettingsRouteRoute: typeof UsernameRepoSettingsRouteRoute
+  UsernameRepoActionsRoute: typeof UsernameRepoActionsRoute
   UsernameRepoCodeRoute: typeof UsernameRepoCodeRoute
   UsernameRepoCommitsRoute: typeof UsernameRepoCommitsRouteWithChildren
   UsernameRepoForksRoute: typeof UsernameRepoForksRoute
+  UsernameRepoSecurityRoute: typeof UsernameRepoSecurityRoute
   UsernameRepoIndexRoute: typeof UsernameRepoIndexRoute
   UsernameRepoBranchBranchNameRoute: typeof UsernameRepoBranchBranchNameRoute
   UsernameRepoPullsPullRoute: typeof UsernameRepoPullsPullRoute
@@ -964,9 +1004,11 @@ const UsernameRepoRouteRouteChildren: UsernameRepoRouteRouteChildren = {
   UsernameRepoCompareRouteRoute: UsernameRepoCompareRouteRouteWithChildren,
   UsernameRepoIssuesRouteRoute: UsernameRepoIssuesRouteRouteWithChildren,
   UsernameRepoSettingsRouteRoute: UsernameRepoSettingsRouteRoute,
+  UsernameRepoActionsRoute: UsernameRepoActionsRoute,
   UsernameRepoCodeRoute: UsernameRepoCodeRoute,
   UsernameRepoCommitsRoute: UsernameRepoCommitsRouteWithChildren,
   UsernameRepoForksRoute: UsernameRepoForksRoute,
+  UsernameRepoSecurityRoute: UsernameRepoSecurityRoute,
   UsernameRepoIndexRoute: UsernameRepoIndexRoute,
   UsernameRepoBranchBranchNameRoute: UsernameRepoBranchBranchNameRoute,
   UsernameRepoPullsPullRoute: UsernameRepoPullsPullRoute,
