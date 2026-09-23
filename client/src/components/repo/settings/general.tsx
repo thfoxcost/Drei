@@ -48,7 +48,7 @@ function General() {
 
     const res = await fetch(
       `http://localhost:3200/api/repos/${username}/${repo}/logo`,
-      { method: "POST", body: formData },
+      { method: "POST", credentials: "include", body: formData },
     )
 
     const result = await res.json()
@@ -87,6 +87,7 @@ function General() {
     try {
       const res = await fetch(`http://localhost:3200/api/repos/${username}/${repo}`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },

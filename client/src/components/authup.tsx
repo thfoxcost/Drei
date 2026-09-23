@@ -19,7 +19,7 @@ import { error006Sound } from "@/sounds/error-006";
 import { confirmation001Sound } from "@/sounds/confirmation-001";
 
 const formSchema = z.object({
-    name: z.string().min(2, "Name must be at least 2 characters."),
+    name: z.string().trim().min(2, "Name must be at least 2 characters.").regex(/^[^\s]/, "Name cannot start with a space"),
     email: z.email("invalid email"),
     password: z.string().min(8, "Password must be at least 8 characters."),
     callbackURL: z.string(),

@@ -83,6 +83,12 @@ func CollaboratorsHandler(w http.ResponseWriter, r *http.Request) {
 		writeSuccess(w, map[string]any{"users": candidates})
 
 	case http.MethodPost:
+		// Organization repositories require an owner/admin role to manage
+		// collaborators. Reads stay open, matching existing behavior.
+		if !authorizeOrgRepo(w, r, info, "admin") {
+			return
+		}
+
 		var req database.Contributor
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -112,6 +118,10 @@ func CollaboratorsHandler(w http.ResponseWriter, r *http.Request) {
 		writeSuccess(w, map[string]any{"success": true})
 
 	case http.MethodDelete:
+		if !authorizeOrgRepo(w, r, info, "admin") {
+			return
+		}
+
 		var req struct {
 			Username string `json:"username"`
 		}
