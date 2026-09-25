@@ -39,7 +39,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	http.HandleFunc("/api/contribution", handlers.Contribution)
+	http.HandleFunc("/api/users/{username}/contributions", handlers.UserContributionsHandler)
 	http.HandleFunc("/api/users", handlers.UsersHandler)
 	http.HandleFunc("/api/users/{owner}/repos", handlers.GetRepos)
 	http.HandleFunc("/api/issues", handlers.AllIssuesHandler)

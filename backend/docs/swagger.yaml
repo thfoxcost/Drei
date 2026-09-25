@@ -429,22 +429,46 @@ info:
   title: Drei API
   version: 1.0.0
 paths:
-  /contribution:
+  /users/{username}/contributions:
     get:
-      description: Returns demo contribution data from data/contribution.json
+      description: Returns per-day activity (commits, opened issues, opened pull
+        requests) for a user and calendar year
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Calendar year (defaults to current year)
+        in: query
+        name: year
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
-          schema: {}
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
         "500":
           description: Internal Server Error
           schema:
-            type: string
-      summary: Get contribution data
+            additionalProperties: true
+            type: object
+      summary: Get user contributions
       tags:
-      - System
+      - Users
   /git/{owner}/{repo}.git:
     get:
       description: Passthrough to git-http-backend CGI for git clone/push operations
