@@ -63,7 +63,8 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
   const isRepoRoot = matches.some(
     (match) =>
       match.routeId === `${repoPrefix}/` ||
-      match.routeId === `${repoPrefix}/branch/$branchName`,
+      match.routeId === `${repoPrefix}/branch/$branchName` ||
+      match.routeId === `${repoPrefix}/tag/$tagName`,
   );
 
   const currentTab = useMemo(() => {
@@ -75,6 +76,10 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
       }
 
       if (routeId === `${repoPrefix}/branch/$branchName`) {
+        return "files";
+      }
+
+      if (routeId === `${repoPrefix}/tag/$tagName`) {
         return "files";
       }
 

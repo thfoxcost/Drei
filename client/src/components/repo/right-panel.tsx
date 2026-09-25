@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import * as linguistLanguages from "linguist-languages";
 import { GitFork } from "lucide-react";
 import { usePullRequests } from "#/hooks/PRs/use-pull-requests";
-import type { RepoFile } from "#/types/repo";
+import type { RepoFile, TagInfo } from "#/types/repo";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
@@ -67,7 +67,7 @@ export interface RepoData {
 	langs: Lang[];
 	branches: string[];
 	defaultBranch: string;
-	tags: string[] | null;
+	tags: TagInfo[] | null;
 	cloneUrl: string;
 	commits: Commit[];
 	commitActivity: { date: string; count: number }[];

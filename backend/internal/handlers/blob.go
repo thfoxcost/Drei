@@ -15,7 +15,7 @@ import (
 //	@Produce		json
 //	@Param			owner	path		string	true	"Repository owner"
 //	@Param			repo	path		string	true	"Repository name"
-//	@Param			branch	path		string	true	"Branch name"
+//	@Param			branch	path		string	true	"Branch, tag, or commit SHA"
 //	@Param			path	path		string	true	"File path within the repository"
 //	@Success		200		{object}	gitrepo.BlobFile
 //	@Failure		400		{object}	map[string]interface{}
