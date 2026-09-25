@@ -81,7 +81,13 @@ func RenameRepository(owner, oldName, newName string) error {
 		return fmt.Errorf("repository %q already exists", newName)
 	}
 
-	return os.Rename(oldPath, newPath)
+	if err := os.Rename(oldPath, newPath); err != nil {
+		return err
+	}
+
+	// Keep the retained backup in sync with the repository name. The backup
+	// row follows automatically via ON DELETE CASCADE / repo_id lookups.
+	return RenameBackup(owner, oldName, newName)
 }
 
 // RemoveRepository removes the bare repository directory and any stored logo
@@ -91,6 +97,12 @@ func RemoveRepository(owner, name, logo string) error {
 	repoPath := filepath.Join(config.App.ReposPath, owner, name+".git")
 
 	if err := os.RemoveAll(repoPath); err != nil {
+		return err
+	}
+
+	// The backup metadata row is removed via ON DELETE CASCADE; delete the
+	// bundle file from disk here.
+	if err := RemoveBackup(owner, name); err != nil {
 		return err
 	}
 
