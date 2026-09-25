@@ -3,6 +3,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import * as linguistLanguages from "linguist-languages";
 import { GitFork } from "lucide-react";
+import { usePullRequests } from "#/hooks/PRs/use-pull-requests";
 import type { RepoFile } from "#/types/repo";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "../ui/badge";
@@ -98,6 +99,9 @@ export default function RightPanel({
 		(a, b) => b.percent - a.percent,
 	);
 	const { visibility, setItemVisible } = useRepoItemsVisibility();
+	const { data: pulls } = usePullRequests(owner, repo);
+	const prCount =
+		(pulls?.open ?? 0) + (pulls?.closed ?? 0) + (pulls?.merged ?? 0);
 	const availableItems = getAvailableItems(data.files as RepoFile[]);
 	const visibleItems = availableItems.filter(
 		(item) => visibility[item.id] ?? true,
@@ -232,6 +236,7 @@ export default function RightPanel({
 					<ActivityRadarChart
 						commitCount={data.commits.length}
 						issueCount={data.issueCount ?? 0}
+						prCount={prCount}
 					/>
 				</TabsContent>
 			</Tabs>
