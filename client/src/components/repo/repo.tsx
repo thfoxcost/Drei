@@ -13,6 +13,7 @@ interface RepoProps {
 	owner: string;
 	repo: string;
 	branch?: string;
+	refKind?: "branch" | "tag";
 }
 
 function decodeDocContent(content: string): string {
@@ -26,7 +27,7 @@ function decodeDocContent(content: string): string {
 	}
 }
 
-function Repo({ owner, repo, branch }: RepoProps) {
+function Repo({ owner, repo, branch, refKind = "branch" }: RepoProps) {
 	const { data: repoData, error } = useRepoData(owner, repo, branch);
 
 	if (error) {
@@ -121,6 +122,7 @@ function Repo({ owner, repo, branch }: RepoProps) {
 						<Tableheader
 							defaultBranch={repoData.defaultBranch}
 							activeBranch={branch ?? repoData.defaultBranch}
+							refKind={branch ? refKind : "branch"}
 							owner={owner}
 							repo={repo}
 							branches={repoData.branches}

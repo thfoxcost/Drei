@@ -30,7 +30,7 @@ export function usePulse(
 ) {
 	const params = new URLSearchParams();
 	params.set("days", String(days));
-	if (branch) params.set("branch", branch);
+	if (branch) params.set("ref", branch);
 	return useQuery({
 		queryKey: ["insights", "pulse", owner, repo, days, branch ?? ""],
 		queryFn: () =>
@@ -68,7 +68,7 @@ export function useInsightContributors(
 	branch?: string,
 ) {
 	const params = new URLSearchParams();
-	if (branch) params.set("branch", branch);
+	if (branch) params.set("ref", branch);
 	const qs = params.toString();
 	return useQuery({
 		queryKey: ["insights", "contributors", owner, repo, branch ?? ""],
@@ -88,7 +88,7 @@ export interface CodeFrequencyWeek {
 
 export function useCodeFrequency(owner: string, repo: string, branch?: string) {
 	const params = new URLSearchParams();
-	if (branch) params.set("branch", branch);
+	if (branch) params.set("ref", branch);
 	const qs = params.toString();
 	return useQuery({
 		queryKey: ["insights", "code-frequency", owner, repo, branch ?? ""],

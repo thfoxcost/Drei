@@ -225,7 +225,7 @@ type Language struct {
 	Percent float64 `json:"percent"`
 }
 
-func GetLang(owner, repo, branch string) ([]Language, error) {
+func GetLang(owner, repo, ref string) ([]Language, error) {
 	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
 
 	r, err := git.PlainOpen(repoPath)
@@ -233,7 +233,7 @@ func GetLang(owner, repo, branch string) ([]Language, error) {
 		return nil, err
 	}
 
-	commit, err := ResolveBranch(r, branch)
+	commit, _, err := ResolveRef(r, ref)
 	if err != nil {
 		return nil, err
 	}

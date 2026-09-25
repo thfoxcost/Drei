@@ -8,8 +8,8 @@ import (
 )
 
 // DownloadHandler serves the repository contents as a zip or tar.gz archive
-// built from the current branch (or a branch selected with the "branch" query
-// parameter).
+// built from the current ref (a branch, tag, or commit SHA selected with the
+// "ref" query parameter; the legacy "branch" parameter still works).
 //
 //	@Summary		Download repository archive
 //	@Description	Downloads a repository as a zip or tar.gz archive
@@ -17,7 +17,8 @@ import (
 //	@Produce		application/zip
 //	@Param			owner	path		string	true	"Repository owner"
 //	@Param			repo	path		string	true	"Repository name"
-//	@Param			branch	query		string	false	"Branch name (defaults to default branch)"
+//	@Param			ref		query		string	false	"Branch, tag, or commit SHA (defaults to default branch)"
+//	@Param			branch	query		string	false	"Branch name, deprecated: use ref instead"
 //	@Param			format	query		string	false	"Archive format: zip or tar.gz (defaults to zip)"
 //	@Success		200		{file}		binary
 //	@Failure		400		{object}	map[string]interface{}
@@ -45,7 +46,7 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	branch := r.URL.Query().Get("branch")
+	branch := effectiveRef(r)
 	format := strings.ToLower(r.URL.Query().Get("format"))
 
 	var gitFormat, contentType, filename string

@@ -83,9 +83,9 @@ func openInsightRepo(owner, repo string) (*git.Repository, error) {
 	return git.PlainOpen(repoPath)
 }
 
-// GetPulse walks the branch history within the last <days> days and sums
+// GetPulse walks the ref history within the last <days> days and sums
 // file changes. Only the window is diffed, so this stays cheap.
-func GetPulse(owner, repo, branch string, days int) (*PulseStats, error) {
+func GetPulse(owner, repo, ref string, days int) (*PulseStats, error) {
 	if days <= 0 {
 		days = 7
 	}
@@ -98,7 +98,7 @@ func GetPulse(owner, repo, branch string, days int) (*PulseStats, error) {
 		return nil, err
 	}
 
-	head, err := ResolveBranch(r, branch)
+	head, _, err := ResolveRef(r, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func GetPulse(owner, repo, branch string, days int) (*PulseStats, error) {
 		}
 	}
 
-	defaultBranch := branch
+	defaultBranch := ref
 	if defaultBranch == "" {
 		if head, err := r.Head(); err == nil && head.Name().IsBranch() {
 			defaultBranch = head.Name().Short()
@@ -186,13 +186,13 @@ func GetPulse(owner, repo, branch string, days int) (*PulseStats, error) {
 // GetContributorsInsight aggregates per-author commits/additions/deletions
 // plus daily buckets for sparklines. Only the most recent
 // maxInsightCommits commits are scanned.
-func GetContributorsInsight(owner, repo, branch string) (*ContributorsInsight, error) {
+func GetContributorsInsight(owner, repo, ref string) (*ContributorsInsight, error) {
 	r, err := openInsightRepo(owner, repo)
 	if err != nil {
 		return nil, err
 	}
 
-	head, err := ResolveBranch(r, branch)
+	head, _, err := ResolveRef(r, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -328,13 +328,13 @@ func GetContributorsInsight(owner, repo, branch string) (*ContributorsInsight, e
 }
 
 // GetCodeFrequency buckets additions/deletions by ISO week (Monday start).
-func GetCodeFrequency(owner, repo, branch string) ([]CodeFrequencyWeek, error) {
+func GetCodeFrequency(owner, repo, ref string) ([]CodeFrequencyWeek, error) {
 	r, err := openInsightRepo(owner, repo)
 	if err != nil {
 		return nil, err
 	}
 
-	head, err := ResolveBranch(r, branch)
+	head, _, err := ResolveRef(r, ref)
 	if err != nil {
 		return nil, err
 	}

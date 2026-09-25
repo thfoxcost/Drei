@@ -32,6 +32,19 @@ export interface Lang {
 	percent: number;
 }
 
+export interface TagInfo {
+	name: string;
+	target: string;
+	commit: string;
+	shortSha: string;
+	type: "annotated" | "lightweight";
+	message?: string;
+	taggerName?: string;
+	taggerEmail?: string;
+	taggerDate?: string;
+	commitMessage?: string;
+}
+
 export interface RepoData {
 	name: string;
 	owner: string;
@@ -49,7 +62,7 @@ export interface RepoData {
 	branches: string[];
 	branchDates: Record<string, string>;
 	defaultBranch: string;
-	tags: string[] | null;
+	tags: TagInfo[] | null;
 	cloneUrl: string;
 	commits: Commit[];
 	commitActivity: { date: string; count: number }[];

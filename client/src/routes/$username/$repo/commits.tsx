@@ -1,40 +1,38 @@
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Outlet,
+	useNavigate,
+	useRouterState,
+} from "@tanstack/react-router";
 import { endOfDay, format, startOfDay } from "date-fns";
 import {
-  CalendarIcon,
-  Check,
-  ChevronDown,
-  GitBranch,
-  GitCommitHorizontal,
-  SearchIcon,
-  Users,
-  X,
+	CalendarIcon,
+	Check,
+	ChevronDown,
+	GitCommitHorizontal,
+	Users,
+	X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
+import { z } from "zod";
 
 import CommitCard from "#/components/repo/commit-card";
 import type { Contributor } from "#/components/repo/contributor-avatars";
 import { NoRepo } from "#/components/repo/norepo";
+import { RefSwitcher } from "#/components/repo/ref-switcher";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
-import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Calendar } from "#/components/ui/calendar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
 import { Input } from "#/components/ui/input";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "#/components/ui/input-group";
 import {
   Popover,
   PopoverContent,
@@ -46,8 +44,13 @@ import { absoluteDate } from "#/lib/time-ago";
 import type { Commit } from "#/types/repo";
 import { Separator } from "#/components/ui/separator";
 
+const commitsSearchSchema = z.object({
+	ref: z.string().optional(),
+});
+
 export const Route = createFileRoute("/$username/$repo/commits")({
-  component: RouteComponent,
+	component: RouteComponent,
+	validateSearch: commitsSearchSchema,
 });
 
 // Parses the API's date format, e.g. "2026-07-23 11:25:29 -0700 -0700",
@@ -74,90 +77,6 @@ function formatDateRange(range?: DateRange): string {
   if (!range?.from) return "Date";
   if (!range.to) return format(range.from, "MMM d, yyyy");
   return `${format(range.from, "MMM d, yyyy")} - ${format(range.to, "MMM d, yyyy")}`;
-}
-
-interface BranchSwitcherProps {
-  branches: string[];
-  defaultBranch: string;
-  currentBranch: string;
-  query: string;
-  onQueryChange: (value: string) => void;
-  onSelect: (branch: string) => void;
-}
-
-function BranchSwitcher({
-  branches,
-  defaultBranch,
-  currentBranch,
-  query,
-  onQueryChange,
-  onSelect,
-}: BranchSwitcherProps) {
-  const filteredBranches = branches.filter((branch) =>
-    branch.toLowerCase().includes(query.trim().toLowerCase()),
-  );
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline">
-          <GitBranch className="h-4 w-4" />
-          {currentBranch}
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel>Switch branch</DropdownMenuLabel>
-
-        <div className="px-2 pb-2">
-          <InputGroup>
-            <InputGroupAddon>
-              <SearchIcon className="h-3.5 w-3.5" />
-            </InputGroupAddon>
-
-            <InputGroupInput
-              placeholder="Find a branch..."
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-              className="text-xs"
-            />
-          </InputGroup>
-        </div>
-
-        <DropdownMenuSeparator />
-
-        {filteredBranches.length === 0 ? (
-          <p className="p-2 text-xs text-muted-foreground">No branches found</p>
-        ) : (
-          filteredBranches.map((branch) => (
-            <DropdownMenuItem
-              key={branch}
-              onClick={() => onSelect(branch)}
-              className="flex items-center justify-between"
-            >
-              <span className="flex items-center gap-2">
-                <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
-                {branch}
-              </span>
-
-              <span className="flex items-center gap-2">
-                {branch === defaultBranch && (
-                  <Badge variant="outline" className="h-4 px-1.5 text-[10px]">
-                    Default
-                  </Badge>
-                )}
-
-                {branch === currentBranch && (
-                  <Check className="h-3.5 w-3.5 text-green-600" />
-                )}
-              </span>
-            </DropdownMenuItem>
-          ))
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 }
 
 interface UsersFilterProps {
@@ -304,21 +223,21 @@ function DateFilter({ value, onChange }: DateFilterProps) {
 }
 
 function RouteComponent() {
-  const { username, repo }: { username: string; repo: string } =
-    Route.useParams();
+	const { username, repo }: { username: string; repo: string } =
+		Route.useParams();
+	const { ref } = Route.useSearch();
+	const navigate = useNavigate();
 
-  const routerState = useRouterState();
-  const isCommitDetail = routerState.location.pathname.startsWith(
-    `/${username}/${repo}/commits/`,
-  );
+	const routerState = useRouterState();
+	const isCommitDetail = routerState.location.pathname.startsWith(
+		`/${username}/${repo}/commits/`,
+	);
 
-  const [branch, setBranch] = useState<string | undefined>();
-  const [branchQuery, setBranchQuery] = useState("");
-  const [user, setUser] = useState<string | undefined>();
-  const [userQuery, setUserQuery] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+	const [user, setUser] = useState<string | undefined>();
+	const [userQuery, setUserQuery] = useState("");
+	const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const { data, isLoading, isError } = useRepoData(username, repo, branch);
+	const { data, isLoading, isError } = useRepoData(username, repo, ref);
 
   const filteredCommits = useMemo(() => {
     if (!data) return [];
@@ -396,10 +315,18 @@ function RouteComponent() {
     return <NoRepo />;
   }
 
-  const branches = data.branches ?? [];
-  const defaultBranch = data.defaultBranch ?? "main";
-  const currentBranch = branch ?? defaultBranch;
-  const contributors = data.contributors ?? [];
+	const branches = data.branches ?? [];
+	const tags = data.tags ?? [];
+	const defaultBranch = data.defaultBranch ?? "main";
+	const currentBranch = ref ?? defaultBranch;
+	const currentKind = branches.includes(currentBranch) ? "branch" : "tag";
+	const contributors = data.contributors ?? [];
+
+	const selectRef = (selected: string | undefined) => {
+		navigate({
+			search: selected ? { ref: selected } : {},
+		});
+	};
 
   const avatarForAuthor = (author: string) =>
     contributors.find((c) => c.username.toLowerCase() === author.toLowerCase())
@@ -410,18 +337,20 @@ function RouteComponent() {
       <h1 className="text-2xl">Commits</h1>
       <Separator className='my-2 mb-4' />
 
-      <div className="my-2 flex flex-row items-center justify-between gap-2">
-        <BranchSwitcher
-          branches={branches}
-          defaultBranch={defaultBranch}
-          currentBranch={currentBranch}
-          query={branchQuery}
-          onQueryChange={setBranchQuery}
-          onSelect={(selectedBranch) => {
-            setBranch(selectedBranch);
-            setBranchQuery("");
-          }}
-        />
+		<div className="my-2 flex flex-row items-center justify-between gap-2">
+			<RefSwitcher
+				currentRef={currentBranch}
+				currentKind={currentKind}
+				defaultBranch={defaultBranch}
+				branches={branches}
+				tags={tags}
+				onSelectBranch={(selectedBranch) =>
+					selectRef(
+						selectedBranch === defaultBranch ? undefined : selectedBranch,
+					)
+				}
+				onSelectTag={selectRef}
+			/>
 
         <div className="flex flex-row items-center gap-2">
           <UsersFilter
