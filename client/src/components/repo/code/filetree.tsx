@@ -1,35 +1,25 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import {
-	Check,
-	ChevronDown,
 	File,
 	Folder,
-	GitBranch,
 	PanelLeftClose,
 	Plus,
 	SearchIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { type TreeDataItem, TreeView } from "#/components/tree-view";
-import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "#/components/ui/dropdown-menu";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
 } from "#/components/ui/input-group";
-import type { RepoFile } from "#/types/repo";
+import type { RepoFile, TagInfo } from "#/types/repo";
+import { RefSwitcher } from "../ref-switcher";
 
 interface FiletreeProps {
 	branches?: string[];
+	tags?: TagInfo[];
 	defaultBranch?: string;
 	files?: RepoFile[];
 	currentBranch?: string;
@@ -78,6 +68,7 @@ function buildFileTree(files: RepoFile[]): TreeDataItem[] {
 
 function Filetree({
 	branches = [],
+	tags = [],
 	defaultBranch = "main",
 	files = [],
 	currentBranch = "main",
@@ -89,16 +80,14 @@ function Filetree({
 	const owner = username as string;
 	const repoName = repo as string;
 
-	const [branchFilter, setBranchFilter] = useState("");
 	const [searchQuery, setSearchQuery] = useState("");
 
-	const filteredBranches = branches.filter((branch) =>
-		branch.toLowerCase().includes(branchFilter.toLowerCase()),
-	);
+	// The tree/blob URL segment holds whatever ref the user is browsing
+	// (branch or tag); the backend resolves it generically with branches
+	// winning on branch/tag name collisions.
+	const currentKind = branches.includes(currentBranch) ? "branch" : "tag";
 
-	const handleBranchClick = (branch: string) => {
-		setBranchFilter("");
-
+	const navigateToRef = (ref: string, kind: "branch" | "tag") => {
 		const currentUrl = window.location.pathname;
 		const branchSegment = currentBranch;
 		const branchPrefix = `/tree/${branchSegment}`;
@@ -116,7 +105,14 @@ function Filetree({
 		if (restOfPath && restOfPath !== "/") {
 			navigate({
 				to: `/$username/$repo/${prefix}/$branch/${restOfPath.replace(/^\//, "")}` as any,
-				params: { username: owner, repo: repoName, branch },
+				params: { username: owner, repo: repoName, branch: ref },
+			});
+		} else if (kind === "tag") {
+			// Tags have no default view: keep the tag context instead of
+			// falling back to the default branch home.
+			navigate({
+				to: "/$username/$repo/tag/$tagName" as any,
+				params: { username: owner, repo: repoName, tagName: ref },
 			});
 		} else {
 			navigate({
@@ -124,6 +120,14 @@ function Filetree({
 				params: { username: owner, repo: repoName },
 			});
 		}
+	};
+
+	const handleBranchClick = (branch: string) => {
+		navigateToRef(branch, "branch");
+	};
+
+	const handleTagClick = (tag: string) => {
+		navigateToRef(tag, "tag");
 	};
 
 	const makeTreeItems = (
@@ -204,66 +208,15 @@ function Filetree({
 				</div>
 
 				<div className="flex items-center gap-2">
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button variant="outline" className="flex-1 justify-start">
-								<GitBranch className="h-4 w-4" />
-								{currentBranch}
-								<ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />
-							</Button>
-						</DropdownMenuTrigger>
-
-						<DropdownMenuContent align="start" className="w-64">
-							<DropdownMenuLabel>Switch branch</DropdownMenuLabel>
-
-							<div className="px-2 pb-2">
-								<InputGroup>
-									<InputGroupAddon>
-										<SearchIcon className="h-3.5 w-3.5" />
-									</InputGroupAddon>
-
-									<InputGroupInput
-										placeholder="Find a branch..."
-										value={branchFilter}
-										onChange={(e) => setBranchFilter(e.target.value)}
-										className="text-xs"
-									/>
-								</InputGroup>
-							</div>
-
-							<DropdownMenuSeparator />
-
-							{filteredBranches.length === 0 ? (
-								<p className="p-2 text-xs text-muted-foreground">
-									No branches found
-								</p>
-							) : (
-								filteredBranches.map((branch) => (
-									<DropdownMenuItem
-										key={branch}
-										onClick={() => handleBranchClick(branch)}
-										className="flex items-center justify-between"
-									>
-										<span className="flex items-center gap-2">
-											<GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
-											{branch}
-										</span>
-
-										{branch === defaultBranch ? (
-											<Badge
-												variant="outline"
-												className="h-4 px-1.5 text-[10px]"
-											>
-												Default
-											</Badge>
-										) : branch === currentBranch ? (
-											<Check className="h-3.5 w-3.5 text-green-600" />
-										) : null}
-									</DropdownMenuItem>
-								))
-							)}
-						</DropdownMenuContent>
-					</DropdownMenu>
+					<RefSwitcher
+						currentRef={currentBranch}
+						currentKind={currentKind}
+						defaultBranch={defaultBranch}
+						branches={branches}
+						tags={tags}
+						onSelectBranch={handleBranchClick}
+						onSelectTag={handleTagClick}
+					/>
 
 					<Button variant="outline" size="icon" disabled>
 						<Plus className="h-4 w-4" />

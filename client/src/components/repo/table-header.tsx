@@ -7,15 +7,12 @@ import {
 	Copy,
 	FileArchive,
 	GitBranch,
-	SearchIcon,
 	SquareTerminal,
 	Tag,
-	Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { RepoFile } from "#/types/repo";
-import { Badge } from "../ui/badge";
+import type { RepoFile, TagInfo } from "#/types/repo";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -45,15 +42,17 @@ import { Spinner } from "../ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 import { FileSearch } from "./file-search";
+import { RefSwitcher } from "./ref-switcher";
 
 interface TableheaderProps {
 	defaultBranch: string;
 	activeBranch?: string;
+	refKind?: "branch" | "tag";
 	owner: string;
 	repo: string;
 	branches: string[];
 	nBranches: number;
-	tags: string[] | null;
+	tags: TagInfo[] | null;
 	nTags: number;
 	cloneUrl: string;
 	readme?: string;
@@ -103,6 +102,7 @@ function CloneUrlField({ url }: { url?: string }) {
 function Tableheader({
 	defaultBranch,
 	activeBranch,
+	refKind = "branch",
 	owner,
 	repo,
 	branches,
@@ -115,16 +115,10 @@ function Tableheader({
 }: TableheaderProps) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const [branchFilter, setBranchFilter] = useState("");
-	const [switcherOpen, setSwitcherOpen] = useState(false);
 	const [branchToDelete, setBranchToDelete] = useState<string | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
 
 	const currentBranch = activeBranch || defaultBranch;
-
-	const filteredBranches = branches.filter((b) =>
-		b.toLowerCase().includes(branchFilter.toLowerCase()),
-	);
 
 	const handleBranchClick = (branch: string) => {
 		if (branch === defaultBranch) {
@@ -138,6 +132,13 @@ function Tableheader({
 				params: { username: owner, repo, branchName: branch },
 			});
 		}
+	};
+
+	const handleTagClick = (tag: string) => {
+		navigate({
+			to: "/$username/$repo/tag/$tagName",
+			params: { username: owner, repo, tagName: tag },
+		});
 	};
 
 	const handleDeleteBranch = async () => {
@@ -179,7 +180,7 @@ function Tableheader({
 	};
 
 	const handleDownload = async (format: "zip" | "tar.gz") => {
-		const url = `${import.meta.env.VITE_BACKEND_URL}/api/repos/${owner}/${repo}/download?format=${format}&branch=${encodeURIComponent(currentBranch)}`;
+		const url = `${import.meta.env.VITE_BACKEND_URL}/api/repos/${owner}/${repo}/download?format=${format}&ref=${encodeURIComponent(currentBranch)}`;
 
 		try {
 			const res = await fetch(url);
@@ -257,79 +258,17 @@ function Tableheader({
 	return (
 		<div className="flex flex-row items-center gap-2 justify-between">
 			<div className="flex flex-row gap-3">
-				{/* Branch switcher */}
-				<DropdownMenu open={switcherOpen} onOpenChange={setSwitcherOpen}>
-					<DropdownMenuTrigger asChild>
-						<Button variant="outline" className="align-center justify-center">
-							<GitBranch className="h-4 w-4" />
-							{currentBranch}
-							<ChevronDown className="h-4 w-4 text-muted-foreground" />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start" className="w-64">
-						<DropdownMenuLabel>Switch branch</DropdownMenuLabel>
-						<div className="px-2 pb-2">
-							<InputGroup>
-								<InputGroupAddon>
-									<SearchIcon className="h-3.5 w-3.5" />
-								</InputGroupAddon>
-								<InputGroupInput
-									placeholder="Find a branch..."
-									value={branchFilter}
-									onChange={(e) => setBranchFilter(e.target.value)}
-									className="text-xs"
-								/>
-							</InputGroup>
-						</div>
-						<DropdownMenuSeparator />
-						{filteredBranches.length === 0 ? (
-							<p className="text-xs text-muted-foreground p-2">
-								No branches found
-							</p>
-						) : (
-							filteredBranches.map((branch) => (
-								<DropdownMenuItem
-									key={branch}
-									onClick={() => handleBranchClick(branch)}
-									className="group flex items-center justify-between"
-								>
-									<span className="flex items-center gap-2">
-										<GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
-										{branch}
-									</span>
-									<span className="flex items-center gap-1.5">
-										{branch === defaultBranch ? (
-											<Badge
-												variant="outline"
-												className="h-4 px-1.5 text-[10px]"
-											>
-												Default
-											</Badge>
-										) : branch === currentBranch ? (
-											<Check className="h-3.5 w-3.5 text-green-600" />
-										) : null}
-										{branch !== defaultBranch && (
-											<button
-												type="button"
-												aria-label={`Delete branch ${branch}`}
-												title={`Delete branch ${branch}`}
-												onClick={(e) => {
-													e.stopPropagation();
-													e.preventDefault();
-													setSwitcherOpen(false);
-													setBranchToDelete(branch);
-												}}
-												className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
-											>
-												<Trash2 className="h-3.5 w-3.5" />
-											</button>
-										)}
-									</span>
-								</DropdownMenuItem>
-							))
-						)}
-					</DropdownMenuContent>
-				</DropdownMenu>
+				{/* Branch/tag switcher */}
+				<RefSwitcher
+					currentRef={currentBranch}
+					currentKind={refKind}
+					defaultBranch={defaultBranch}
+					branches={branches}
+					tags={tags ?? []}
+					onSelectBranch={handleBranchClick}
+					onSelectTag={handleTagClick}
+					onDeleteBranch={setBranchToDelete}
+				/>
 
 				{/* Branches list */}
 				<DropdownMenu>
@@ -381,9 +320,13 @@ function Tableheader({
 							<p className="text-xs text-muted-foreground p-2">No tags</p>
 						) : (
 							tags.map((tag) => (
-								<DropdownMenuItem key={tag} className="flex items-center gap-2">
+								<DropdownMenuItem
+									key={tag.name}
+									onClick={() => handleTagClick(tag.name)}
+									className="flex items-center gap-2"
+								>
 									<Tag className="h-3.5 w-3.5 text-muted-foreground" />
-									{tag}
+									{tag.name}
 								</DropdownMenuItem>
 							))
 						)}

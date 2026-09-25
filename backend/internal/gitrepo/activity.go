@@ -22,7 +22,7 @@ const DefaultActivityWeeks = 16
 // <weeks> weeks (oldest first). Unlike GetCommitActivity the output is
 // bounded, making it cheap enough to fan out across repository lists for
 // sparklines. Repositories without reachable commits yield all zeros.
-func GetCommitActivityWindow(owner, repo, branch string, weeks int) ([]int, error) {
+func GetCommitActivityWindow(owner, repo, ref string, weeks int) ([]int, error) {
 	if weeks <= 0 {
 		weeks = DefaultActivityWeeks
 	}
@@ -36,7 +36,7 @@ func GetCommitActivityWindow(owner, repo, branch string, weeks int) ([]int, erro
 		return zeros, nil
 	}
 
-	commit, err := ResolveBranch(r, branch)
+	commit, _, err := ResolveRef(r, ref)
 	if err != nil {
 		return zeros, nil
 	}
@@ -72,7 +72,7 @@ func GetCommitActivityWindow(owner, repo, branch string, weeks int) ([]int, erro
 // GetCommitActivity walks the repository history and returns the number of
 // commits per day. Every day from the first commit through today is
 // represented, including days with zero commits.
-func GetCommitActivity(owner, repo, branch string) ([]CommitDay, error) {
+func GetCommitActivity(owner, repo, ref string) ([]CommitDay, error) {
 	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
 
 	r, err := git.PlainOpen(repoPath)
@@ -80,7 +80,7 @@ func GetCommitActivity(owner, repo, branch string) ([]CommitDay, error) {
 		return nil, err
 	}
 
-	commit, err := ResolveBranch(r, branch)
+	commit, _, err := ResolveRef(r, ref)
 	if err != nil {
 		return nil, err
 	}

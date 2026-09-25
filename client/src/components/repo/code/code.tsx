@@ -166,6 +166,7 @@ function Code({
 			<aside className="sticky top-0 h-screen shrink-0">
 				<Filetree
 					branches={repoData?.branches}
+					tags={repoData?.tags ?? []}
 					defaultBranch={repoData?.defaultBranch}
 					files={repoData?.files}
 					currentBranch={branch}
