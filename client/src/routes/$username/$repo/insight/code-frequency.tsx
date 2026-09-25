@@ -1,33 +1,19 @@
-import { CSSProperties } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { createFileRoute } from "@tanstack/react-router";
+import type { CSSProperties } from "react";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import {
+	type ChartConfig,
 	ChartContainer,
 	ChartTooltip,
 	ChartTooltipContent,
-	type ChartConfig,
 } from "#/components/ui/chart";
+import { useCodeFrequency } from "#/hooks/useInsights";
 
-export const Route = createFileRoute(
-	"/$username/$repo/insight/code-frequency",
-)({
-	component: RouteComponent,
-});
-
-const chartData = [
-	{ week: "Sep 1", additions: 342, deletions: 145 },
-	{ week: "Sep 8", additions: 876, deletions: 354 },
-	{ week: "Sep 15", additions: 512, deletions: 289 },
-	{ week: "Sep 22", additions: 629, deletions: 421 },
-	{ week: "Sep 29", additions: 458, deletions: 167 },
-	{ week: "Oct 6", additions: 781, deletions: 298 },
-	{ week: "Oct 13", additions: 634, deletions: 376 },
-	{ week: "Oct 20", additions: 924, deletions: 512 },
-	{ week: "Oct 27", additions: 728, deletions: 341 },
-	{ week: "Nov 3", additions: 842, deletions: 428 },
-	{ week: "Nov 10", additions: 596, deletions: 267 },
-	{ week: "Nov 17", additions: 764, deletions: 389 },
-];
+export const Route = createFileRoute("/$username/$repo/insight/code-frequency")(
+	{
+		component: RouteComponent,
+	},
+);
 
 const chartConfig = {
 	additions: {
@@ -55,18 +41,8 @@ function CrosshatchPattern({ config }: { config: ChartConfig }) {
 					height="8"
 					patternUnits="userSpaceOnUse"
 				>
-					<path
-						d="M0,8 L8,0"
-						stroke={color}
-						strokeWidth="0.8"
-						opacity="0.4"
-					/>
-					<path
-						d="M0,0 L8,8"
-						stroke={color}
-						strokeWidth="0.8"
-						opacity="0.2"
-					/>
+					<path d="M0,8 L8,0" stroke={color} strokeWidth="0.8" opacity="0.4" />
+					<path d="M0,0 L8,8" stroke={color} strokeWidth="0.8" opacity="0.2" />
 				</pattern>
 			))}
 		</>
@@ -74,10 +50,14 @@ function CrosshatchPattern({ config }: { config: ChartConfig }) {
 }
 
 function RouteComponent() {
+	const { username, repo } = Route.useParams();
+	const { data, isPending, isError } = useCodeFrequency(username, repo);
+	const chartData = data ?? [];
+
 	return (
 		<div className="flex w-full flex-col gap-4">
 			<span className="text-2xl font-medium">
-				Code frequency over the history of ncdai/chanhdai.com
+				Code frequency over the history of {username}/{repo}
 			</span>
 
 			<div className="overflow-hidden rounded-md border">
@@ -86,99 +66,106 @@ function RouteComponent() {
 				</div>
 
 				<div className="px-4 py-6">
-					<ChartContainer
-						config={chartConfig}
-						className="h-[420px] w-full"
-					>
-						<AreaChart
-							accessibilityLayer
-							data={chartData}
-							margin={{
-								top: 20,
-								right: 0,
-								bottom: 0,
-								left: 0,
-							}}
-						>
-							<CartesianGrid
-								vertical={false}
-								strokeDasharray="3 3"
-							/>
+					{isPending ? (
+						<div className="flex h-[420px] items-center justify-center text-sm text-muted-foreground">
+							Loading code frequency…
+						</div>
+					) : isError ? (
+						<div className="flex h-[420px] items-center justify-center text-sm text-destructive">
+							Failed to load code frequency.
+						</div>
+					) : chartData.length === 0 ? (
+						<div className="flex h-[420px] items-center justify-center text-sm text-muted-foreground">
+							No commits yet in this repository.
+						</div>
+					) : (
+						<ChartContainer config={chartConfig} className="h-[420px] w-full">
+							<AreaChart
+								accessibilityLayer
+								data={chartData}
+								margin={{
+									top: 20,
+									right: 0,
+									bottom: 0,
+									left: 0,
+								}}
+							>
+								<CartesianGrid vertical={false} strokeDasharray="3 3" />
 
-							<XAxis
-								dataKey="week"
-								tickLine={false}
-								axisLine={false}
-								tickMargin={8}
-							/>
+								<XAxis
+									dataKey="week"
+									tickLine={false}
+									axisLine={false}
+									tickMargin={8}
+								/>
 
-							<ChartTooltip
-								content={
-									<ChartTooltipContent
-										indicator="dot"
-										className="min-w-44 gap-2.5"
-										labelFormatter={(value) => (
-											<div className="border-border/50 mb-0.5 border-b pb-2">
-												<span className="text-xs font-medium">
-													Week of {value}
-												</span>
-											</div>
-										)}
-										formatter={(value, name) => (
-											<div className="flex w-full items-center justify-between gap-2">
-												<div className="flex items-center gap-1.5">
-													<div
-														className="h-2.5 w-2.5 shrink-0 rounded-xs bg-(--color-bg)"
-														style={
-															{
-																"--color-bg": `var(--color-${name})`,
-															} as CSSProperties
-														}
-													/>
-
-													<span className="text-muted-foreground">
-														{
-															chartConfig[
-																name as keyof typeof chartConfig
-															]?.label
-														}
+								<ChartTooltip
+									content={
+										<ChartTooltipContent
+											indicator="dot"
+											className="min-w-44 gap-2.5"
+											labelFormatter={(value) => (
+												<div className="border-border/50 mb-0.5 border-b pb-2">
+													<span className="text-xs font-medium">
+														Week of {value}
 													</span>
 												</div>
+											)}
+											formatter={(value, name) => (
+												<div className="flex w-full items-center justify-between gap-2">
+													<div className="flex items-center gap-1.5">
+														<div
+															className="h-2.5 w-2.5 shrink-0 rounded-xs bg-(--color-bg)"
+															style={
+																{
+																	"--color-bg": `var(--color-${name})`,
+																} as CSSProperties
+															}
+														/>
 
-												<span className="font-semibold tabular-nums text-foreground">
-													{Number(value).toLocaleString()}
-												</span>
-											</div>
-										)}
-									/>
-								}
-							/>
+														<span className="text-muted-foreground">
+															{
+																chartConfig[name as keyof typeof chartConfig]
+																	?.label
+															}
+														</span>
+													</div>
 
-							<defs>
-								<CrosshatchPattern config={chartConfig} />
-							</defs>
+													<span className="font-semibold tabular-nums text-foreground">
+														{Number(value).toLocaleString()}
+													</span>
+												</div>
+											)}
+										/>
+									}
+								/>
 
-							<Area
-								dataKey="deletions"
-								type="natural"
-								fill="url(#code-frequency-crosshatch-deletions)"
-								fillOpacity={0.5}
-								stroke="var(--color-deletions)"
-								stackId="a"
-								strokeWidth={1}
-							/>
+								<defs>
+									<CrosshatchPattern config={chartConfig} />
+								</defs>
 
-							<Area
-								dataKey="additions"
-								type="natural"
-								fill="url(#code-frequency-crosshatch-additions)"
-								fillOpacity={0.5}
-								stroke="var(--color-additions)"
-								stackId="a"
-								strokeWidth={1}
-							/>
-						</AreaChart>
-					</ChartContainer>
+								<Area
+									dataKey="deletions"
+									type="natural"
+									fill="url(#code-frequency-crosshatch-deletions)"
+									fillOpacity={0.5}
+									stroke="var(--color-deletions)"
+									stackId="a"
+									strokeWidth={1}
+								/>
+
+								<Area
+									dataKey="additions"
+									type="natural"
+									fill="url(#code-frequency-crosshatch-additions)"
+									fillOpacity={0.5}
+									stroke="var(--color-additions)"
+									stackId="a"
+									strokeWidth={1}
+								/>
+							</AreaChart>
+						</ChartContainer>
+					)}
 				</div>
 			</div>
 		</div>
