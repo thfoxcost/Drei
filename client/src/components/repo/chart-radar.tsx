@@ -31,11 +31,8 @@ interface ActivityDatum {
 interface ActivityRadarChartProps {
 	commitCount?: number;
 	issueCount?: number;
+	prCount?: number;
 }
-
-// TODO: The PR count is a static placeholder. Replace it with a real count
-// once pull requests are implemented.
-const DUMMY_PR_COUNT = 123;
 
 const chartConfig = {
 	value: {
@@ -47,10 +44,11 @@ const chartConfig = {
 export function ActivityRadarChart({
 	commitCount = 0,
 	issueCount = 0,
+	prCount = 0,
 }: ActivityRadarChartProps) {
 	const chartData: ActivityDatum[] = [
 		{ activity: "Commits", value: commitCount, icon: GitCommit },
-		{ activity: "PRs", value: DUMMY_PR_COUNT, icon: GitPullRequest },
+		{ activity: "PRs", value: prCount, icon: GitPullRequest },
 		{ activity: "Issues", value: issueCount, icon: CircleDot },
 	];
 	return (
