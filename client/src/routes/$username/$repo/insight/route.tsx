@@ -1,4 +1,9 @@
-import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	Outlet,
+	useParams,
+} from "@tanstack/react-router";
 
 export const Route = createFileRoute("/$username/$repo/insight")({
 	component: RouteComponent,
@@ -24,6 +29,10 @@ const insights = [
 ] as const;
 
 function RouteComponent() {
+	const { username, repo } = useParams({
+		from: "/$username/$repo/insight",
+	});
+
 	return (
 		<div className="mx-30 my-2 flex gap-4">
 			<div className="h-fit w-[300px] overflow-hidden rounded-md border">
@@ -38,8 +47,11 @@ function RouteComponent() {
 									<Link
 										to={insight.to}
 										params={{
-											username: "theFoxCost",
-											repo: "test12",
+											username,
+											repo,
+										}}
+										activeProps={{
+											className: "underline",
 										}}
 										className="flex items-center gap-2 font-medium hover:underline"
 									>
