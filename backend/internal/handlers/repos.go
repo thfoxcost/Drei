@@ -291,6 +291,13 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 			return
 		}
 
+		// Keep the retained backup's stored path in sync (the bundle file
+		// itself was already moved by RenameRepository).
+		if err := database.UpdateBackupPath(info.ID, gitrepo.BackupFilePath(owner, req.Name)); err != nil {
+			writeErr(http.StatusInternalServerError, err.Error())
+			return
+		}
+
 		// Keep the stored logo in sync so its public URL still works.
 		if info.Logo != "" {
 			if err := gitrepo.RenameLogo(owner, repo, req.Name, info.Logo); err != nil {

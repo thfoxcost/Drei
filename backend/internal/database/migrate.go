@@ -741,5 +741,41 @@ func Migrate() error {
 		return err
 	}
 
+	// Repository backups: per-repo opt-in flag plus a single snapshot row per
+	// repository (retention = 1, enforced by UNIQUE(repo_id)). The snapshot
+	// itself is a `git bundle --all` file on local disk; the row only tracks
+	// which commit it contains so isLatest can be answered cheaply.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE repositories
+		ADD COLUMN IF NOT EXISTS backup_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS repository_backups (
+			id BIGSERIAL PRIMARY KEY,
+			repo_id BIGINT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+			file_path TEXT NOT NULL,
+			commit_hash TEXT NOT NULL,
+			size_bytes BIGINT NOT NULL DEFAULT 0,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+			UNIQUE(repo_id)
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS repository_backups_repo_id_idx
+		ON repository_backups (repo_id);
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
