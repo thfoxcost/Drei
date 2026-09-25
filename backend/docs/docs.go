@@ -15,25 +15,58 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/contribution": {
+        "/users/{username}/contributions": {
             "get": {
-                "description": "Returns demo contribution data from data/contribution.json",
+                "description": "Returns per-day activity (commits, opened issues, opened pull requests) for a user and calendar year",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "System"
+                    "Users"
                 ],
-                "summary": "Get contribution data",
+                "summary": "Get user contributions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Calendar year (defaults to current year)",
+                        "name": "year",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
-                        "schema": {}
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
