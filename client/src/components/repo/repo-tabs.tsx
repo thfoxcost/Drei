@@ -28,7 +28,7 @@ const tabs = [
   },
   { name: "Actions", value: "actions", icon: Play, disabled: false },
   { name: "Security", value: "security", icon: Shield, disabled: false },
-  { name: "Insights", value: "insights", icon: BarChart3, disabled: true },
+  { name: "Insights", value: "insights", icon: BarChart3, disabled: false },
   { name: "Settings", value: "settings", icon: Settings, disabled: false },
 ];
 
@@ -38,8 +38,8 @@ const tabRouteTo = {
   pulls: "/$username/$repo/pulls",
   settings: "/$username/$repo/settings",
   security: "/$username/$repo/security",
-  actions: "/$username/$repo/actions"
-
+  actions: "/$username/$repo/actions",
+  insights: "/$username/$repo/insight",
 } as const;
 
 interface RepoProps {
