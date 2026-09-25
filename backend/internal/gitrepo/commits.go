@@ -63,10 +63,11 @@ type rawCommit struct {
 }
 
 // GetCommits walks the repository history and returns the commits reachable
-// from the given branch, newest first, plus the head commit. Commit authors
+// from the given ref (branch, tag, or commit SHA; empty means HEAD), newest
+// first, plus the head commit. Commit authors
 // are resolved against registered Drei users by email so a stale git author
 // name is replaced with the account username when possible.
-func GetCommits(owner, repo, branch string) ([]CommitInfo, CommitInfo, error) {
+func GetCommits(owner, repo, ref string) ([]CommitInfo, CommitInfo, error) {
 	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
 
 	r, err := git.PlainOpen(repoPath)
@@ -74,7 +75,7 @@ func GetCommits(owner, repo, branch string) ([]CommitInfo, CommitInfo, error) {
 		return nil, CommitInfo{}, err
 	}
 
-	commit, err := ResolveBranch(r, branch)
+	commit, _, err := ResolveRef(r, ref)
 	if err != nil {
 		return nil, CommitInfo{}, err
 	}
@@ -351,7 +352,8 @@ type FileDiff struct {
 }
 
 // GetCommitDetail returns the detailed metadata for a single commit identified
-// by its full or short hash. The author name is resolved against registered
+// by its full or short hash, or by tag name (annotated tags are dereferenced
+// to their target commit). The author name is resolved against registered
 // Drei users by email, and the author avatar is fetched from the user table.
 func GetCommitDetail(owner, repo, hash string) (*CommitDetail, error) {
 	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
@@ -365,6 +367,9 @@ func GetCommitDetail(owner, repo, hash string) (*CommitDetail, error) {
 
 	if plumbing.IsHash(hash) {
 		commitHash = plumbing.NewHash(hash)
+	} else if _, commit, _, err := ResolveTagCommit(r, hash); err == nil {
+		// Tag name (including slashes, which never look like hashes).
+		commitHash = commit.Hash
 	} else {
 		// Short hash: iterate refs and match prefix.
 		var found bool

@@ -38,7 +38,7 @@ func PulseHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	branch := r.URL.Query().Get("branch")
+	branch := effectiveRef(r)
 
 	stats, err := gitrepo.GetPulse(owner, repo, branch, days)
 	if err != nil {
@@ -74,7 +74,7 @@ func ContributorsInsightHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	insight, err := gitrepo.GetContributorsInsight(owner, repo, r.URL.Query().Get("branch"))
+	insight, err := gitrepo.GetContributorsInsight(owner, repo, effectiveRef(r))
 	if err != nil {
 		writeError(w, http.StatusNotFound, "repository not found or has no commits")
 		return
@@ -109,7 +109,7 @@ func CodeFrequencyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	weeks, err := gitrepo.GetCodeFrequency(owner, repo, r.URL.Query().Get("branch"))
+	weeks, err := gitrepo.GetCodeFrequency(owner, repo, effectiveRef(r))
 	if err != nil {
 		writeError(w, http.StatusNotFound, "repository not found or has no commits")
 		return

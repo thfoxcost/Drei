@@ -26,8 +26,9 @@ type BlobFile struct {
 }
 
 // GetFile retrieves a single file's content and metadata from the repository
-// tree at the given branch. The filePath must not be empty.
-func GetFile(owner, repo, branch, filePath string) (*BlobFile, error) {
+// tree at the given ref (branch, tag, or commit SHA; empty means HEAD).
+// The filePath must not be empty.
+func GetFile(owner, repo, ref, filePath string) (*BlobFile, error) {
 	repoPath := filepath.Join(
 		config.App.ReposPath,
 		owner,
@@ -39,7 +40,7 @@ func GetFile(owner, repo, branch, filePath string) (*BlobFile, error) {
 		return nil, err
 	}
 
-	commit, err := ResolveBranch(r, branch)
+	commit, _, err := ResolveRef(r, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +160,7 @@ type FileInfo struct {
 	LastCommit CommitInfo `json:"lastCommit"`
 }
 
-func GetFiles(owner, repo, branch string) ([]FileInfo, error) {
+func GetFiles(owner, repo, ref string) ([]FileInfo, error) {
 	repoPath := filepath.Join(
 		config.App.ReposPath,
 		owner,
@@ -171,7 +172,7 @@ func GetFiles(owner, repo, branch string) ([]FileInfo, error) {
 		return nil, err
 	}
 
-	commit, err := ResolveBranch(r, branch)
+	commit, _, err := ResolveRef(r, ref)
 	if err != nil {
 		return nil, err
 	}

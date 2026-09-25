@@ -22,7 +22,7 @@ type RepoResponse struct {
 	Branches          []string               `json:"branches"`
 	BranchDates       map[string]string      `json:"branchDates"`
 	DefaultBranch     string                 `json:"defaultBranch"`
-	Tags              []string               `json:"tags"`
+	Tags              []TagInfo              `json:"tags"`
 	CloneURL          string                 `json:"cloneUrl"`
 	Commits           []CommitInfo           `json:"commits"`
 	CommitActivity    []CommitDay            `json:"commitActivity"`
@@ -55,7 +55,7 @@ func archivedAtString(archivedAt *time.Time) string {
 	return archivedAt.Format(time.RFC3339)
 }
 
-func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
+func GetRepo(owner, repo, ref string) (*RepoResponse, error) {
 	cloneURL := fmt.Sprintf("http://localhost:3200/git/%s/%s.git", owner, repo)
 
 	info, err := database.GetRepository(owner, repo)
@@ -99,7 +99,7 @@ func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
 			Langs:           []Language{},
 			Branches:        []string{},
 			BranchDates:     map[string]string{},
-			Tags:            []string{},
+			Tags:            []TagInfo{},
 			Commits:         []CommitInfo{},
 			CommitActivity:  []CommitDay{},
 			LastCommit:      CommitInfo{},
@@ -113,7 +113,7 @@ func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
 		}, nil
 	}
 
-	langs, err := GetLang(owner, repo, branch)
+	langs, err := GetLang(owner, repo, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -128,32 +128,32 @@ func GetRepo(owner, repo, branch string) (*RepoResponse, error) {
 		branchDates = map[string]string{}
 	}
 
-	tags, err := GetTags(owner, repo)
+	tags, err := GetTagInfos(owner, repo)
 	if err != nil {
 		return nil, err
 	}
 
-	commits, lastCommit, err := GetCommits(owner, repo, branch)
+	commits, lastCommit, err := GetCommits(owner, repo, ref)
 	if err != nil {
 		return nil, err
 	}
 
-	commitActivity, err := GetCommitActivity(owner, repo, branch)
+	commitActivity, err := GetCommitActivity(owner, repo, ref)
 	if err != nil {
 		return nil, err
 	}
 
-	files, err := GetFiles(owner, repo, branch)
+	files, err := GetFiles(owner, repo, ref)
 	if err != nil {
 		return nil, err
 	}
 
-	repoSize, err := CalcRepoSize(owner, repo, branch)
+	repoSize, err := CalcRepoSize(owner, repo, ref)
 	if err != nil {
 		return nil, err
 	}
 
-	commitAuthors, err := GetCommitAuthors(owner, repo, branch)
+	commitAuthors, err := GetCommitAuthors(owner, repo, ref)
 	if err != nil {
 		return nil, err
 	}
