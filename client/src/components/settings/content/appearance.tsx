@@ -18,6 +18,7 @@ import {
 import { Separator } from "#/components/ui/separator"
 import { Spinner } from "#/components/ui/spinner"
 import { useTheme } from "@/components/theme-provider"
+import { getCurrentYear, useHeatmapYear } from "#/hooks/useHeatmapYear"
 
 const API_BASE = "http://localhost:3200"
 
@@ -42,6 +43,18 @@ function ContentAppearance() {
     const [saving, setSaving] = useState(false)
 
     const [language, setLanguage] = useState<Language>("en")
+
+    const [heatmapYear, setHeatmapYear] = useHeatmapYear()
+
+    const heatmapYearOptions = Array.from(
+        new Set([
+            heatmapYear,
+            ...Array.from(
+                { length: 5 },
+                (_, i) => getCurrentYear() - i,
+            ),
+        ]),
+    ).sort((a, b) => b - a)
 
     const [original, setOriginal] =
         useState<AppearanceData | null>(null)
@@ -291,6 +304,49 @@ function ContentAppearance() {
                                 <SelectItem value="de" disabled>
                                     🇩🇪 Deutsch
                                 </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </Field>
+
+                {/* Contribution heatmap year */}
+                <Field>
+                    <FieldLabel>
+                        Contribution heatmap
+                    </FieldLabel>
+
+                    <FieldDescription>
+                        Choose which calendar year your
+                        contribution heatmap displays.
+                        Applies instantly.
+                    </FieldDescription>
+
+                    <div className="max-w-sm">
+                        <Select
+                            value={String(heatmapYear)}
+                            onValueChange={(value) =>
+                                setHeatmapYear(
+                                    Number(value),
+                                )
+                            }
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                {heatmapYearOptions.map(
+                                    (option) => (
+                                        <SelectItem
+                                            key={option}
+                                            value={String(
+                                                option,
+                                            )}
+                                        >
+                                            {option}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
                     </div>

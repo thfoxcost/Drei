@@ -17,7 +17,8 @@ backend/
 │   │   ├── migrate.go              # Schema migrations
 │   │   ├── repos.go                # Repository model + create/read queries
 │   │   ├── metadata.go             # Repository metadata model + query
-│   │   └── contributors.go         # Contributor model + queries
+│   │   ├── contributors.go         # Contributor model + queries
+│   │   └── contributions.go        # User identity, repo scope, per-day issue/PR counts
 │   ├── gitrepo/
 │   │   ├── init.go                 # Bare repo creation (git init --bare)
 │   │   ├── repo.go                 # Assembles full repo metadata (GetRepo)
@@ -28,16 +29,16 @@ backend/
 │   │   ├── languages.go            # Language breakdown by bytes
 │   │   ├── files.go                # Recursive file tree with last-commit info
 │   │   ├── check.go                # Has-commits check
-│   │   └── size.go                 # Total repo size
+│   │   ├── size.go                 # Total repo size
+│   │   └── contributions.go        # Per-day commit counts for a user
 │   └── handlers/
 │       ├── repos.go                # POST /api/repos, GET /api/repos/{owner}/{repo}
 │       ├── users.go                # GET /api/users/{owner}/repos
 │       ├── status.go               # GET /api/status (demo)
-│       ├── contribution.go         # GET /api/contribution (demo)
+│       ├── contributions.go        # GET /api/users/{username}/contributions
 │       └── git.go                  # /git/ CGI passthrough to git-http-backend
 ├── data/
-│   ├── status.json                 # Static payload for the /api/status demo
-│   └── contribution.json           # Static payload for the /api/contribution demo
+│   └── status.json                 # Static payload for the /api/status demo
 ├── .air.toml                       # air hot-reload configuration
 ├── .env                            # Local environment (gitignored)
 ├── .gitignore
@@ -91,7 +92,9 @@ The HTTP layer. One file per route group:
 - `repos.go` — create a repo (bare git init + DB row + first contributor) and
   fetch full repo metadata. Also parses the create-repo request body.
 - `users.go` — list a user's repositories.
-- `status.go` / `contribution.go` — demo endpoints serving static JSON from `data/`.
+- `status.go` — demo endpoint serving static JSON from `data/`.
+- `contributions.go` — aggregate a user's yearly activity (commits via
+  `gitrepo`, opened issues/PRs via `database`) for the heatmap.
 - `git.go` — the `/git/` route, a CGI passthrough to the system
   `git-http-backend`, so clients can push/clone over HTTP.
 
@@ -120,8 +123,8 @@ All configuration comes from environment variables (loaded via `godotenv` from
 | `POST` | `/api/repos` | `handlers.CreateRepo` |
 | `GET` | `/api/repos/{owner}/{repo}` | `handlers.RepoHandler` |
 | `GET` | `/api/users/{owner}/repos` | `handlers.GetRepos` |
+| `GET` | `/api/users/{username}/contributions?year=2026` | `handlers.UserContributionsHandler` |
 | `GET` | `/api/status` | `handlers.Status` |
-| `GET` | `/api/contribution` | `handlers.Contribution` |
 | `*` | `/git/` | `handlers.GitHandler` |
 
 ## Build and test
