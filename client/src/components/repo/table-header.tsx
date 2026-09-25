@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
 	Check,
@@ -9,11 +10,21 @@ import {
 	SearchIcon,
 	SquareTerminal,
 	Tag,
+	Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { RepoFile } from "#/types/repo";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "../ui/dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -30,10 +41,10 @@ import {
 	InputGroupInput,
 } from "../ui/input-group";
 import { Separator } from "../ui/separator";
+import { Spinner } from "../ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 import { FileSearch } from "./file-search";
-import type { RepoFile } from "#/types/repo";
 
 interface TableheaderProps {
 	defaultBranch: string;
@@ -103,7 +114,11 @@ function Tableheader({
 	files = [],
 }: TableheaderProps) {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [branchFilter, setBranchFilter] = useState("");
+	const [switcherOpen, setSwitcherOpen] = useState(false);
+	const [branchToDelete, setBranchToDelete] = useState<string | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	const currentBranch = activeBranch || defaultBranch;
 
@@ -122,6 +137,44 @@ function Tableheader({
 				to: "/$username/$repo/branch/$branchName",
 				params: { username: owner, repo, branchName: branch },
 			});
+		}
+	};
+
+	const handleDeleteBranch = async () => {
+		if (!branchToDelete) return;
+		setIsDeleting(true);
+
+		try {
+			const res = await fetch(
+				`${import.meta.env.VITE_BACKEND_URL}/api/repos/${owner}/${repo}/branches/${encodeURIComponent(branchToDelete)}`,
+				{ method: "DELETE", credentials: "include" },
+			);
+
+			const result = await res.json().catch(() => null);
+
+			if (!res.ok) {
+				throw new Error(
+					result?.error || result?.message || "Failed to delete branch",
+				);
+			}
+
+			toast.success(`Branch "${branchToDelete}" deleted`);
+			const deletedCurrent = branchToDelete === currentBranch;
+			setBranchToDelete(null);
+			await queryClient.invalidateQueries({
+				queryKey: ["repo", owner, repo],
+			});
+
+			if (deletedCurrent) {
+				navigate({
+					to: "/$username/$repo",
+					params: { username: owner, repo },
+				});
+			}
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Something went wrong");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -205,7 +258,7 @@ function Tableheader({
 		<div className="flex flex-row items-center gap-2 justify-between">
 			<div className="flex flex-row gap-3">
 				{/* Branch switcher */}
-				<DropdownMenu>
+				<DropdownMenu open={switcherOpen} onOpenChange={setSwitcherOpen}>
 					<DropdownMenuTrigger asChild>
 						<Button variant="outline" className="align-center justify-center">
 							<GitBranch className="h-4 w-4" />
@@ -238,19 +291,40 @@ function Tableheader({
 								<DropdownMenuItem
 									key={branch}
 									onClick={() => handleBranchClick(branch)}
-									className="flex items-center justify-between"
+									className="group flex items-center justify-between"
 								>
 									<span className="flex items-center gap-2">
 										<GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
 										{branch}
 									</span>
-									{branch === defaultBranch ? (
-										<Badge variant="outline" className="h-4 px-1.5 text-[10px]">
-											Default
-										</Badge>
-									) : branch === currentBranch ? (
-										<Check className="h-3.5 w-3.5 text-green-600" />
-									) : null}
+									<span className="flex items-center gap-1.5">
+										{branch === defaultBranch ? (
+											<Badge
+												variant="outline"
+												className="h-4 px-1.5 text-[10px]"
+											>
+												Default
+											</Badge>
+										) : branch === currentBranch ? (
+											<Check className="h-3.5 w-3.5 text-green-600" />
+										) : null}
+										{branch !== defaultBranch && (
+											<button
+												type="button"
+												aria-label={`Delete branch ${branch}`}
+												title={`Delete branch ${branch}`}
+												onClick={(e) => {
+													e.stopPropagation();
+													e.preventDefault();
+													setSwitcherOpen(false);
+													setBranchToDelete(branch);
+												}}
+												className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
+											>
+												<Trash2 className="h-3.5 w-3.5" />
+											</button>
+										)}
+									</span>
 								</DropdownMenuItem>
 							))
 						)}
@@ -431,6 +505,43 @@ function Tableheader({
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>
+
+			<Dialog
+				open={branchToDelete !== null}
+				onOpenChange={(open) => {
+					if (!open && !isDeleting) setBranchToDelete(null);
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Delete &quot;{branchToDelete}&quot;?</DialogTitle>
+						<DialogDescription>
+							This action cannot be undone. This will permanently delete the{" "}
+							<span className="font-medium text-foreground">
+								{branchToDelete}
+							</span>{" "}
+							branch and it cannot be recovered.
+						</DialogDescription>
+					</DialogHeader>
+
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setBranchToDelete(null)}
+							disabled={isDeleting}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={handleDeleteBranch}
+							disabled={isDeleting}
+						>
+							{isDeleting ? <Spinner /> : "Delete branch"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

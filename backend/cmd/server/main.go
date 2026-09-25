@@ -51,6 +51,7 @@ func main() {
 	http.HandleFunc("/api/user/appearance", handlers.AppearanceHandler)
 	http.HandleFunc("/api/repos", handlers.CreateRepo)
 	http.HandleFunc("/api/repos/{owner}/{repo}", handlers.RepoHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/branches/{branch...}", handlers.BranchHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/commits/{hash}", handlers.CommitHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/insights/pulse", handlers.PulseHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/insights/contributors", handlers.ContributorsInsightHandler)
