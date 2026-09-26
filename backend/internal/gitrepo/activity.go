@@ -2,12 +2,18 @@ package gitrepo
 
 import (
 	"backend/internal/config"
+	"errors"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing/object"
 )
+
+// errStopIteration ends a go-git ForEach walk early once enough commits are
+// collected. It is never surfaced to callers.
+var errStopIteration = errors.New("stop iteration")
 
 // CommitDay is the number of commits authored on a single calendar day.
 type CommitDay struct {
@@ -67,6 +73,78 @@ func GetCommitActivityWindow(owner, repo, ref string, weeks int) ([]int, error) 
 	}
 
 	return zeros, nil
+}
+
+// RecentPush is a single commit used as a "pushed a commit" feed entry,
+// newest first.
+type RecentPush struct {
+	Hash        string
+	Message     string
+	AuthorName  string
+	AuthorEmail string
+	Date        time.Time
+}
+
+// RecentPushes returns up to limit commits reachable from the repository's
+// default branch (HEAD), newest first. Empty or missing repositories yield no
+// pushes and no error so one empty repo never fails a feed aggregation.
+func RecentPushes(owner, repo string, limit int) ([]RecentPush, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 10
+	}
+
+	repoPath := filepath.Join(config.App.ReposPath, owner, repo+".git")
+
+	r, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return nil, nil
+	}
+
+	head, err := r.Head()
+	if err != nil {
+		return nil, nil
+	}
+
+	headCommit, err := r.CommitObject(head.Hash())
+	if err != nil {
+		return nil, nil
+	}
+
+	commitIter, err := r.Log(&git.LogOptions{From: headCommit.Hash})
+	if err != nil {
+		return nil, nil
+	}
+
+	pushes := make([]RecentPush, 0, limit)
+
+	err = commitIter.ForEach(func(commit *object.Commit) error {
+		if len(pushes) >= limit {
+			return errStopIteration
+		}
+
+		message := commit.Message
+		if nl := strings.IndexByte(message, '\n'); nl != -1 {
+			message = message[:nl]
+		}
+		if len(message) > 120 {
+			message = message[:120]
+		}
+
+		pushes = append(pushes, RecentPush{
+			Hash:        commit.Hash.String(),
+			Message:     message,
+			AuthorName:  commit.Author.Name,
+			AuthorEmail: commit.Author.Email,
+			Date:        commit.Author.When,
+		})
+
+		return nil
+	})
+	if err != nil && err != errStopIteration {
+		return pushes, nil
+	}
+
+	return pushes, nil
 }
 
 // GetCommitActivity walks the repository history and returns the number of
