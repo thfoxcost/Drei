@@ -14,6 +14,7 @@ type Config struct {
 	ReposPath   string
 	DatabaseURL string
 	ClientURL   string
+	Environment string
 }
 
 var App Config
@@ -41,6 +42,7 @@ func Load() error {
 		ReposPath:   os.Getenv("REPOS_PATH"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		ClientURL:   os.Getenv("CLIENT_URL"),
+		Environment: os.Getenv("APP_ENV"),
 	}
 
 	if App.Port == "" {
@@ -49,6 +51,10 @@ func Load() error {
 
 	if App.ClientURL == "" {
 		App.ClientURL = "http://localhost:3000"
+	}
+
+	if App.Environment == "" {
+		App.Environment = "development"
 	}
 
 	return nil

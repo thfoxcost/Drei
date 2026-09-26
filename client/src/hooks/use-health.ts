@@ -1,63 +1,79 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { authClient } from "#/lib/auth-client.ts";
 
-export type ServiceState = "online" | "degraded" | "offline";
+export type ServiceState = "online" | "degraded" | "offline" | "unavailable";
 
 export interface ServiceStatus {
-  name: string;
-  status: ServiceState;
-  latency: number;
+	name: string;
+	status: ServiceState;
+	latency: number;
 }
 
 export interface HealthData {
-  services: ServiceStatus[];
-  system: {
-    uptime: string;
-    version: string;
-    environment: string;
-    cpu: number;
-    memory: { used: number; total: number; unit: string };
-    disk: { used: number; total: number; unit: string };
-    requests: number;
-    averageLatency: number;
-    lastDeploy: string;
-    lastUpdated: string;
-  };
+	services: ServiceStatus[];
+	/** False for anonymous callers, who receive no host metrics. */
+	metricsAvailable: boolean;
+	system: SystemMetrics | null;
+	/** The client server's own memory usage, or null if it could not be read. */
+	client: ClientProcess | null;
+	/** Storage used by the signed-in account, or null if it could not be measured. */
+	storage: StorageUsage | null;
+}
+
+export interface ClientProcess {
+	rssBytes: number;
+	heapUsedBytes: number;
+	heapTotalBytes: number;
+}
+
+export interface StorageUsage {
+	bytes: number;
+	computedAt: string;
+}
+
+export interface SystemMetrics {
+	uptime: string;
+	hostUptime: string;
+	version: string;
+	environment: string;
+	cpu: {
+		percent: number;
+		count: number;
+	};
+	processMemory: {
+		rss: number;
+		heap: number;
+		unit: string;
+		goroutines: number;
+	};
+	lastUpdated: string;
 }
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 export function useHealth(pollIntervalMs = 15000) {
-  const [data, setData] = useState<HealthData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+	const { data: session, isPending: sessionPending } = authClient.useSession();
 
-  useEffect(() => {
-    let cancelled = false;
+	const query = useQuery({
+		queryKey: ["health", session?.user?.id ?? null],
+		queryFn: async (): Promise<HealthData> => {
+			// no-store: host metrics are gated on the session cookie, so a
+			// cached response must never be served to a different user.
+			const res = await fetch(`${BACKEND_URL}/api/status`, {
+				credentials: "include",
+				cache: "no-store",
+			});
 
-    async function fetchHealth() {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/status`);
-        if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
-        const json = (await res.json()) as HealthData;
-        if (!cancelled) {
-          setData(json);
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) setError(err as Error);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
+			if (!res.ok) {
+				throw new Error(`Health check failed: ${res.status}`);
+			}
 
-    fetchHealth();
-    const interval = setInterval(fetchHealth, pollIntervalMs);
+			return res.json();
+		},
+		enabled: !sessionPending && session !== null,
+		refetchInterval: pollIntervalMs,
+		staleTime: pollIntervalMs,
+	});
 
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [pollIntervalMs]);
-
-  return { data, isLoading, error };
+	return { ...query, sessionPending };
 }

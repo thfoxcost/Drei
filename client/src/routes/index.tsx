@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-	const { repos, loaded } = useUserRepos();
+	const { loaded } = useUserRepos();
 
 	useEffect(() => {
 		const previous = document.body.style.overflow;
@@ -28,7 +28,7 @@ function Home() {
 	return (
 		<div className="flex flex-col h-dvh overflow-hidden">
 			<Header />
-			<Main repos={repos} />
+			<Main />
 
 			<AnimatePresence>
 				{!loaded && (

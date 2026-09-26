@@ -4,6 +4,8 @@ import (
 	"backend/internal/config"
 	"backend/internal/database"
 	"backend/internal/handlers"
+	"backend/internal/sysinfo"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -39,7 +41,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Sample host and process metrics in the background so that /api/status
+	// handlers only ever read the latest snapshot. The context is never
+	// cancelled: the sampler holds nothing that must outlive the process, and
+	// trapping signals here would stop SIGTERM from terminating the server.
+	go sysinfo.Run(context.Background(), sysinfo.DefaultInterval)
+
 	http.HandleFunc("/api/users/{username}/contributions", handlers.UserContributionsHandler)
+	http.HandleFunc("/api/activity", handlers.ActivityHandler)
 	http.HandleFunc("/api/users", handlers.UsersHandler)
 	http.HandleFunc("/api/users/{owner}/repos", handlers.GetRepos)
 	http.HandleFunc("/api/issues", handlers.AllIssuesHandler)

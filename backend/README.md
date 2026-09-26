@@ -31,14 +31,15 @@ backend/
 │   │   ├── check.go                # Has-commits check
 │   │   ├── size.go                 # Total repo size
 │   │   └── contributions.go        # Per-day commit counts for a user
+│   ├── sysinfo/
+│   │   ├── sysinfo.go              # Background host/process metric sampler
+│   │   └── probe.go                # Frontend/backend/database/storage probes
 │   └── handlers/
 │       ├── repos.go                # POST /api/repos, GET /api/repos/{owner}/{repo}
 │       ├── users.go                # GET /api/users/{owner}/repos
-│       ├── status.go               # GET /api/status (demo)
+│       ├── status.go               # GET /api/status (services + host metrics)
 │       ├── contributions.go        # GET /api/users/{username}/contributions
 │       └── git.go                  # /git/ CGI passthrough to git-http-backend
-├── data/
-│   └── status.json                 # Static payload for the /api/status demo
 ├── .air.toml                       # air hot-reload configuration
 ├── .env                            # Local environment (gitignored)
 ├── .gitignore
@@ -49,8 +50,8 @@ backend/
 ## Entry point
 
 `cmd/server/main.go` is the single entry point. It loads configuration, connects to
-Postgres, applies migrations, and wires up the routes on the default mux before
-listening on the port from `PORT`.
+Postgres, applies migrations, starts the `sysinfo` metric sampler, and wires up
+the routes on the default mux before listening on the port from `PORT`.
 
 Run it with:
 
@@ -92,7 +93,11 @@ The HTTP layer. One file per route group:
 - `repos.go` — create a repo (bare git init + DB row + first contributor) and
   fetch full repo metadata. Also parses the create-repo request body.
 - `users.go` — list a user's repositories.
-- `status.go` — demo endpoint serving static JSON from `data/`.
+- `status.go` — reports the state of each service Drei depends on (frontend
+  reachability, Postgres ping, repos-directory writability). Detailed host
+  metrics (CPU, load, RAM, process memory, disk, uptime) are included only for
+  authenticated callers; anonymous callers get the service list alone. The
+  numbers come from the `sysinfo` sampler, not from a static file.
 - `contributions.go` — aggregate a user's yearly activity (commits via
   `gitrepo`, opened issues/PRs via `database`) for the heatmap.
 - `git.go` — the `/git/` route, a CGI passthrough to the system
@@ -115,6 +120,8 @@ All configuration comes from environment variables (loaded via `godotenv` from
 | `REPOS_PATH` | Root directory where bare repos are stored |
 | `DATABASE_URL` | Postgres connection string |
 | `GIT_HTTP_BACKEND` | Path to `git-http-backend` (read directly by the `/git/` handler) |
+| `CLIENT_URL` | TanStack Start server URL; used to validate sessions and to probe the frontend |
+| `APP_ENV` | Environment name reported by `/api/status` (defaults to `development`) |
 
 ## API surface
 
