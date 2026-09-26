@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsernameIndexRouteImport } from './routes/$username/index'
+import { Route as ApiMemoryRouteImport } from './routes/api/memory'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/_auth/signin'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
@@ -82,6 +83,11 @@ const IndexRoute = IndexRouteImport.update({
 const UsernameIndexRoute = UsernameIndexRouteImport.update({
   id: '/$username/',
   path: '/$username/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMemoryRoute = ApiMemoryRouteImport.update({
+  id: '/api/memory',
+  path: '/api/memory',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
+  '/api/memory': typeof ApiMemoryRoute
   '/$username/': typeof UsernameIndexRoute
   '/$username/$repo/compare': typeof UsernameRepoCompareRouteRouteWithChildren
   '/$username/$repo/insight': typeof UsernameRepoInsightRouteRouteWithChildren
@@ -389,6 +396,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
+  '/api/memory': typeof ApiMemoryRoute
   '/$username': typeof UsernameIndexRoute
   '/$username/$repo/settings': typeof UsernameRepoSettingsRouteRoute
   '/$username/$repo/actions': typeof UsernameRepoActionsRoute
@@ -438,6 +446,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_auth/signin': typeof AuthSigninRoute
   '/_auth/signup': typeof AuthSignupRoute
+  '/api/memory': typeof ApiMemoryRoute
   '/$username/': typeof UsernameIndexRoute
   '/$username/$repo/compare': typeof UsernameRepoCompareRouteRouteWithChildren
   '/$username/$repo/insight': typeof UsernameRepoInsightRouteRouteWithChildren
@@ -491,6 +500,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signin'
     | '/signup'
+    | '/api/memory'
     | '/$username/'
     | '/$username/$repo/compare'
     | '/$username/$repo/insight'
@@ -541,6 +551,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signin'
     | '/signup'
+    | '/api/memory'
     | '/$username'
     | '/$username/$repo/settings'
     | '/$username/$repo/actions'
@@ -589,6 +600,7 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_auth/signin'
     | '/_auth/signup'
+    | '/api/memory'
     | '/$username/'
     | '/$username/$repo/compare'
     | '/$username/$repo/insight'
@@ -636,6 +648,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   UsernameRepoRouteRoute: typeof UsernameRepoRouteRouteWithChildren
+  ApiMemoryRoute: typeof ApiMemoryRoute
   UsernameIndexRoute: typeof UsernameIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -675,6 +688,13 @@ declare module '@tanstack/react-router' {
       path: '/$username'
       fullPath: '/$username/'
       preLoaderRoute: typeof UsernameIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/memory': {
+      id: '/api/memory'
+      path: '/api/memory'
+      fullPath: '/api/memory'
+      preLoaderRoute: typeof ApiMemoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/signup': {
@@ -1190,6 +1210,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   UsernameRepoRouteRoute: UsernameRepoRouteRouteWithChildren,
+  ApiMemoryRoute: ApiMemoryRoute,
   UsernameIndexRoute: UsernameIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

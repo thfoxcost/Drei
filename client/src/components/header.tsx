@@ -42,8 +42,8 @@ const NAV_ITEMS: {
 }[] = [
     { label: "Repositories", icon: BookMarked, to: "/repos" },
     { label: "Issues", icon: Bug, to: "/issues" },
-    { label: "Organizations", icon: Building2, to: "/orgs" },
     { label: "Pulls", icon: GitPullRequest, to: "/pulls" },
+    { label: "Organizations", icon: Building2, to: "/orgs" },
   ]
 
 export default function Header() {
@@ -155,8 +155,9 @@ export default function Header() {
 
           <DropdownMenuContent className="w-64" align="end">
             <DropdownMenuLabel className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <UserAvatar
+                  className="size-9"
                   src={session?.user.image}
                   name={session?.user.name}
                 />

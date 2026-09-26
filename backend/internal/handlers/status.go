@@ -1,42 +1,74 @@
 package handlers
 
 import (
-	"encoding/json"
+	"log"
 	"net/http"
-	"os"
+
+	"backend/internal/storage"
+	"backend/internal/sysinfo"
 )
 
 // Status godoc
 //
-//	@Summary		Get API status
-//	@Description	Returns demo status data from data/status.json
+//	@Summary		Get system status
+//	@Description	Reports the state of every service the deployment depends on.
+//	                    Detailed host metrics and the caller's own storage usage
+//	                    are included only for authenticated callers; anonymous
+//	                    callers receive the service list alone.
 //	@Tags			System
 //	@Produce		json
-//	@Success		200	{object}	interface{}
-//	@Failure		500	{string}	string
+//	@Success		200	{object}	map[string]interface{}
+//	@Failure		405	{object}	map[string]interface{}
 //	@Router			/status [get]
 func Status(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	setCORS(w, r, "GET")
 
 	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
+		handleOptions(w, r)
 		return
 	}
 
-	data, err := os.ReadFile("./data/status.json")
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	snapshot := sysinfo.Current()
+	if snapshot == nil {
+		writeError(w, http.StatusServiceUnavailable, "system metrics are still starting up")
+		return
+	}
+
+	payload := map[string]any{
+		"services":         snapshot.Services,
+		"metricsAvailable": false,
+	}
+
+	// Host metrics describe the machine Drei runs on, so they are reserved for
+	// signed-in users. Session validation is optional here: a failure only
+	// means the metrics are withheld, not that the request is rejected.
+	user, err := authenticate(r)
 	if err != nil {
-		http.Error(w, "failed to read status data", http.StatusInternalServerError)
+		writeSuccess(w, payload)
 		return
 	}
 
-	var v any
-	if err := json.Unmarshal(data, &v); err != nil {
-		http.Error(w, "invalid json", http.StatusInternalServerError)
-		return
+	payload["metricsAvailable"] = true
+	payload["system"] = snapshot.System
+
+	// The client server reports its own memory usage, so it only appears when
+	// the probe managed to read it.
+	if snapshot.Client != nil {
+		payload["client"] = snapshot.Client
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(v)
+	// Storage is per-account, so it can only be measured once we know who is
+	// asking. It is cached per account, so this stays cheap to poll.
+	if usage, err := storage.ForUser(r.Context(), user.ID, user.Name); err == nil {
+		payload["storage"] = usage
+	} else {
+		log.Printf("storage measurement failed for %s: %v", user.Name, err)
+	}
+
+	writeSuccess(w, payload)
 }
