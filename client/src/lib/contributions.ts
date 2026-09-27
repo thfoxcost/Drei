@@ -18,7 +18,10 @@ export async function getContributions(
 	username: string,
 	year: number,
 ): Promise<ContributionsResponse> {
-	const url = `${import.meta.env.VITE_BACKEND_URL}/api/users/${encodeURIComponent(username)}/contributions?year=${year}`;
+	const base =
+		(import.meta.env.VITE_BACKEND_URL as string | undefined) ||
+		"http://localhost:3200";
+	const url = `${base}/api/users/${encodeURIComponent(username)}/contributions?year=${year}`;
 
 	const res = await fetch(url, { credentials: "include" });
 
@@ -34,6 +37,14 @@ export async function getContributions(
 
 	if (!res.ok) {
 		throw new Error(`Failed to load contributions (${res.status})`);
+	}
+
+	const contentType = res.headers.get("content-type") ?? "";
+	if (!contentType.includes("application/json")) {
+		const text = await res.text();
+		throw new Error(
+			`Failed to load contributions: expected JSON but got ${contentType || "unknown content-type"} (body: ${text.slice(0, 120) || "<empty>"})`,
+		);
 	}
 
 	return res.json();

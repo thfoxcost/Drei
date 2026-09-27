@@ -49,13 +49,15 @@ export interface SystemMetrics {
 	lastUpdated: string;
 }
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL =
+	(import.meta.env.VITE_BACKEND_URL as string | undefined) ||
+	"http://localhost:3200";
 
 export function useHealth(pollIntervalMs = 15000) {
 	const { data: session, isPending: sessionPending } = authClient.useSession();
 
 	const query = useQuery({
-		queryKey: ["health", session?.user?.id ?? null],
+		queryKey: ["health", session?.user?.id ?? "anonymous"],
 		queryFn: async (): Promise<HealthData> => {
 			// no-store: host metrics are gated on the session cookie, so a
 			// cached response must never be served to a different user.
@@ -68,9 +70,16 @@ export function useHealth(pollIntervalMs = 15000) {
 				throw new Error(`Health check failed: ${res.status}`);
 			}
 
-			return res.json();
+			const data = await res.json();
+			return {
+				services: data.services ?? [],
+				metricsAvailable: data.metricsAvailable ?? false,
+				system: data.system ?? null,
+				client: data.client ?? null,
+				storage: data.storage ?? null,
+			};
 		},
-		enabled: !sessionPending && session !== null,
+		enabled: !sessionPending,
 		refetchInterval: pollIntervalMs,
 		staleTime: pollIntervalMs,
 	});
