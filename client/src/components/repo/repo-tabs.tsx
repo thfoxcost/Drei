@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIssues } from "@/hooks/useIssues";
 import { usePullRequests } from "@/hooks/PRs/use-pull-requests";
 import { useRepoData } from "@/hooks/useRepoData";
+import { authClient } from "#/lib/auth-client";
 import RepoStarsheader from "./repo-stars-header";
 
 const tabs = [
@@ -49,8 +50,16 @@ interface RepoProps {
 
 export default function RepoTabs({ owner, repo }: RepoProps) {
   const { data: repoData, isPending } = useRepoData(owner, repo);
+  const { data: session } = authClient.useSession();
   const { data: issuesData } = useIssues(owner, repo, { state: "open" });
   const { data: pullsData } = usePullRequests(owner, repo, { state: "open" });
+
+  // The Settings tab is only shown to the repository author (creator).
+  const isAuthor =
+    !!session?.user?.id && !!repoData && session.user.id === repoData.ownerId;
+  const visibleTabs = tabs.filter(
+    (tab) => tab.value !== "settings" || isAuthor,
+  );
 
   const [loadingTab, setLoadingTab] = useState<string | null>(null);
 
@@ -149,7 +158,7 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
       <Tabs value={currentTab} className="gap-4">
         <div className="w-full border-b bg-muted/10 pb-1">
           <TabsList variant="line" className="ml-2 rounded-none p-0">
-            {tabs.map((tab) => {
+            {visibleTabs.map((tab) => {
               const Icon = tab.icon;
               const isLoadingThisTab = loadingTab === tab.value;
               const to = tab.disabled
@@ -220,7 +229,7 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
           </TabsList>
         </div>
 
-        {tabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <TabsContent
             key={tab.value}
             value={tab.value}

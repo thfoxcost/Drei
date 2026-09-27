@@ -135,7 +135,7 @@ function Profile() {
       )}
 
       <a href="/settings" className="w-full mb-2 hover:cursor-pointer">
-        <Button variant="secondary" className="w-full">Edit Profile</Button>
+        <Button variant="secondary" className="w-full mt-2">Edit Profile</Button>
       </a>
 
       {hasQuote && (
