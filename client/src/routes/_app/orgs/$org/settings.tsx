@@ -1,11 +1,19 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { ImagePlus, Save } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ImagePlus, Save, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { organizationPurposes } from "#/components/organization/purpose";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "#/components/ui/dialog";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { Separator } from "#/components/ui/separator";
@@ -21,6 +29,7 @@ import {
 } from "#/components/ui/select";
 import {
   useOrganization,
+  useDeleteOrganization,
   useUpdateOrganization,
 } from "#/hooks/useOrganizations";
 import { authClient } from "#/lib/auth-client";
@@ -53,7 +62,9 @@ function RouteComponent() {
   const { data: session, isPending: isSessionPending } =
     authClient.useSession();
   const updateOrganization = useUpdateOrganization(org);
+  const deleteOrganization = useDeleteOrganization(org);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [initialized, setInitialized] = useState(false);
   const [name, setName] = useState("");
@@ -64,6 +75,8 @@ function RouteComponent() {
   const [status, setStatus] = useState<"active" | "suspended">("active");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmSlug, setConfirmSlug] = useState("");
   const isSavingRef = useRef(false);
 
   useEffect(() => {
@@ -188,6 +201,21 @@ function RouteComponent() {
       }
     } finally {
       isSavingRef.current = false;
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteOrganization.mutateAsync();
+      toast.success("Organization deleted");
+      setDeleteOpen(false);
+      navigate({ to: "/orgs" });
+    } catch (err) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Failed to delete organization");
+      }
     }
   };
 
@@ -395,7 +423,18 @@ function RouteComponent() {
         <Separator />
 
         {canEdit && (
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setConfirmSlug("");
+                setDeleteOpen(true);
+              }}
+              disabled={isSaving || deleteOrganization.isPending}
+            >
+              <Trash2 className="size-4" />
+              Delete organization
+            </Button>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? (
                 <>
@@ -412,6 +451,60 @@ function RouteComponent() {
           </div>
         )}
       </div>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {data?.name ?? org}?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete the{" "}
+              <span className="font-medium text-foreground">
+                {data?.name ?? org}
+              </span>{" "}
+              organization, its repositories, and all of its contents. Please
+              type the organization slug to confirm.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-org-slug">
+              To confirm, type{" "}
+              <span className="font-medium">{data?.slug ?? org}</span> in the
+              box below
+            </Label>
+            <Input
+              id="confirm-org-slug"
+              value={confirmSlug}
+              onChange={(event) => setConfirmSlug(event.target.value)}
+              placeholder={data?.slug ?? org}
+              autoFocus
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={
+                confirmSlug !== (data?.slug ?? org) ||
+                deleteOrganization.isPending
+              }
+              onClick={handleDelete}
+            >
+              {deleteOrganization.isPending ? (
+                <>
+                  <Spinner />
+                  <span className="ml-2">Deleting…</span>
+                </>
+              ) : (
+                "I understand, delete this organization"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

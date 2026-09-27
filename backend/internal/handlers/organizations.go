@@ -293,7 +293,7 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 //	@Failure		404		{object}	map[string]interface{}
 //	@Router			/orgs/{slug} [get]
 func GetOrganizationHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, r, "GET, PATCH, OPTIONS")
+	setCORS(w, r, "GET, PATCH, DELETE, OPTIONS")
 
 	if r.Method == http.MethodOptions {
 		handleOptions(w, r)
@@ -306,6 +306,11 @@ func GetOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	// never see the preflight and the browser would block the request.
 	if r.Method == http.MethodPatch {
 		UpdateOrganizationHandler(w, r)
+		return
+	}
+
+	if r.Method == http.MethodDelete {
+		DeleteOrganizationHandler(w, r)
 		return
 	}
 
@@ -819,6 +824,97 @@ func UpdateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{
 		"success":      true,
 		"organization": updated,
+	})
+}
+
+// DeleteOrganizationHandler godoc
+//
+//	@Summary		Delete an organization
+//	@Description	Permanently deletes an organization, its repositories on disk, and its data
+//	@Tags			Organizations
+//	@Produce		json
+//	@Param			slug	path		string	true	"Organization slug"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		403		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Router			/orgs/{slug} [delete]
+func DeleteOrganizationHandler(w http.ResponseWriter, r *http.Request) {
+	setCORS(w, r, "DELETE, OPTIONS")
+
+	if r.Method == http.MethodOptions {
+		handleOptions(w, r)
+		return
+	}
+
+	if r.Method != http.MethodDelete {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	user, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+
+	slug := r.PathValue("slug")
+
+	org, ok := getOrganizationBySlugOr404(w, slug)
+	if !ok {
+		return
+	}
+
+	// Only the organization creator/owner may delete, mirroring updates.
+	role, err := database.GetOrganizationMemberRole(org.ID, user.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusForbidden, "only organization owners can delete this organization")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed to check membership")
+		return
+	}
+
+	if role != "owner" || user.ID != org.CreatedBy.ID {
+		writeError(w, http.StatusForbidden, "only organization owners can delete this organization")
+		return
+	}
+
+	// Remove each organization-owned bare repository from disk. The DB rows
+	// follow via ON DELETE CASCADE, but the .git directories do not.
+	if repos, err := database.GetOrganizationRepositories(org.ID); err != nil {
+		log.Printf("ERROR: failed to fetch repositories for organization delete %q: %v", slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to delete organization")
+		return
+	} else {
+		for _, repo := range repos {
+			if err := gitrepo.RemoveRepository(org.Slug, repo.Name, repo.Logo); err != nil {
+				log.Printf("ERROR: failed to remove repository %q/%q during organization delete: %v", org.Slug, repo.Name, err)
+				writeError(w, http.StatusInternalServerError, "failed to delete organization repositories")
+				return
+			}
+		}
+	}
+
+	if err := database.DeleteOrganization(org.ID); err != nil {
+		log.Printf("ERROR: failed to delete organization %q: %v", slug, err)
+		writeError(w, http.StatusInternalServerError, "failed to delete organization")
+		return
+	}
+
+	// Clean up the organization namespace directory and avatar files.
+	// Best-effort: the DB row is already gone at this point.
+	for _, ext := range []string{".png", ".jpg", ".webp", ".gif"} {
+		_ = os.Remove(filepath.Join(config.App.ReposPath, "orgs", slug+ext))
+	}
+	_ = os.RemoveAll(filepath.Join(config.App.ReposPath, slug))
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"success": true,
+		"message": "Organization deleted successfully",
 	})
 }
 
