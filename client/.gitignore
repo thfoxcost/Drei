@@ -12,5 +12,4 @@ dist-ssr
 __unconfig*
 todos.json
 public/icons/*
-client/sqlite.db
 

@@ -1,3 +1,5 @@
 repos/*
 !/repos/tools/
 test/*
+# Local compose secrets (BETTER_AUTH_SECRET) — never commit.
+.env
