@@ -245,8 +245,15 @@ function NewIssue() {
 		<div className="ml-35 my-7 max-w-7xl">
 			<div className="flex items-center gap-2">
 				<Avatar>
-					<AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-					<AvatarFallback>CN</AvatarFallback>
+					{session?.user.image ? (
+						<AvatarImage
+							src={session.user.image}
+							alt={session.user.name ?? "User"}
+						/>
+					) : null}
+					<AvatarFallback>
+						{session?.user.name ? getInitials(session.user.name) : "U"}
+					</AvatarFallback>
 				</Avatar>
 
 				<span className="font-semibold">Create new issue</span>
