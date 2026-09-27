@@ -6,7 +6,6 @@ import {
   CircleDot,
   GitCommit,
   GitMerge,
-  GitPullRequest,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useActivity } from "#/hooks/useActivity";
@@ -242,6 +241,56 @@ function Timestamp({ createdAt }: { createdAt: string }) {
   );
 }
 
+function OpenedPullRequestIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      className={className}
+      aria-hidden="true"
+    >
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      >
+        <circle cx="5" cy="6" r="3" />
+        <path d="M5 9v12M15 9l-3-3l3-3" />
+        <path d="M12 6h5a2 2 0 0 1 2 2v3m0 4v6m3-3h-6" />
+      </g>
+    </svg>
+  );
+}
+
+function ClosedPullRequestIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      className={className}
+      aria-hidden="true"
+    >
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      >
+        <circle cx="6" cy="6" r="3" />
+        <path d="M6 9v12M21 3l-6 6m6 0l-6-6m3 8.5V15" />
+        <circle cx="18" cy="18" r="3" />
+      </g>
+    </svg>
+  );
+}
+
 function ActivityBody({ item }: { item: ActivityItem }) {
   const { owner, name } = item.repo;
   const iconClass = "ml-auto size-8 shrink-0 text-muted-foreground";
@@ -328,7 +377,7 @@ function ActivityBody({ item }: { item: ActivityItem }) {
               </div>
             )}
           </div>
-          <GitPullRequest className={iconClass} />
+          <OpenedPullRequestIcon className={iconClass} />
         </div>
       );
     case "pr_merged":
@@ -370,7 +419,7 @@ function ActivityBody({ item }: { item: ActivityItem }) {
               </div>
             )}
           </div>
-          <GitPullRequest className={iconClass} />
+          <ClosedPullRequestIcon className={iconClass} />
         </div>
       );
     case "pr_approved":
