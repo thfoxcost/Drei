@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Header from "#/components/header";
 import Main from "#/components/home/main";
-import DotMatrixLoader from "#/components/ui/dot-matrix-loader";
+import { DotmTriangle6 } from "#/components/ui/dotm-triangle-6";
 import useUserRepos from "#/hooks/useUserRepos";
 import { authMiddleware } from "@/lib/middleware";
 
@@ -16,6 +16,14 @@ export const Route = createFileRoute("/")({
 
 function Home() {
 	const { loaded } = useUserRepos();
+	// TEMP: hold the loader 8s so the animation is observable. Remove before commit.
+	const [minWaitDone, setMinWaitDone] = useState(false);
+	const showLoader = !loaded || !minWaitDone;
+
+	useEffect(() => {
+		const id = setTimeout(() => setMinWaitDone(true), 8000);
+		return () => clearTimeout(id);
+	}, []);
 
 	useEffect(() => {
 		const previous = document.body.style.overflow;
@@ -31,7 +39,7 @@ function Home() {
 			<Main />
 
 			<AnimatePresence>
-				{!loaded && (
+				{showLoader && (
 					<motion.div
 						key="home-loading"
 						initial={{ opacity: 1 }}
@@ -39,11 +47,7 @@ function Home() {
 						transition={{ duration: 0.3, ease: "easeOut" }}
 						className="fixed inset-0 z-50 flex items-center justify-center bg-background"
 					>
-						<DotMatrixLoader
-							size={40}
-							dotSize={5}
-							className="text-foreground"
-						/>
+						<DotmTriangle6 />
 					</motion.div>
 				)}
 			</AnimatePresence>
