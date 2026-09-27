@@ -363,7 +363,7 @@ function Commit({ hash, owner, repo }: CommitProps) {
 		queryKey: ["commit", owner, repo, hash],
 		queryFn: async () => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/commits/${hash}`,
+				`/api/repos/${owner}/${repo}/commits/${hash}`,
 			)
 			if (!res.ok) throw new Error("Failed to fetch commit")
 			return res.json()

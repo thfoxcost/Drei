@@ -14,7 +14,7 @@ export function useUserOrganizations() {
 	return useQuery({
 		queryKey: ["organizations"],
 		queryFn: async (): Promise<OrganizationListItem[]> => {
-			const res = await fetch("http://localhost:3200/api/orgs", {
+			const res = await fetch("/api/orgs", {
 				credentials: "include",
 			});
 			if (!res.ok) throw new Error("Failed to fetch organizations");
@@ -30,7 +30,7 @@ export function useOrganization(slug: string) {
 		queryKey: ["organization", slug],
 		queryFn: async (): Promise<OrganizationDetail> => {
 			const res = await fetch(
-				`http://localhost:3200/api/orgs/${encodeURIComponent(slug)}`,
+				`/api/orgs/${encodeURIComponent(slug)}`,
 				{ credentials: "include" },
 			);
 			if (!res.ok) throw new Error("Failed to fetch organization");
@@ -46,7 +46,7 @@ export function useOrganizationMembers(slug: string) {
     queryKey: ["organization-members", slug],
     queryFn: async (): Promise<OrganizationMember[]> => {
       const res = await fetch(
-        `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/members`,
+        `/api/orgs/${encodeURIComponent(slug)}/members`,
         { credentials: "include" },
       );
       if (!res.ok) throw new Error("Failed to fetch organization members");
@@ -60,7 +60,7 @@ export function useOrganizationMembers(slug: string) {
 
 async function postOrganizationMembership(slug: string, action: "join" | "leave") {
   const res = await fetch(
-    `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/${action}`,
+    `/api/orgs/${encodeURIComponent(slug)}/${action}`,
     {
       method: "POST",
       credentials: "include",
@@ -112,7 +112,7 @@ export function useOrganizationRepositories(slug: string) {
     queryKey: ["organization-repos", slug],
     queryFn: async (): Promise<{ repositories: OrganizationRepo[]; total: number }> => {
       const res = await fetch(
-        `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/repos`,
+        `/api/orgs/${encodeURIComponent(slug)}/repos`,
         { credentials: "include" },
       );
       if (!res.ok) throw new Error("Failed to fetch organization repositories");
@@ -132,7 +132,7 @@ export function useOrganizationLanguages(slug: string) {
     queryKey: ["organization-languages", slug],
     queryFn: async (): Promise<OrganizationLanguage[]> => {
       const res = await fetch(
-        `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/languages`,
+        `/api/orgs/${encodeURIComponent(slug)}/languages`,
         { credentials: "include" },
       );
       if (!res.ok) throw new Error("Failed to fetch organization languages");
@@ -152,7 +152,7 @@ export function useCreateOrganizationRepository(slug: string) {
       params: CreateOrganizationRepoRequest,
     ): Promise<{ owner: string; name: string }> => {
       const res = await fetch(
-        `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/repos`,
+        `/api/orgs/${encodeURIComponent(slug)}/repos`,
         {
           method: "POST",
           credentials: "include",
@@ -188,7 +188,7 @@ export function useUpdateOrganization(slug: string) {
       params: OrganizationUpdateRequest,
     ): Promise<OrganizationDetail> => {
       const res = await fetch(
-        `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}`,
+        `/api/orgs/${encodeURIComponent(slug)}`,
         {
           method: "PATCH",
           credentials: "include",
@@ -217,7 +217,7 @@ export function useCreateOrganization() {
 		mutationFn: async (
 			params: OrganizationCreateRequest,
 		): Promise<OrganizationDetail> => {
-			const res = await fetch("http://localhost:3200/api/orgs", {
+			const res = await fetch("/api/orgs", {
 				method: "POST",
 				credentials: "include",
 				headers: { "Content-Type": "application/json" },
@@ -241,7 +241,7 @@ export function useCheckSlug(slug: string) {
 		queryKey: ["org-slug-check", slug],
 		queryFn: async (): Promise<{ available: boolean }> => {
 			const res = await fetch(
-				`http://localhost:3200/api/orgs?slug=${encodeURIComponent(slug)}`,
+				`/api/orgs?slug=${encodeURIComponent(slug)}`,
 			);
 			if (!res.ok) throw new Error("Failed to check slug");
 			return res.json();

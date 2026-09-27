@@ -10,7 +10,7 @@ export function usePRChangedFiles(
 		queryKey: ["pr-files", owner, repo, number],
 		queryFn: async (): Promise<BranchCompare> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/files`,
+				`/api/repos/${owner}/${repo}/pulls/${number}/files`,
 			);
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);

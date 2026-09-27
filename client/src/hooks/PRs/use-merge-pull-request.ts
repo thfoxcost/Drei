@@ -10,7 +10,7 @@ export function useMergePullRequest(
 	return useMutation({
 		mutationFn: async (): Promise<{ mergeCommitHash: string }> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/merge`,
+				`/api/repos/${owner}/${repo}/pulls/${number}/merge`,
 				{
 					method: "POST",
 					credentials: "include",

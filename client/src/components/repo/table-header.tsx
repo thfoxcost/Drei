@@ -147,7 +147,7 @@ function Tableheader({
 
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_BACKEND_URL}/api/repos/${owner}/${repo}/branches/${encodeURIComponent(branchToDelete)}`,
+				`/api/repos/${owner}/${repo}/branches/${encodeURIComponent(branchToDelete)}`,
 				{ method: "DELETE", credentials: "include" },
 			);
 
@@ -180,7 +180,7 @@ function Tableheader({
 	};
 
 	const handleDownload = async (format: "zip" | "tar.gz") => {
-		const url = `${import.meta.env.VITE_BACKEND_URL}/api/repos/${owner}/${repo}/download?format=${format}&ref=${encodeURIComponent(currentBranch)}`;
+		const url = `/api/repos/${owner}/${repo}/download?format=${format}&ref=${encodeURIComponent(currentBranch)}`;
 
 		try {
 			const res = await fetch(url);

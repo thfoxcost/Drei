@@ -14,7 +14,7 @@ export function usePullRequestReviews(
 		queryKey: ["pull-reviews", owner, repo, number],
 		queryFn: async (): Promise<PullRequestReviewsResponse> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/reviews`,
+				`/api/repos/${owner}/${repo}/pulls/${number}/reviews`,
 			);
 			if (!res.ok) throw new Error("Failed to fetch pull request reviews");
 			return res.json();

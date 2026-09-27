@@ -114,7 +114,7 @@ function NewIssue() {
 		queryKey: ["repo-labels", username, repo],
 		queryFn: async (): Promise<{ name: string; color: string | null }[]> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/labels`,
+				`/api/repos/${username}/${repo}/labels`,
 			);
 			if (!res.ok) throw new Error("Failed to fetch labels");
 			const json = (await res.json()) as {
@@ -205,7 +205,7 @@ function NewIssue() {
 
 		try {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/issues`,
+				`/api/repos/${username}/${repo}/issues`,
 				{
 					method: "POST",
 					credentials: "include",
@@ -286,7 +286,7 @@ function NewIssue() {
 
 						<MarkdownEditor
 							id="issue-description"
-							uploadUrl={`http://localhost:3200/api/repos/${username}/${repo}/issues/images`}
+							uploadUrl={`/api/repos/${username}/${repo}/issues/images`}
 							placeholder="Type your description here... Supports Markdown and image uploads."
 							value={description}
 							onChange={setDescription}

@@ -67,7 +67,7 @@ function Main() {
 									<div className="flex size-13 items-center justify-center overflow-hidden rounded-md bg-muted">
 										{org.avatar ? (
 											<img
-												src={`${import.meta.env.VITE_BACKEND_URL}/uploads/${org.avatar}`}
+												src={`/uploads/${org.avatar}`}
 												alt={org.name}
 												className="size-full object-cover"
 											/>

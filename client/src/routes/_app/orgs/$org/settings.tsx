@@ -99,7 +99,7 @@ function RouteComponent() {
   const isSaving = updateOrganization.isPending;
 
   const avatarUrl = data.avatar
-    ? `${import.meta.env.VITE_BACKEND_URL}/uploads/${data.avatar}`
+    ? `/uploads/${data.avatar}`
     : undefined;
 
   const currentAvatar = avatarPreview ?? avatarUrl;
@@ -147,7 +147,7 @@ function RouteComponent() {
 
         try {
           const avatarRes = await fetch(
-            `http://localhost:3200/api/orgs/${encodeURIComponent(org)}/avatar`,
+            `/api/orgs/${encodeURIComponent(org)}/avatar`,
             {
               method: "POST",
               credentials: "include",

@@ -31,7 +31,7 @@ function Collab() {
 		queryKey: ["collaborator-candidates", username, repo],
 		queryFn: async (): Promise<Contributor[]> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/collaborators`,
+				`/api/repos/${username}/${repo}/collaborators`,
 			)
 			if (!res.ok) throw new Error("Failed to fetch collaborators")
 			const result = await res.json()
@@ -59,7 +59,7 @@ function Collab() {
 
 		try {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/collaborators`,
+				`/api/repos/${username}/${repo}/collaborators`,
 				{
 					method: "POST",
 					credentials: "include",
@@ -94,7 +94,7 @@ function Collab() {
 
 		try {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/collaborators`,
+				`/api/repos/${username}/${repo}/collaborators`,
 				{
 					method: "DELETE",
 					credentials: "include",

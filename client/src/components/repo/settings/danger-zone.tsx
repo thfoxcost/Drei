@@ -36,7 +36,7 @@ const DangerZone = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/visibility`,
+        `/api/repos/${username}/${repo}/visibility`,
         {
           method: "POST",
           credentials: "include",
@@ -66,7 +66,7 @@ const DangerZone = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/archive`,
+        `/api/repos/${username}/${repo}/archive`,
         {
           method: "POST",
           credentials: "include",
@@ -94,7 +94,7 @@ const DangerZone = () => {
     setBusy("delete")
 
     try {
-      const res = await fetch(`http://localhost:3200/api/repos/${username}/${repo}`, {
+      const res = await fetch(`/api/repos/${username}/${repo}`, {
         method: "DELETE",
         credentials: "include",
       })

@@ -1,8 +1,6 @@
 import { useCallback } from "react"
 import { toast } from "sonner"
 
-const API_BASE = "http://localhost:3200"
-
 interface NotificationPayload {
 	repositoryId?: number | null
 	event: string
@@ -25,7 +23,7 @@ export function useNotification(): UseNotificationResult {
 	const sendNotification = useCallback(
 		async (payload: NotificationPayload): Promise<boolean> => {
 			try {
-				const res = await fetch(`${API_BASE}/api/notifications/send`, {
+				const res = await fetch("/api/notifications/send", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					credentials: "include",
@@ -58,7 +56,7 @@ export function useNotification(): UseNotificationResult {
 	const testNotification = useCallback(
 		async (payload: TestNotificationPayload): Promise<boolean> => {
 			try {
-				const res = await fetch(`${API_BASE}/api/notifications/test`, {
+				const res = await fetch("/api/notifications/test", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					credentials: "include",

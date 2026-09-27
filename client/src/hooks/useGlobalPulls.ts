@@ -22,7 +22,7 @@ export function useGlobalPulls(filters: PRFilters = {}) {
 		],
 		queryFn: async (): Promise<PullRequestsList> => {
 			const qs = queryString ? `?${queryString}` : "";
-			const res = await fetch(`http://localhost:3200/api/pulls${qs}`);
+			const res = await fetch(`/api/pulls${qs}`);
 			if (!res.ok) throw new Error("Failed to fetch pull requests");
 			return res.json();
 		},

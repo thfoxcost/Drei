@@ -1,13 +1,19 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { Toaster } from "@/components/ui/sonner"
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-import { useState } from "react"
+import { Suspense, lazy, useState } from "react"
 
 import appCss from '../styles.css?url'
 import { ThemeProvider } from '#/components/theme-provider'
 import { TooltipProvider } from "#/components/ui/tooltip"
+
+// Development-only. `import.meta.env.DEV` is statically replaced with `false`
+// during `vite build`, which makes this ternary collapse to null and keeps the
+// devtools packages out of the production module graph entirely. A static
+// import would ship them to every user.
+const Devtools = import.meta.env.DEV
+  ? lazy(() => import("@/components/devtools").then((m) => ({ default: m.Devtools })))
+  : null
 
 export const Route = createRootRoute({
   head: () => ({
@@ -83,17 +89,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               {children}
             </QueryClientProvider>
             <Toaster />
-            <TanStackDevtools
-              config={{
-                position: 'top-right',
-              }}
-              plugins={[
-                {
-                  name: 'Tanstack Router',
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-              ]}
-            />
+            {Devtools ? (
+              <Suspense fallback={null}>
+                <Devtools />
+              </Suspense>
+            ) : null}
             <Scripts />
           </TooltipProvider>
         </ThemeProvider>

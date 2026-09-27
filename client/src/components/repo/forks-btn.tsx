@@ -44,7 +44,7 @@ export function ForksBtn({ disabled = false }: { disabled?: boolean }) {
 		queryKey: ["forks", username, repo],
 		queryFn: async () => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/forks`,
+				`/api/repos/${username}/${repo}/forks`,
 				{ credentials: "include" },
 			);
 			if (!res.ok) throw new Error("Failed to fetch forks");

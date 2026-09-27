@@ -16,7 +16,7 @@ export function useDuplicatePR(
 		queryFn: async (): Promise<DuplicateCheck> => {
 			const params = new URLSearchParams({ source, target });
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/duplicate?${params}`,
+				`/api/repos/${owner}/${repo}/pulls/duplicate?${params}`,
 			);
 			if (!res.ok) throw new Error("Failed to check for duplicate PR");
 			return res.json();

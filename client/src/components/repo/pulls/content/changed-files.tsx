@@ -672,7 +672,7 @@ function Changedfiles({
       formData.append("image", file)
 
       const res = await fetch(
-        `http://localhost:3200/api/repos/${owner}/${repo}/pulls/images`,
+        `/api/repos/${owner}/${repo}/pulls/images`,
         {
           method: "POST",
           body: formData,
@@ -874,7 +874,7 @@ function Changedfiles({
   const submitReview = useMutation({
     mutationFn: async ({ state, body }: { state: string; body: string }) => {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`,
+        `/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`,
         {
           method: "POST",
           credentials: "include",
@@ -1123,7 +1123,7 @@ function Changedfiles({
                   )
 
                   fetch(
-                    `http://localhost:3200/api/repos/${owner}/${repo}/pulls/${pullNumber}/viewed`,
+                    `/api/repos/${owner}/${repo}/pulls/${pullNumber}/viewed`,
                     {
                       method:
                         "PUT",
@@ -1153,7 +1153,7 @@ function Changedfiles({
                   )
 
                   fetch(
-                    `http://localhost:3200/api/repos/${owner}/${repo}/pulls/${pullNumber}/viewed`,
+                    `/api/repos/${owner}/${repo}/pulls/${pullNumber}/viewed`,
                     {
                       method:
                         "DELETE",

@@ -19,7 +19,7 @@ export function useCreatePullRequest(owner: string, repo: string) {
 			params: CreatePullRequestParams,
 		): Promise<PullRequest> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls`,
+				`/api/repos/${owner}/${repo}/pulls`,
 				{
 					method: "POST",
 					credentials: "include",

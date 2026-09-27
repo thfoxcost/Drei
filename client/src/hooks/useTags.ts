@@ -22,7 +22,7 @@ export function useTags(owner: string, repo: string) {
 		queryKey: ["tags", owner, repo],
 		queryFn: (): Promise<TagInfo[]> =>
 			fetchJSON<TagInfo[] | null>(
-				`http://localhost:3200/api/repos/${owner}/${repo}/tags`,
+				`/api/repos/${owner}/${repo}/tags`,
 				"Failed to fetch tags",
 			).then((data) => data ?? []),
 		enabled: !!(owner && repo),
@@ -35,7 +35,7 @@ export function useTag(owner: string, repo: string, tag: string) {
 		queryKey: ["tag", owner, repo, tag],
 		queryFn: (): Promise<TagInfo> =>
 			fetchJSON<TagInfo>(
-				`http://localhost:3200/api/repos/${owner}/${repo}/tags/${encodeURIComponent(tag)}`,
+				`/api/repos/${owner}/${repo}/tags/${encodeURIComponent(tag)}`,
 				"Failed to fetch tag",
 			),
 		enabled: !!(owner && repo && tag),

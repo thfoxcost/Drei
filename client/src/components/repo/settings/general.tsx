@@ -47,7 +47,7 @@ function General() {
     formData.append("logo", file)
 
     const res = await fetch(
-      `http://localhost:3200/api/repos/${username}/${repo}/logo`,
+      `/api/repos/${username}/${repo}/logo`,
       { method: "POST", credentials: "include", body: formData },
     )
 
@@ -85,7 +85,7 @@ function General() {
     setUpdating(true)
 
     try {
-      const res = await fetch(`http://localhost:3200/api/repos/${username}/${repo}`, {
+      const res = await fetch(`/api/repos/${username}/${repo}`, {
         method: "PATCH",
         credentials: "include",
         headers: {

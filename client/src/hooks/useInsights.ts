@@ -1,7 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 
-const API = "http://localhost:3200";
-
 async function fetchJSON<T>(url: string): Promise<T> {
 	const res = await fetch(url, { credentials: "include" });
 	if (!res.ok) {
@@ -35,7 +33,7 @@ export function usePulse(
 		queryKey: ["insights", "pulse", owner, repo, days, branch ?? ""],
 		queryFn: () =>
 			fetchJSON<PulseStats>(
-				`${API}/api/repos/${owner}/${repo}/insights/pulse?${params.toString()}`,
+				`/api/repos/${owner}/${repo}/insights/pulse?${params.toString()}`,
 			),
 		staleTime: 60_000,
 	});
@@ -74,7 +72,7 @@ export function useInsightContributors(
 		queryKey: ["insights", "contributors", owner, repo, branch ?? ""],
 		queryFn: () =>
 			fetchJSON<ContributorsInsight>(
-				`${API}/api/repos/${owner}/${repo}/insights/contributors${qs ? `?${qs}` : ""}`,
+				`/api/repos/${owner}/${repo}/insights/contributors${qs ? `?${qs}` : ""}`,
 			),
 		staleTime: 60_000,
 	});
@@ -94,7 +92,7 @@ export function useCodeFrequency(owner: string, repo: string, branch?: string) {
 		queryKey: ["insights", "code-frequency", owner, repo, branch ?? ""],
 		queryFn: async () => {
 			const data = await fetchJSON<{ weeks: CodeFrequencyWeek[] }>(
-				`${API}/api/repos/${owner}/${repo}/insights/code-frequency${qs ? `?${qs}` : ""}`,
+				`/api/repos/${owner}/${repo}/insights/code-frequency${qs ? `?${qs}` : ""}`,
 			);
 			return data.weeks ?? [];
 		},

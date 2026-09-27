@@ -7,7 +7,7 @@ export function useRepoData(owner: string, repo: string, branch?: string) {
 		queryFn: async (): Promise<RepoData> => {
 			const query = branch ? `?ref=${encodeURIComponent(branch)}` : "";
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}${query}`,
+				`/api/repos/${owner}/${repo}${query}`,
 				{ credentials: "include" },
 			);
 			if (!res.ok) {

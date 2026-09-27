@@ -19,7 +19,14 @@ Drei is a self-hosted Git platform: a Go backend + a TanStack Start (React 19) c
 Both servers fail at startup if their gitignored `.env` files are missing:
 
 - `backend/.env`: `PORT=3200`, `REPOS_PATH=...`, `DATABASE_URL=postgres://user:password@localhost:5432/pg`, `GIT_HTTP_BACKEND=/usr/lib/git-core/git-http-backend`.
-- `client/.env`: `BETTER_AUTH_URL=http://localhost:3000`, `BETTER_AUTH_SECRET=...`, `VITE_BACKEND_URL=http://localhost:3200`, `DB_HOST=postgres://...`.
+- `client/.env`: `PUBLIC_URL=http://localhost:3000` (`BETTER_AUTH_URL` is an accepted alias), `BETTER_AUTH_SECRET=...`, `VITE_BACKEND_URL=http://localhost:3200`, `DB_HOST=postgres://...`.
+
+## Deployment (Docker Compose)
+
+- `docker compose up --build` runs the whole stack: `postgres` → `migrate` → `backend` → `frontend`. Only `frontend` publishes a port; everything else stays on the Compose network. The Go backend's `CLIENT_URL` is therefore the internal `http://frontend:3000`, not the public address.
+- The root `.env` is the deployment's configuration. `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` and `PUBLIC_URL` are required and have no defaults, so Compose refuses to start rather than run with a guessed value.
+- **`PUBLIC_URL` is the origin better-auth trusts.** `client/src/lib/auth.ts` reads it (or the `BETTER_AUTH_URL` alias), sets better-auth's `baseURL`, and puts that origin in `trustedOrigins`. Every sign-in/sign-up request's `Origin` header must match it exactly, otherwise better-auth answers `403 Invalid origin` before touching the database. `client/server.mjs` re-checks the same variables at boot and refuses to start if they are missing (in production), malformed, or disagree with each other. Do not "fix" this by disabling origin validation.
+- Secrets (`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `GIT_BASIC_AUTH_PASSWORD`) exist only in `.env`; never read, log, or commit them.
 
 ## Architecture — facts that aren't obvious from filenames
 

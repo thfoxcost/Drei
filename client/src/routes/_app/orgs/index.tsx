@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_app/orgs/")({
 
 function getAvatarUrl(avatar: string | null): string | null {
 	if (!avatar) return null;
-	return `${import.meta.env.VITE_BACKEND_URL}/uploads/${avatar}`;
+	return `/uploads/${avatar}`;
 }
 
 function RouteComponent() {

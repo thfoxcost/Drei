@@ -24,7 +24,7 @@ export function useBackupStatus(owner: string, repo: string) {
 		queryKey: ["backup-status", owner, repo],
 		queryFn: async (): Promise<BackupStatus> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/backup/status`,
+				`/api/repos/${owner}/${repo}/backup/status`,
 				{ credentials: "include" },
 			);
 			if (!res.ok) throw await parseError(res, "Failed to fetch backup status");
@@ -39,7 +39,7 @@ export function useToggleBackup(owner: string, repo: string) {
 	return useMutation({
 		mutationFn: async (enabled: boolean): Promise<BackupStatus> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/backup`,
+				`/api/repos/${owner}/${repo}/backup`,
 				{
 					method: "POST",
 					credentials: "include",
@@ -63,7 +63,7 @@ export function useRunBackup(owner: string, repo: string) {
 	return useMutation({
 		mutationFn: async (): Promise<BackupStatus> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/backup/run`,
+				`/api/repos/${owner}/${repo}/backup/run`,
 				{ method: "POST", credentials: "include" },
 			);
 			if (!res.ok) throw await parseError(res, "Failed to create backup");

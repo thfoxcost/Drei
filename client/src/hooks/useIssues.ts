@@ -33,7 +33,7 @@ export function useIssues(
 		queryFn: async (): Promise<IssuesList> => {
 			const qs = queryString ? `?${queryString}` : "";
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/issues${qs}`,
+				`/api/repos/${owner}/${repo}/issues${qs}`,
 			);
 			if (!res.ok) throw new Error("Failed to fetch issues");
 			return res.json();

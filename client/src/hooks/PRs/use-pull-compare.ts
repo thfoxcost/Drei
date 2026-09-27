@@ -28,7 +28,7 @@ export function usePullCompare(
 		queryFn: async (): Promise<BranchCompare> => {
 			const params = new URLSearchParams({ base, head });
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/compare?${params}`,
+				`/api/repos/${owner}/${repo}/pulls/compare?${params}`,
 			);
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);

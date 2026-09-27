@@ -77,7 +77,7 @@ export function Cmd() {
 
       try {
         const res = await fetch(
-          `http://localhost:3200/api/users/${username}/repos`,
+          `/api/users/${username}/repos`,
         );
 
         if (!res.ok) {

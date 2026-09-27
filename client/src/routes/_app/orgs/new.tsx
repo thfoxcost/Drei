@@ -155,7 +155,7 @@ function RouteComponent() {
           formData.append("avatar", avatarFile);
 
           const avatarRes = await fetch(
-            `http://localhost:3200/api/orgs/${createdOrgSlugRef.current}/avatar`,
+            `/api/orgs/${createdOrgSlugRef.current}/avatar`,
             {
               method: "POST",
               credentials: "include",

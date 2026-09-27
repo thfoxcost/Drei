@@ -6,14 +6,15 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
-    "generate-routes": "tsr generate",
     "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest run",
+    "check": "biome check",
+    "dev": "vite dev --port 3000",
     "format": "biome format",
+    "generate-routes": "tsr generate",
     "lint": "biome lint",
-    "check": "biome check"
+    "preview": "vite preview",
+    "start": "node server.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -71,6 +72,7 @@
     "remark-gemoji": "^8.0.0",
     "remark-gfm": "^4.0.1",
     "shadcn": "^4.13.0",
+    "shiki": "^4.3.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.1.18",
@@ -92,7 +94,6 @@
     "@vitejs/plugin-react": "^6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "jsdom": "^28.1.0",
-    "shiki": "^4.3.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
     "vitest": "^4.1.5"

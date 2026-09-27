@@ -49,8 +49,6 @@ export interface SystemMetrics {
 	lastUpdated: string;
 }
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
 export function useHealth(pollIntervalMs = 15000) {
 	const { data: session, isPending: sessionPending } = authClient.useSession();
 
@@ -59,7 +57,7 @@ export function useHealth(pollIntervalMs = 15000) {
 		queryFn: async (): Promise<HealthData> => {
 			// no-store: host metrics are gated on the session cookie, so a
 			// cached response must never be served to a different user.
-			const res = await fetch(`${BACKEND_URL}/api/status`, {
+			const res = await fetch("/api/status", {
 				credentials: "include",
 				cache: "no-store",
 			});

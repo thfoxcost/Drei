@@ -19,8 +19,6 @@ import { Separator } from "#/components/ui/separator"
 import { Spinner } from "#/components/ui/spinner"
 import { useNotification } from "#/hooks/useNotification"
 
-const API_BASE = "http://localhost:3200"
-
 function DiscordIcon({ className = "size-4" }: { className?: string }) {
     return (
         <svg
@@ -61,7 +59,7 @@ function ContentNotifications() {
 
     async function fetchNotifications() {
         try {
-            const res = await fetch(`${API_BASE}/api/notifications`, {
+            const res = await fetch("/api/notifications", {
                 credentials: "include",
             })
 
@@ -87,7 +85,7 @@ function ContentNotifications() {
         const encoded = btoa(bare)
 
         try {
-            const res = await fetch(`${API_BASE}/api/notifications`, {
+            const res = await fetch("/api/notifications", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -111,7 +109,7 @@ function ContentNotifications() {
 
     async function removeNotification(id: number) {
         try {
-            const res = await fetch(`${API_BASE}/api/notifications/${id}`, {
+            const res = await fetch(`/api/notifications/${id}`, {
                 method: "DELETE",
                 credentials: "include",
             })

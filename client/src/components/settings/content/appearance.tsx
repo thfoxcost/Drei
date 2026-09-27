@@ -20,8 +20,6 @@ import { Spinner } from "#/components/ui/spinner"
 import { useTheme } from "@/components/theme-provider"
 import { getCurrentYear, useHeatmapYear } from "#/hooks/useHeatmapYear"
 
-const API_BASE = "http://localhost:3200"
-
 type Language = "en" | "ar" | "fr" | "de"
 
 type AppearanceData = {
@@ -65,7 +63,7 @@ function ContentAppearance() {
         async function fetchAppearance() {
             try {
                 const res = await fetch(
-                    `${API_BASE}/api/user/appearance`,
+                    "/api/user/appearance",
                     {
                         credentials: "include",
                     },
@@ -137,7 +135,7 @@ function ContentAppearance() {
 
         try {
             const res = await fetch(
-                `${API_BASE}/api/user/appearance`,
+                "/api/user/appearance",
                 {
                     method: "PUT",
                     headers: {

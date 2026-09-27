@@ -56,7 +56,7 @@ export default function Header() {
   useEffect(() => {
     async function fetchBiography() {
       try {
-        const res = await fetch("http://localhost:3200/api/profile", {
+        const res = await fetch("/api/profile", {
           credentials: "include",
         })
 
@@ -262,7 +262,7 @@ export default function Header() {
               <DropdownMenuSubContent className="w-40">
                 <DropdownMenuItem asChild>
                   <a
-                    href={`${import.meta.env.VITE_BACKEND_URL}/swagger/index.html`}
+                    href={`/swagger/index.html`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

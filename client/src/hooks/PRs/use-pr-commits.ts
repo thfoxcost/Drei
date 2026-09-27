@@ -14,7 +14,7 @@ export function usePRCommits(
 			const params = new URLSearchParams({ base, head });
 			if (mergeCommitHash) params.set("mergeCommit", mergeCommitHash);
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/compare/commits?${params}`,
+				`/api/repos/${owner}/${repo}/pulls/compare/commits?${params}`,
 			);
 			if (!res.ok) throw new Error("Failed to fetch commits");
 			return res.json();

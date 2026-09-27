@@ -3,6 +3,7 @@ import { useLocation } from "@tanstack/react-router"
 import { Check, Copy } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { publicGitUrl } from "@/lib/backend"
 import { cn } from "@/lib/utils"
 
 type CodeBlockProps = {
@@ -14,13 +15,17 @@ export function CodeBlock({ className }: CodeBlockProps) {
   // e.g. "/thfoxcost/curly-potato" -> ["thfoxcost", "curly-potato"]
   const [username, repo] = location.pathname.split("/").filter(Boolean)
 
+  // The clone URL has to be absolute: it is typed into a terminal, not
+  // fetched by the browser, so it cannot be origin-relative.
+  const cloneUrl = publicGitUrl(username, repo)
+
   const commands = [
     `echo "# ${repo}" >> README.md`,
     "git init",
     "git add README.md",
     `git commit -m "first commit"`,
     "git branch -M main",
-    `git remote add origin http://localhost:3200/git/${username}/${repo}.git`,
+    `git remote add origin ${cloneUrl}`,
     "git push -u origin main",
   ]
 

@@ -31,7 +31,7 @@ export function usePullRequests(
 		queryFn: async (): Promise<PullRequestsList> => {
 			const qs = queryString ? `?${queryString}` : "";
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls${qs}`,
+				`/api/repos/${owner}/${repo}/pulls${qs}`,
 			);
 			if (!res.ok) throw new Error("Failed to fetch pull requests");
 			return res.json();

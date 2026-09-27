@@ -150,7 +150,7 @@ function PRdetail({ pull }: { pull: string }) {
 	async function handleAddComment(body: string) {
 		try {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}/comments`,
+				`/api/repos/${username}/${repo}/pulls/${number}/comments`,
 				{
 					method: "POST",
 					credentials: "include",
@@ -169,7 +169,7 @@ function PRdetail({ pull }: { pull: string }) {
 	async function handleEditComment(commentId: number, body: string) {
 		try {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}/comments/${commentId}`,
+				`/api/repos/${username}/${repo}/pulls/${number}/comments/${commentId}`,
 				{
 					method: "PATCH",
 					credentials: "include",
@@ -188,7 +188,7 @@ function PRdetail({ pull }: { pull: string }) {
 	async function handleDeleteComment(commentId: number) {
 		try {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}/comments/${commentId}`,
+				`/api/repos/${username}/${repo}/pulls/${number}/comments/${commentId}`,
 				{
 					method: "DELETE",
 					credentials: "include",
@@ -205,7 +205,7 @@ function PRdetail({ pull }: { pull: string }) {
 	async function handleDeleteReview(reviewId: number) {
 		try {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}/reviews/${reviewId}`,
+				`/api/repos/${username}/${repo}/pulls/${number}/reviews/${reviewId}`,
 				{
 					method: "DELETE",
 					credentials: "include",
@@ -225,7 +225,7 @@ function PRdetail({ pull }: { pull: string }) {
 			if (body.trim()) payload.body = body;
 
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}/close`,
+				`/api/repos/${username}/${repo}/pulls/${number}/close`,
 				{
 					method: "POST",
 					credentials: "include",
@@ -247,7 +247,7 @@ function PRdetail({ pull }: { pull: string }) {
 	async function handleReopen() {
 		try {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}/reopen`,
+				`/api/repos/${username}/${repo}/pulls/${number}/reopen`,
 				{
 					method: "POST",
 					credentials: "include",
@@ -274,7 +274,7 @@ function PRdetail({ pull }: { pull: string }) {
 		}
 		try {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${number}`,
+				`/api/repos/${username}/${repo}/pulls/${number}`,
 				{
 					method: "PATCH",
 					credentials: "include",
@@ -916,7 +916,7 @@ function PRdetail({ pull }: { pull: string }) {
 										username={session?.user.name}
 										onSubmit={handleAddComment}
 										defaultValue={quoteText}
-										uploadUrl={`http://localhost:3200/api/repos/${username}/${repo}/pulls/images`}
+										uploadUrl={`/api/repos/${username}/${repo}/pulls/images`}
 										onClose={handleClose}
 										onReopen={handleReopen}
 										isClosed={pr.state === "closed"}

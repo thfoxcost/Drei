@@ -17,7 +17,7 @@ export function usePullRequestMergeability(
 		queryKey: ["pr-mergeability", owner, repo, number],
 		queryFn: async (): Promise<MergeabilityResult> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/mergeability`,
+				`/api/repos/${owner}/${repo}/pulls/${number}/mergeability`,
 			);
 			if (!res.ok) throw new Error("Failed to check mergeability");
 			return res.json();

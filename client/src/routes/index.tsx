@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Header from "#/components/header";
 import Main from "#/components/home/main";
 import { DotmTriangle6 } from "#/components/ui/dotm-triangle-6";
@@ -16,14 +16,7 @@ export const Route = createFileRoute("/")({
 
 function Home() {
 	const { loaded } = useUserRepos();
-	// TEMP: hold the loader 8s so the animation is observable. Remove before commit.
-	const [minWaitDone, setMinWaitDone] = useState(false);
-	const showLoader = !loaded || !minWaitDone;
-
-	useEffect(() => {
-		const id = setTimeout(() => setMinWaitDone(true), 8000);
-		return () => clearTimeout(id);
-	}, []);
+	const showLoader = !loaded;
 
 	useEffect(() => {
 		const previous = document.body.style.overflow;

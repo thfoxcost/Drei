@@ -1,0 +1,25 @@
+# Build context for the client image.
+#
+# Keeping node_modules and dist out is not only about size: a host node_modules
+# is built for the host's platform and would shadow the image's own, and a
+# stale dist would be copied in ahead of the one the build produces.
+node_modules
+dist
+.tanstack
+.output
+.nitro
+.vinxi
+coverage
+*.log
+*.local
+
+# Real secrets and a localhost database URL. The Dockerfile supplies
+# build-time values via build args and deletes these before building, but
+# excluding them here means they are never sent to the daemon at all.
+.env
+.env.local
+.env.*.local
+
+.DS_Store
+.vscode
+.idea

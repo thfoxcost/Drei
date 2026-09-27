@@ -683,7 +683,7 @@ export function ConversationSheet({
       { id: number; name: string; color: string | null }[]
     > => {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/labels`,
+        `/api/repos/${username}/${repo}/labels`,
       );
       if (!res.ok) throw new Error("Failed to fetch labels");
       const json = (await res.json()) as {
@@ -736,7 +736,7 @@ export function ConversationSheet({
   const setAssigneesMutation = useMutation({
     mutationFn: async (assignees: string[]) => {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/pulls/${pull.number}/assignee`,
+        `/api/repos/${username}/${repo}/pulls/${pull.number}/assignee`,
         {
           method: "POST",
           credentials: "include",
@@ -752,7 +752,7 @@ export function ConversationSheet({
   const setReviewersMutation = useMutation({
     mutationFn: async (reviewers: string[]) => {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/pulls/${pull.number}/reviewers`,
+        `/api/repos/${username}/${repo}/pulls/${pull.number}/reviewers`,
         {
           method: "POST",
           credentials: "include",
@@ -768,7 +768,7 @@ export function ConversationSheet({
   const setLabelsMutation = useMutation({
     mutationFn: async (labels: number[]) => {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/pulls/${pull.number}/labels`,
+        `/api/repos/${username}/${repo}/pulls/${pull.number}/labels`,
         {
           method: "POST",
           credentials: "include",
@@ -790,7 +790,7 @@ export function ConversationSheet({
       color: string;
     }): Promise<{ id: number; name: string; color: string }> => {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/labels`,
+        `/api/repos/${username}/${repo}/labels`,
         {
           method: "POST",
           credentials: "include",
@@ -806,7 +806,7 @@ export function ConversationSheet({
   const notificationsMutation = useMutation({
     mutationFn: async (notifications: boolean) => {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/pulls/${pull.number}/notifications`,
+        `/api/repos/${username}/${repo}/pulls/${pull.number}/notifications`,
         {
           method: "POST",
           credentials: "include",

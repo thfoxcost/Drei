@@ -6,7 +6,7 @@ export function usePullRequest(owner: string, repo: string, number: number) {
 		queryKey: ["pull", owner, repo, number],
 		queryFn: async (): Promise<PullRequest> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}`,
+				`/api/repos/${owner}/${repo}/pulls/${number}`,
 			);
 			if (!res.ok) throw new Error("Failed to fetch pull request");
 			return res.json();

@@ -41,9 +41,18 @@ export type ActivityResponse = {
 
 const PAGE_SIZE = 8;
 
+/**
+ * The API is served from the same origin as this client, so requests are
+ * origin-relative and the session cookie rides along automatically.
+ *
+ * VITE_BACKEND_URL is retained only as an escape hatch for running the client
+ * against a backend on a different origin during development. It is empty in
+ * production, and an empty value means "same origin" rather than falling back
+ * to a hardcoded address.
+ */
 function backendUrl(): string {
-  const url = import.meta.env.VITE_BACKEND_URL as string | undefined;
-  return url && url.length > 0 ? url : "http://localhost:3200";
+  const url = import.meta.env.VITE_BACKEND_URL as string | undefined
+  return url && url.length > 0 ? url.replace(/\/+$/, "") : ""
 }
 
 export async function getActivity(

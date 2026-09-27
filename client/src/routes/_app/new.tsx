@@ -125,7 +125,7 @@ function New() {
     try {
       const res = selectedOrganization
         ? await fetch(
-            `http://localhost:3200/api/orgs/${encodeURIComponent(selectedOrganization.slug)}/repos`,
+            `/api/orgs/${encodeURIComponent(selectedOrganization.slug)}/repos`,
             {
               method: "POST",
               credentials: "include",
@@ -139,7 +139,7 @@ function New() {
               }),
             },
           )
-        : await fetch("http://localhost:3200/api/repos", {
+        : await fetch("/api/repos", {
             method: "POST",
             credentials: "include",
             headers: {
@@ -256,7 +256,7 @@ function New() {
                         <Avatar className="size-5.5">
                           {selectedOrganization.avatar && (
                             <AvatarImage
-                              src={`${import.meta.env.VITE_BACKEND_URL}/uploads/${selectedOrganization.avatar}`}
+                              src={`/uploads/${selectedOrganization.avatar}`}
                               alt={selectedOrganization.name}
                             />
                           )}
@@ -311,7 +311,7 @@ function New() {
                       <Avatar className="size-5.5">
                         {org.avatar && (
                           <AvatarImage
-                            src={`${import.meta.env.VITE_BACKEND_URL}/uploads/${org.avatar}`}
+                            src={`/uploads/${org.avatar}`}
                             alt={org.name}
                           />
                         )}

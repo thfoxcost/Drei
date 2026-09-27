@@ -1,0 +1,26 @@
+# Build context for the backend image.
+#
+# backend/main and backend/server are compiled binaries that are committed in
+# the work tree (~56 MB). They must not enter the build context, and the
+# Dockerfile only builds ./cmd/server so they are never linked either.
+#
+# These must stay anchored to the root. An unanchored "server" would also match
+# the cmd/server *directory*, which is the package being compiled.
+# Same for "tmp", which is where air writes.
+/main
+/server
+/tmp
+
+# Local configuration and a developer-absolute REPOS_PATH.
+.env
+.env.local
+.env.*.local
+
+# NOTE: docs/ must NOT be excluded. cmd/server/main.go imports it for
+# `_ "backend/docs"`, which registers the generated Swagger definitions served
+# at /swagger/. Removing it makes the Go build fail on a missing package.
+
+*.log
+.DS_Store
+.vscode
+.idea

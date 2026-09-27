@@ -6,7 +6,7 @@ export function useRevertMerge(owner: string, repo: string, number: number) {
 	return useMutation({
 		mutationFn: async (): Promise<{ revertCommitHash: string }> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/revert`,
+				`/api/repos/${owner}/${repo}/pulls/${number}/revert`,
 				{
 					method: "POST",
 					credentials: "include",

@@ -24,7 +24,7 @@ export function useGlobalIssues(filters: IssueFilters = {}) {
 		],
 		queryFn: async (): Promise<IssuesList> => {
 			const qs = queryString ? `?${queryString}` : "";
-			const res = await fetch(`http://localhost:3200/api/issues${qs}`);
+			const res = await fetch(`/api/issues${qs}`);
 			if (!res.ok) throw new Error("Failed to fetch issues");
 			return res.json();
 		},

@@ -127,8 +127,7 @@ function Codeblock({
 
 	const handleRaw = () => {
 		if (!owner || !repo || !branch || !filePath) return;
-		const base = import.meta.env.VITE_BACKEND_URL;
-		window.location.href = `${base}/api/repos/${owner}/${repo}/raw/${encodeURIComponent(branch)}/${filePath}`;
+		window.location.href = `/api/repos/${owner}/${repo}/raw/${encodeURIComponent(branch)}/${filePath}`;
 	};
 
 	// Don't render the code block/header for empty files.

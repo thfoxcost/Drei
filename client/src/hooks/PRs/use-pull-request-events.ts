@@ -14,7 +14,7 @@ export function usePullRequestEvents(
 		queryKey: ["pull-events", owner, repo, number],
 		queryFn: async (): Promise<PullRequestEventsResponse> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/events`,
+				`/api/repos/${owner}/${repo}/pulls/${number}/events`,
 			);
 			if (!res.ok) throw new Error("Failed to fetch pull request events");
 			return res.json();

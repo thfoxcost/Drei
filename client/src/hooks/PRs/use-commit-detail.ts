@@ -28,7 +28,7 @@ export function useCommitDetail(
 		queryKey: ["commit-detail", owner, repo, hash],
 		queryFn: async (): Promise<CommitDetail> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/commits/${hash}`,
+				`/api/repos/${owner}/${repo}/commits/${hash}`,
 			);
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);

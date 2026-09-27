@@ -117,7 +117,7 @@ function IssueDetail() {
     queryKey: ["issue", username, repo, number],
     queryFn: async (): Promise<Issue> => {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/issues/${number}`,
+        `/api/repos/${username}/${repo}/issues/${number}`,
       );
       if (!res.ok) throw new Error("Failed to fetch issue");
       return res.json();
@@ -146,7 +146,7 @@ function IssueDetail() {
 
     try {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/state`,
+        `/api/repos/${username}/${repo}/issues/${number}/state`,
         {
           method: "POST",
           credentials: "include",
@@ -175,7 +175,7 @@ function IssueDetail() {
 
     try {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/state`,
+        `/api/repos/${username}/${repo}/issues/${number}/state`,
         {
           method: "POST",
           credentials: "include",
@@ -212,7 +212,7 @@ function IssueDetail() {
 
     try {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/issues/${number}`,
+        `/api/repos/${username}/${repo}/issues/${number}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -250,7 +250,7 @@ function IssueDetail() {
 
     try {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/assignee`,
+        `/api/repos/${username}/${repo}/issues/${number}/assignee`,
         {
           method: "POST",
           credentials: "include",
@@ -302,7 +302,7 @@ function IssueDetail() {
 
     try {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/issues/${number}`,
+        `/api/repos/${username}/${repo}/issues/${number}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -343,7 +343,7 @@ function IssueDetail() {
 
     try {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/comments`,
+        `/api/repos/${username}/${repo}/issues/${number}/comments`,
         {
           method: "POST",
           credentials: "include",
@@ -377,7 +377,7 @@ function IssueDetail() {
 
     try {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/comments/${comment.id}`,
+        `/api/repos/${username}/${repo}/issues/${number}/comments/${comment.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -408,7 +408,7 @@ function IssueDetail() {
 
     try {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${username}/${repo}/issues/${number}/comments/${comment.id}`,
+        `/api/repos/${username}/${repo}/issues/${number}/comments/${comment.id}`,
         { method: "DELETE" },
       );
 

@@ -66,7 +66,7 @@ function ContentProfile() {
 	useEffect(() => {
 		async function fetchProfile() {
 			try {
-				const res = await fetch("http://localhost:3200/api/profile", {
+				const res = await fetch("/api/profile", {
 					credentials: "include",
 				});
 
@@ -162,7 +162,7 @@ function ContentProfile() {
 		setUpdating(true);
 
 		try {
-			const res = await fetch("http://localhost:3200/api/profile", {
+			const res = await fetch("/api/profile", {
 				method: "PATCH",
 				headers: { "Content-Type": "application/json" },
 				credentials: "include",

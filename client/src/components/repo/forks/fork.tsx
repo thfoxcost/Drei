@@ -101,7 +101,7 @@ function Fork({ owner, reponame }: ForkProp) {
 
 		try {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${reponame}/fork`,
+				`/api/repos/${owner}/${reponame}/fork`,
 				{
 					method: "POST",
 					credentials: "include",

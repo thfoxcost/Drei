@@ -40,7 +40,7 @@ function useUserRepos() {
 		async function getRepos() {
 			try {
 				const res = await fetch(
-					`http://localhost:3200/api/users/${username}/repos`,
+					`/api/users/${username}/repos`,
 				);
 
 				if (!res.ok) {

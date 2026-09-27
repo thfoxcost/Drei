@@ -18,7 +18,7 @@ export async function getContributions(
 	username: string,
 	year: number,
 ): Promise<ContributionsResponse> {
-	const url = `${import.meta.env.VITE_BACKEND_URL}/api/users/${encodeURIComponent(username)}/contributions?year=${year}`;
+	const url = `/api/users/${encodeURIComponent(username)}/contributions?year=${year}`;
 
 	const res = await fetch(url, { credentials: "include" });
 

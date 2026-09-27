@@ -66,7 +66,7 @@ function RouteComponent() {
   }
 
   const avatarUrl = data.avatar
-    ? `${import.meta.env.VITE_BACKEND_URL}/uploads/${data.avatar}`
+    ? `/uploads/${data.avatar}`
     : null;
 
   const isUserAdmin = session?.user.id === data.createdBy.id;

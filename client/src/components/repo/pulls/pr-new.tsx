@@ -167,7 +167,7 @@ function PrNew({
     queryKey: ["repo-labels", owner, repo],
     queryFn: async (): Promise<{ name: string; color: string | null }[]> => {
       const res = await fetch(
-        `http://localhost:3200/api/repos/${owner}/${repo}/labels`,
+        `/api/repos/${owner}/${repo}/labels`,
       );
       if (!res.ok) throw new Error("Failed to fetch labels");
       const json = (await res.json()) as {

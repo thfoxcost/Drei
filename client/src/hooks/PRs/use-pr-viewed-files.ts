@@ -9,7 +9,7 @@ export function usePRViewedFiles(
 		queryKey: ["pr-viewed", owner, repo, number],
 		queryFn: async (): Promise<{ viewedFiles: string[] }> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/viewed`,
+				`/api/repos/${owner}/${repo}/pulls/${number}/viewed`,
 				{ credentials: "include" },
 			);
 			if (!res.ok) {
@@ -40,7 +40,7 @@ export function useTogglePRViewedFile(
 			viewed: boolean;
 		}) => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/viewed`,
+				`/api/repos/${owner}/${repo}/pulls/${number}/viewed`,
 				{
 					method: "POST",
 					headers: { "Content-Type": "application/json" },

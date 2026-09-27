@@ -21,8 +21,6 @@ import {
 } from "#/components/ui/dialog"
 import { authClient } from "#/lib/auth-client"
 
-const API_BASE = "http://localhost:3200"
-
 function ContentAccount() {
 	const { refetch } = authClient.useSession()
 
@@ -49,7 +47,7 @@ function ContentAccount() {
 
 		async function fetchAccount() {
 			try {
-				const res = await fetch(`${API_BASE}/api/user/account`, {
+				const res = await fetch("/api/user/account", {
 					credentials: "include",
 				})
 
@@ -92,7 +90,7 @@ function ContentAccount() {
 		setUpdatingEmail(true)
 
 		try {
-			const res = await fetch(`${API_BASE}/api/user/account`, {
+			const res = await fetch("/api/user/account", {
 				method: "PATCH",
 				headers: { "Content-Type": "application/json" },
 				credentials: "include",
@@ -142,7 +140,7 @@ function ContentAccount() {
 		setChangingPassword(true)
 
 		try {
-			const res = await fetch(`${API_BASE}/api/user/account/password`, {
+			const res = await fetch("/api/user/account/password", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				credentials: "include",
@@ -181,7 +179,7 @@ function ContentAccount() {
 		setDeleting(true)
 
 		try {
-			const res = await fetch(`${API_BASE}/api/user/account`, {
+			const res = await fetch("/api/user/account", {
 				method: "DELETE",
 				headers: { "Content-Type": "application/json" },
 				credentials: "include",

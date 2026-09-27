@@ -1,3 +1,9 @@
 repos/*
 !/repos/tools/
 test/*
+
+# Real deployment secrets for the Compose stack. .env.example is committed and
+# documents the same keys with empty values.
+.env
+.env.local
+.env.*.local

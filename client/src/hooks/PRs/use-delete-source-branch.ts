@@ -10,7 +10,7 @@ export function useDeleteSourceBranch(
 	return useMutation({
 		mutationFn: async (): Promise<{ success: boolean }> => {
 			const res = await fetch(
-				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/source-branch`,
+				`/api/repos/${owner}/${repo}/pulls/${number}/source-branch`,
 				{
 					method: "DELETE",
 					credentials: "include",
