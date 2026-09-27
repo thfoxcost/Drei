@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import OrgMainHeader from "#/components/organization/header";
 import { useOrganization } from "#/hooks/useOrganizations";
+import { authClient } from "#/lib/auth-client";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_app/orgs/$org")({
@@ -64,9 +65,19 @@ function RouteComponent() {
   const { org } = Route.useParams();
   const { pathname } = useLocation();
   const { data: orgData } = useOrganization(org);
+  const { data: session } = authClient.useSession();
+
+  // The Settings tab is only shown to the organization creator.
+  const isOwner =
+    !!session?.user?.id &&
+    !!orgData &&
+    session.user.id === orgData.createdBy.id;
+  const visibleTabs = tabs.filter(
+    (tab) => tab.value !== "settings" || isOwner,
+  );
 
   const activeValue =
-    tabs.find((tab) => {
+    visibleTabs.find((tab) => {
       const to = tabRouteTo[tab.value as keyof typeof tabRouteTo];
       return to !== undefined && pathname === to.replace("$org", org);
     })?.value ?? "overview";
@@ -78,7 +89,7 @@ function RouteComponent() {
       <Tabs value={activeValue} className="gap-4">
         <div className="w-full border-b bg-muted/10 pb-1">
           <TabsList variant="line" className="ml-2 rounded-none p-0">
-            {tabs.map((tab) => {
+            {visibleTabs.map((tab) => {
               const Icon = tab.icon;
 
               const to = tab.disabled
