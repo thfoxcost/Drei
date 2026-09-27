@@ -7,44 +7,12 @@ import (
 	"net/http"
 )
 
-// canViewBackup enforces the same view rules as the repository itself:
-// organization repositories defer to authorizeOrgRepoView, public personal
-// repositories are open, and private personal repositories require the
-// requester to be the owner or a contributor.
+// canViewBackup enforces the same view rules as the repository itself, which
+// are defined once in canViewRepository. Running a backup is open to anyone
+// with read access; the bundle is a copy of the repository, so it must not be
+// more available than the repository is.
 func canViewBackup(w http.ResponseWriter, r *http.Request, info *database.RepoInfo) bool {
-	if !authorizeOrgRepoView(w, r, info) {
-		return false
-	}
-
-	if info.OrganizationID != nil || info.Visibility {
-		return true
-	}
-
-	user, err := authenticate(r)
-	if err != nil {
-		writeError(w, http.StatusUnauthorized, "authentication required for private repositories")
-		return false
-	}
-
-	if user.ID == info.OwnerID {
-		return true
-	}
-
-	contributors, err := database.GetContributors(info.ID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return false
-	}
-
-	for _, c := range contributors {
-		if c.ID == user.ID {
-			return true
-		}
-	}
-
-	writeError(w, http.StatusForbidden, "this repository is private")
-
-	return false
+	return authorizeOrgRepoView(w, r, info)
 }
 
 // requireBackupToggle restricts enable/disable to the repository owner (or an

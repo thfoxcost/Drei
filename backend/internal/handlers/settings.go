@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"backend/internal/config"
 	"backend/internal/database"
 	"encoding/json"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -21,20 +24,55 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	})
 }
 
+// setCORS emits CORS headers only for origins on the allowlist.
+//
+// The previous implementation echoed whatever Origin the request carried and
+// always set Access-Control-Allow-Credentials, which is worse than a wildcard:
+// any site a signed-in user visited could issue credentialed requests against
+// the API and read the responses.
+//
+// The allowlist is the origin of CLIENT_URL, the same value used to resolve
+// sessions. A deployment that serves the API from a different origin than the
+// client must therefore set CLIENT_URL to the public client origin.
+//
+// Requests without an Origin header (same-origin navigation, curl, server-side
+// calls) get no CORS headers, which is correct: CORS only constrains browsers.
 func setCORS(w http.ResponseWriter, r *http.Request, methods string) {
-	// Echo the request origin instead of using "*" so credentialed requests
-	// (the better-auth session cookie) are allowed by the browser.
-	origin := r.Header.Get("Origin")
+	w.Header().Add("Vary", "Origin")
 
+	origin := r.Header.Get("Origin")
 	if origin == "" {
-		origin = "*"
+		return
+	}
+
+	if !originAllowed(origin) {
+		// No headers at all: the browser blocks the response, and we do not
+		// hand the caller an origin it can read.
+		return
 	}
 
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", methods+", OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Vary", "Origin")
+}
+
+// originAllowed reports whether origin matches the configured client origin.
+// Comparison is exact on scheme, host and port after normalising a trailing
+// slash, so a look-alike host cannot satisfy the check.
+func originAllowed(origin string) bool {
+	allowed, err := url.Parse(config.App.ClientURL)
+	if err != nil || allowed.Host == "" {
+		return false
+	}
+
+	requested, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+
+	return strings.EqualFold(requested.Scheme, allowed.Scheme) &&
+		strings.EqualFold(requested.Host, allowed.Host)
 }
 
 func handleOptions(w http.ResponseWriter, r *http.Request) {

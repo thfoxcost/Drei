@@ -13,6 +13,11 @@ import (
 	"strings"
 )
 
+// CreateRepoRequest is the wire format accepted by POST /api/repos.
+//
+// The identity fields (UserId, Useremail, Username) are retained only so the
+// shape of existing clients keeps decoding. They are ignored: the owning user
+// is always resolved from the session cookie, never from the request body.
 type CreateRepoRequest struct {
 	UserId        string `json:"userid"`
 	Useremail     string `json:"useremail"`
@@ -22,19 +27,6 @@ type CreateRepoRequest struct {
 	Visibility    bool   `json:"visibility"`
 	DefaultBranch string `json:"defaultbranch"`
 	Avatar        string `json:"avatar"`
-}
-
-var current CreateRepoRequest
-
-func parseRequest(r *http.Request) error {
-	var req CreateRepoRequest
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return err
-	}
-
-	current = req
-	return nil
 }
 
 func repoExists(path string) bool {
@@ -63,6 +55,17 @@ var errRepositoryExists = errors.New("repository already exists")
 // username or an organization slug), ownerID is the creating user's ID, and
 // organizationID is nil for personal repositories.
 func createBareRepository(namespace, ownerID, creatorName string, organizationID *int64, name, description string, visibility bool, avatar *string) (int64, error) {
+	// Re-validate here rather than trusting callers: this is the single
+	// function that turns a namespace and a name into a filesystem path, and
+	// it serves the personal, organization and fork creation paths.
+	if !ValidNamespace(namespace) {
+		return 0, fmt.Errorf("invalid owner namespace %q", namespace)
+	}
+
+	if !gitrepo.ValidRepoName(name) {
+		return 0, fmt.Errorf("invalid repository name %q", name)
+	}
+
 	userPath := filepath.Join(config.App.ReposPath, namespace)
 	repoPath := filepath.Join(userPath, name+".git")
 
@@ -130,8 +133,6 @@ func createBareRepository(namespace, ownerID, creatorName string, organizationID
 //	@Failure		500		{object}	map[string]interface{}
 //	@Router			/repos [post]
 func CreateRepo(w http.ResponseWriter, r *http.Request) {
-	// Credential-aware CORS (echo origin + allow credentials): browsers
-	// reject credentialed requests answered with a "*" origin.
 	setCORS(w, r, "POST")
 
 	if r.Method == http.MethodOptions {
@@ -139,14 +140,24 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := parseRequest(r); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
 
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   err.Error(),
-		})
+	// The repository is always owned by the authenticated session. Identity
+	// supplied in the body is not trusted: an unauthenticated caller could
+	// otherwise create a repository attributed to any user id or username.
+	user, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	var current CreateRepoRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&current); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -154,14 +165,8 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 	// the URL namespace (no leading/trailing whitespace divergence).
 	current.Reponame = strings.TrimSpace(current.Reponame)
 
-	if current.Reponame == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   "repository name is required",
-		})
+	if !gitrepo.ValidRepoName(current.Reponame) {
+		writeError(w, http.StatusBadRequest, "invalid repository name")
 		return
 	}
 
@@ -172,37 +177,22 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 		avatar = &current.Avatar
 	}
 
-	_, err := createBareRepository(current.Username, current.UserId, current.Username, nil, current.Reponame, current.Description, current.Visibility, avatar)
-	if err != nil {
+	if _, err := createBareRepository(user.Name, user.ID, user.Name, nil, current.Reponame, current.Description, current.Visibility, avatar); err != nil {
 		if errors.Is(err, errRepositoryExists) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusConflict)
-
-			json.NewEncoder(w).Encode(map[string]any{
-				"success": false,
-				"message": "Repository already exists",
-			})
+			writeError(w, http.StatusConflict, "Repository already exists")
 			return
 		}
 
 		// Disk cleanup on failure happens inside createBareRepository.
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   err.Error(),
-		})
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
-	json.NewEncoder(w).Encode(map[string]any{
+	writeSuccess(w, map[string]any{
 		"success": true,
 		"message": "Repository created successfully",
 		"repository": map[string]any{
-			"owner": current.Username,
+			"owner": user.Name,
 			"name":  current.Reponame,
 		},
 	})
@@ -443,14 +433,9 @@ func RepoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Organization-owned private repositories (and members-only orgs) are
-	// hidden from non-members. Personal repositories keep existing behavior.
-	if info, err := database.GetRepository(owner, repo); err == nil {
-		if !authorizeOrgRepoView(w, r, info) {
-			return
-		}
-	}
-
+	// Visibility is enforced by handlers.RepositoryView, which wraps every
+	// /api/repos/{owner}/{repo} route at registration. Repeating the check
+	// here would only add a second session round trip per request.
 	w.Header().Set("Content-Type", "application/json")
 
 	repository, err := gitrepo.GetRepo(owner, repo, ref)

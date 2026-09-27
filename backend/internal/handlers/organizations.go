@@ -416,57 +416,49 @@ func requireOrgRole(w http.ResponseWriter, r *http.Request, org *database.Organi
 	return user, true
 }
 
-// authorizeOrgRepo enforces minRole on an organization-owned repository.
-// Personal repositories (OrganizationID == nil) keep their existing behavior
-// and are always allowed through.
+// authorizeOrgRepo enforces minRole on an organization-owned repository, and
+// requires ownership on a personal one.
+//
+// Personal repositories (OrganizationID == nil) are not a free pass: the
+// session must resolve to the repository's owner. Returning true for them
+// unconditionally would leave every admin/write call site on personal
+// repositories - update, delete, archive, visibility, logo, collaborators -
+// reachable without authentication.
 func authorizeOrgRepo(w http.ResponseWriter, r *http.Request, info *database.RepoInfo, minRole string) bool {
-	if info.OrganizationID == nil {
-		return true
-	}
-
-	org, ok := getOrganizationBySlugOr404(w, info.Owner)
-	if !ok {
+	user, err := authenticate(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
 		return false
 	}
 
-	_, ok = requireOrgRole(w, r, org, minRole)
-
-	return ok
-}
-
-// authorizeOrgRepoView enforces the view rules for an organization-owned
-// repository: members-only organizations require membership, and private
-// repositories are hidden from non-members. Personal repositories are always
-// allowed through, preserving existing behavior.
-func authorizeOrgRepoView(w http.ResponseWriter, r *http.Request, info *database.RepoInfo) bool {
 	if info.OrganizationID == nil {
-		return true
-	}
-
-	org, ok := getOrganizationBySlugOr404(w, info.Owner)
-	if !ok {
-		return false
-	}
-
-	var isMember bool
-
-	if user, err := authenticate(r); err == nil {
-		if member, err := database.IsOrganizationMember(org.ID, user.ID); err == nil && member {
-			isMember = true
+		if user.ID != info.OwnerID {
+			writeError(w, http.StatusForbidden, "only the repository owner can perform this action")
+			return false
 		}
+
+		return true
 	}
 
-	if org.Visibility == "members" && !isMember {
-		writeError(w, http.StatusUnauthorized, "authentication required for private organizations")
+	org, ok := getOrganizationBySlugOr404(w, info.Owner)
+	if !ok {
 		return false
 	}
 
-	if !info.Visibility && !isMember {
-		writeError(w, http.StatusForbidden, "this repository is private")
+	if _, ok := requireOrgRole(w, r, org, minRole); !ok {
 		return false
 	}
 
 	return true
+}
+
+// authorizeOrgRepoView enforces the view rules for a repository of any kind.
+//
+// It is retained as the response-writing wrapper around the shared rule in
+// canViewRepository, which now also covers personal repositories: private
+// personal repositories require membership instead of being open to everyone.
+func authorizeOrgRepoView(w http.ResponseWriter, r *http.Request, info *database.RepoInfo) bool {
+	return requireRepositoryView(w, r, info)
 }
 
 // GetOrganizationMembersHandler godoc

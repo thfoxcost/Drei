@@ -913,6 +913,8 @@ func IssueLabelsHandler(w http.ResponseWriter, r *http.Request) {
 //	@Param			labelId		path		int64	true	"Label ID"
 //	@Success		200			{object}	map[string]interface{}
 //	@Failure		400			{object}	map[string]interface{}
+//	@Failure		401			{object}	map[string]interface{}
+//	@Failure		403			{object}	map[string]interface{}
 //	@Failure		500			{object}	map[string]interface{}
 //	@Router			/repos/{owner}/{repo}/labels/{labelId} [delete]
 func IssueLabelHandler(w http.ResponseWriter, r *http.Request) {
@@ -930,6 +932,14 @@ func IssueLabelHandler(w http.ResponseWriter, r *http.Request) {
 
 	info, ok := resolveRepo(w, r)
 	if !ok {
+		return
+	}
+
+	// Deleting a label rewrites every issue and pull request that carries it,
+	// so it is a repository-management action. This handler used to perform no
+	// authorization at all, which let an unauthenticated caller delete any
+	// label in any repository.
+	if _, ok := requireRepoMember(w, r, info); !ok {
 		return
 	}
 

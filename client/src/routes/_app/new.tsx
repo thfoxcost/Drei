@@ -22,6 +22,7 @@ import {
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldLabel,
 } from "#/components/ui/field"
 import { Input } from "#/components/ui/input"
@@ -29,6 +30,12 @@ import { Textarea } from "#/components/ui/textarea"
 
 import { authClient } from "#/lib/auth-client"
 import { authMiddleware } from "#/lib/middleware"
+import {
+  REPO_NAME_HINT,
+  REPO_NAME_MAX_LENGTH,
+  REPO_NAME_PATTERN,
+  repoNameError,
+} from "#/lib/repo-name"
 import { useUserOrganizations } from "#/hooks/useOrganizations"
 import { Card, CardContent } from "#/components/ui/card"
 import { useEffect, useState } from "react"
@@ -60,6 +67,7 @@ function New() {
   const [visibility, setVisibility] = useState("Public")
 
   const [name, setName] = useState("")
+  const [nameError, setNameError] = useState<string | null>(null)
   const [description, setDescription] = useState("")
   // Selected namespace: empty string = personal account, otherwise org slug.
   // May be preselected via the ?org= search param (e.g. from an org page).
@@ -98,11 +106,17 @@ function New() {
     if (name !== trimmedName) {
       setName(trimmedName)
     }
-    if (/^\s/.test(name)) {
-      toast.error("Repository name cannot start with a space")
+
+    // Validate against the same rule the backend enforces, so an invalid name
+    // is reported here instead of coming back as an opaque 400.
+    const invalid = repoNameError(trimmedName)
+    if (invalid) {
+      setNameError(invalid)
+      toast.error(invalid)
       setLoading(false)
       return
     }
+    setNameError(null)
 
     // Namespace display used in validation messages: username/repository
     // for personal repos, org-slug/repository for organization repos.
@@ -127,6 +141,7 @@ function New() {
           )
         : await fetch("http://localhost:3200/api/repos", {
             method: "POST",
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -315,7 +330,7 @@ function New() {
             </div>
 
 
-            <Field className="flex-1">
+            <Field className="flex-1" data-invalid={!!nameError}>
               <FieldLabel htmlFor="repo-name">
                 Repository name *
               </FieldLabel>
@@ -324,11 +339,29 @@ function New() {
                 name="name"
                 placeholder="awesome-project"
                 required
-                pattern="[^\s].*"
-                title="Name cannot start with a space"
+                maxLength={REPO_NAME_MAX_LENGTH}
+                pattern={REPO_NAME_PATTERN}
+                title={REPO_NAME_HINT}
+                aria-invalid={!!nameError}
+                aria-describedby="repo-name-hint"
                 value={name}
-                onChange={(e) => setName(e.target.value.replace(/^\s+/, ""))}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setName(value)
+                  // Clear the error as soon as the name becomes acceptable,
+                  // but do not raise one before the first keystroke settles.
+                  if (nameError) {
+                    setNameError(repoNameError(value.trim()))
+                  }
+                }}
               />
+              {nameError ? (
+                <FieldError errors={[{ message: nameError }]} />
+              ) : (
+                <FieldDescription id="repo-name-hint">
+                  {REPO_NAME_HINT}
+                </FieldDescription>
+              )}
             </Field>
           </div>
 

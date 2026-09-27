@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	Port        string
+	BindAddr    string
 	ReposPath   string
 	DatabaseURL string
 	ClientURL   string
@@ -39,6 +40,7 @@ func Load() error {
 
 	App = Config{
 		Port:        os.Getenv("PORT"),
+		BindAddr:    os.Getenv("BIND_ADDR"),
 		ReposPath:   os.Getenv("REPOS_PATH"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		ClientURL:   os.Getenv("CLIENT_URL"),
@@ -47,6 +49,15 @@ func Load() error {
 
 	if App.Port == "" {
 		App.Port = "3200"
+	}
+
+	// Bind to loopback by default. The server is meant to sit behind a reverse
+	// proxy: it has no authentication of its own on several routes, and the
+	// /git/ handler trusts proxy-injected headers, both of which assume the
+	// listener is unreachable from outside the host. Set BIND_ADDR explicitly
+	// (e.g. 0.0.0.0) to expose it directly.
+	if App.BindAddr == "" {
+		App.BindAddr = "127.0.0.1"
 	}
 
 	if App.ClientURL == "" {

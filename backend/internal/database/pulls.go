@@ -20,48 +20,48 @@ type PullRequestUser struct {
 
 // PullRequestComment is a comment on a pull request with its author resolved.
 type PullRequestComment struct {
-	ID        int64            `json:"id"`
-	Body      string           `json:"body"`
-	CreatedBy PullRequestUser  `json:"createdBy"`
-	CreatedAt string           `json:"createdAt"`
-	UpdatedAt string           `json:"updatedAt"`
+	ID        int64           `json:"id"`
+	Body      string          `json:"body"`
+	CreatedBy PullRequestUser `json:"createdBy"`
+	CreatedAt string          `json:"createdAt"`
+	UpdatedAt string          `json:"updatedAt"`
 }
 
 // PullRequestEvent is a timeline entry for a pull request.
 type PullRequestEvent struct {
-	ID        int64            `json:"id"`
-	Type      string           `json:"type"`
-	Actor     PullRequestUser  `json:"actor"`
-	Metadata  map[string]any   `json:"metadata,omitempty"`
-	CreatedAt string           `json:"createdAt"`
+	ID        int64           `json:"id"`
+	Type      string          `json:"type"`
+	Actor     PullRequestUser `json:"actor"`
+	Metadata  map[string]any  `json:"metadata,omitempty"`
+	CreatedAt string          `json:"createdAt"`
 }
 
 // PullRequest is the JSON shape returned to the frontend.
 type PullRequest struct {
-	ID              int64               `json:"id"`
-	Number          int                 `json:"number"`
-	Title           string              `json:"title"`
-	Description     string              `json:"description"`
-	State           string              `json:"state"`
-	Author          PullRequestUser     `json:"author"`
-	SourceBranch    string              `json:"sourceBranch"`
-	TargetBranch    string              `json:"targetBranch"`
-	MergeCommitHash *string             `json:"mergeCommitHash"`
-	MergedAt        *string             `json:"mergedAt"`
-	MergedBy        *PullRequestUser    `json:"mergedBy"`
-	ClosedAt        *string             `json:"closedAt"`
-	ClosedBy        *PullRequestUser    `json:"closedBy"`
-	CreatedAt       string              `json:"createdAt"`
-	UpdatedAt       string              `json:"updatedAt"`
-	CommentCount    int                 `json:"commentCount"`
+	ID              int64                `json:"id"`
+	Number          int                  `json:"number"`
+	Title           string               `json:"title"`
+	Description     string               `json:"description"`
+	State           string               `json:"state"`
+	Author          PullRequestUser      `json:"author"`
+	SourceBranch    string               `json:"sourceBranch"`
+	TargetBranch    string               `json:"targetBranch"`
+	MergeCommitHash *string              `json:"mergeCommitHash"`
+	MergedAt        *string              `json:"mergedAt"`
+	MergedBy        *PullRequestUser     `json:"mergedBy"`
+	ClosedAt        *string              `json:"closedAt"`
+	ClosedBy        *PullRequestUser     `json:"closedBy"`
+	CreatedAt       string               `json:"createdAt"`
+	UpdatedAt       string               `json:"updatedAt"`
+	CommentCount    int                  `json:"commentCount"`
 	Comments        []PullRequestComment `json:"comments"`
-	Assignees       []PullRequestUser   `json:"assignees"`
-	Reviewers       []PullRequestUser   `json:"reviewers"`
-	Labels          []PRLabel           `json:"labels"`
-	Participants    []PullRequestUser   `json:"participants"`
-	Notifications   bool                `json:"notifications"`
-	Owner           string              `json:"owner"`
-	Repo            string              `json:"repo"`
+	Assignees       []PullRequestUser    `json:"assignees"`
+	Reviewers       []PullRequestUser    `json:"reviewers"`
+	Labels          []PRLabel            `json:"labels"`
+	Participants    []PullRequestUser    `json:"participants"`
+	Notifications   bool                 `json:"notifications"`
+	Owner           string               `json:"owner"`
+	Repo            string               `json:"repo"`
 }
 
 // PullRequestFilter describes the optional filters and sort applied when
@@ -379,10 +379,13 @@ func pullRequestWhereAll(filter PullRequestFilter) (string, []any, int) {
 	return query, args, param
 }
 
-// ListAllPulls returns pull requests across every repository, filtered and sorted
-// according to the given filter.
-func ListAllPulls(filter PullRequestFilter) ([]PullRequest, error) {
+// ListAllPulls returns pull requests across every repository, filtered and
+// sorted according to the given filter. The result is restricted to the
+// repositories viewer may read.
+func ListAllPulls(filter PullRequestFilter, viewer Viewer) ([]PullRequest, error) {
 	where, args, param := pullRequestWhereAll(filter)
+	where, args, param = appendRepoVisibility(where, param, args, viewer)
+
 	query := `SELECT ` + prSelectColumns + `
 		` + prFromClause + where
 	query, args = appendPRStateAndSort(query, param, args, filter)
@@ -407,16 +410,19 @@ func ListAllPulls(filter PullRequestFilter) ([]PullRequest, error) {
 }
 
 // CountAllPulls returns the open, closed, and merged pull request counts across
-// every repository after applying every non-state filter.
-func CountAllPulls(filter PullRequestFilter) (open, closed, merged int, err error) {
-	where, args, _ := pullRequestWhereAll(filter)
+// every repository after applying every non-state filter, restricted to the
+// repositories viewer may read.
+func CountAllPulls(filter PullRequestFilter, viewer Viewer) (open, closed, merged int, err error) {
+	where, args, param := pullRequestWhereAll(filter)
+	where, args, param = appendRepoVisibility(where, param, args, viewer)
 
 	err = DB.QueryRow(
 		context.Background(),
 		`SELECT COUNT(*) FILTER (WHERE pr.state = 'open'),
 		       COUNT(*) FILTER (WHERE pr.state = 'closed'),
 		       COUNT(*) FILTER (WHERE pr.state = 'merged')
-		FROM pull_requests pr`+where,
+		FROM pull_requests pr
+		JOIN repositories r ON r.id = pr.repo_id`+where,
 		args...,
 	).Scan(&open, &closed, &merged)
 

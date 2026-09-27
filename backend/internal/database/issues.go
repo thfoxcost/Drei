@@ -315,11 +315,20 @@ func appendIssueStateAndSort(query string, param int, args []any, filter IssueFi
 
 // listIssues runs the shared issues list query scoped to a single repository
 // when repoID is non-nil and across every repository otherwise.
-func listIssues(repoID *int64, filter IssueFilter) ([]Issue, error) {
+//
+// A nil viewer means the caller has already authorized access to the
+// repository being listed (the per-repository routes are gated by
+// handlers.RepositoryView). A non-nil viewer adds a visibility predicate,
+// which is what the global feed needs.
+func listIssues(repoID *int64, filter IssueFilter, viewer *Viewer) ([]Issue, error) {
 	query := `SELECT ` + issueSelectColumns + `
 		` + issueFromClause
 	where, args, param := issueWhere(repoID, filter)
 	query += where
+
+	if viewer != nil {
+		query, args, param = appendRepoVisibility(query, param, args, *viewer)
+	}
 
 	query, args = appendIssueStateAndSort(query, param, args, filter)
 
@@ -346,25 +355,29 @@ func listIssues(repoID *int64, filter IssueFilter) ([]Issue, error) {
 // ListIssues returns the issues of a repository, filtered and sorted according
 // to the given filter. Search matches title, description and number.
 func ListIssues(repoID int64, filter IssueFilter) ([]Issue, error) {
-	return listIssues(&repoID, filter)
-}
-
-// ListAllIssues returns issues across every repository, filtered and sorted
-// according to the given filter. Search matches title, description and number.
-func ListAllIssues(filter IssueFilter) ([]Issue, error) {
-	return listIssues(nil, filter)
+	return listIssues(&repoID, filter, nil)
 }
 
 // countIssues runs the shared issues count query scoped to a single repository
-// when repoID is non-nil and across every repository otherwise.
-func countIssues(repoID *int64, filter IssueFilter) (open, closed int, err error) {
-	where, args, _ := issueWhere(repoID, filter)
+// when repoID is non-nil and across every repository otherwise. See listIssues
+// for the meaning of viewer.
+func countIssues(repoID *int64, filter IssueFilter, viewer *Viewer) (open, closed int, err error) {
+	where, args, param := issueWhere(repoID, filter)
+	from := `FROM issues i`
+
+	if viewer != nil {
+		// The visibility predicate references repositories as "r", which the
+		// count query has to join for itself.
+		from += ` JOIN repositories r ON r.id = i.repo_id`
+
+		where, args, param = appendRepoVisibility(where, param, args, *viewer)
+	}
 
 	err = DB.QueryRow(
 		context.Background(),
 		`SELECT COUNT(*) FILTER (WHERE i.state = 'open'),
 		       COUNT(*) FILTER (WHERE i.state = 'closed')
-		FROM issues i`+where,
+		`+from+where,
 		args...,
 	).Scan(&open, &closed)
 
@@ -374,13 +387,21 @@ func countIssues(repoID *int64, filter IssueFilter) (open, closed int, err error
 // CountIssues returns the open and closed issue counts for a repository after
 // applying every non-state filter, so the counts always match the tabbed list.
 func CountIssues(repoID int64, filter IssueFilter) (open, closed int, err error) {
-	return countIssues(&repoID, filter)
+	return countIssues(&repoID, filter, nil)
+}
+
+// ListAllIssues returns issues across every repository, filtered and sorted
+// according to the given filter. Search matches title, description and number.
+// The result is restricted to the repositories viewer may read.
+func ListAllIssues(filter IssueFilter, viewer Viewer) ([]Issue, error) {
+	return listIssues(nil, filter, &viewer)
 }
 
 // CountAllIssues returns the open and closed issue counts across every
-// repository after applying every non-state filter.
-func CountAllIssues(filter IssueFilter) (open, closed int, err error) {
-	return countIssues(nil, filter)
+// repository after applying every non-state filter, restricted to the
+// repositories viewer may read.
+func CountAllIssues(filter IssueFilter, viewer Viewer) (open, closed int, err error) {
+	return countIssues(nil, filter, &viewer)
 }
 
 // CreateIssue inserts a new open issue, allocating the next repository-scoped

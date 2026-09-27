@@ -27,6 +27,26 @@ func CreateUserDIR(userPath string) {
 	}
 }
 
+// exportMarker is the per-repository file git-http-backend checks before it
+// will serve a directory. A repository is servable when either
+// GIT_HTTP_EXPORT_ALL is set for the CGI invocation or this file exists.
+//
+// We deliberately never set GIT_HTTP_EXPORT_ALL: it is a blanket, static
+// bypass of git's own checks. The marker is the narrow alternative.
+const exportMarker = "git-daemon-export-ok"
+
+// markExportable drops the export marker into a freshly initialised bare
+// repository.
+//
+// This is NOT an authorization control. Every request that reaches
+// git-http-backend has already passed the handler's session/proxy check, so
+// the marker only tells the backend "this directory may be served" and grants
+// nothing on its own. Do not treat its presence as meaning a repository is
+// public.
+func markExportable(repoPath string) error {
+	return os.WriteFile(filepath.Join(repoPath, exportMarker), nil, 0644)
+}
+
 func Init(repoPath string) error {
 	cmd := exec.Command(
 		"git",
@@ -48,10 +68,19 @@ func Init(repoPath string) error {
 		"true",
 	)
 
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return markExportable(repoPath)
 }
 
-func validRepoName(name string) bool {
+// ValidRepoName reports whether name is acceptable as a repository name for
+// creation and renaming. It is stricter than the read-path validation in the
+// handlers package: it caps the length and restricts the character set, so it
+// must only be used on paths that create or move a directory, never when
+// resolving an existing repository.
+func ValidRepoName(name string) bool {
 	if name == "" || len(name) > 30 ||
 		strings.HasPrefix(name, "-") || strings.HasPrefix(name, ".") ||
 		strings.HasSuffix(name, ".") {
@@ -70,7 +99,7 @@ func validRepoName(name string) bool {
 
 // RenameRepository renames the bare repository directory on disk.
 func RenameRepository(owner, oldName, newName string) error {
-	if !validRepoName(newName) {
+	if !ValidRepoName(newName) {
 		return fmt.Errorf("invalid repository name %q", newName)
 	}
 
@@ -145,7 +174,8 @@ func ForkBareRepo(sourcePath, destPath string) error {
 		return fmt.Errorf("git clone --bare failed: %w", err)
 	}
 
-	// Enable http.receivepack on the fork so it can receive pushes.
+	// Enable http.receivepack on the fork so it can receive pushes, and mark
+	// it servable by git-http-backend.
 	cmd = exec.Command(
 		"git",
 		"--git-dir="+destPath,
@@ -154,5 +184,28 @@ func ForkBareRepo(sourcePath, destPath string) error {
 		"true",
 	)
 
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return markExportable(destPath)
+}
+
+// EnsureExportable creates the export marker for an existing repository if it
+// is missing.
+//
+// It is used to backfill repositories that were created before the marker
+// existed: the marker is derived state, so recreating it on demand is safe and
+// avoids a one-off migration over REPOS_PATH. The caller must have already
+// authorized the request - this function is not an access check.
+func EnsureExportable(owner, name string) error {
+	repoPath := filepath.Join(config.App.ReposPath, owner, name+".git")
+
+	if _, err := os.Stat(filepath.Join(repoPath, exportMarker)); err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	return markExportable(repoPath)
 }

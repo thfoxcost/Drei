@@ -44,7 +44,9 @@ func AllIssuesHandler(w http.ResponseWriter, r *http.Request) {
 		Sort:     r.URL.Query().Get("sort"),
 	}
 
-	issues, err := database.ListAllIssues(filter)
+	viewer := repositoryViewer(r)
+
+	issues, err := database.ListAllIssues(filter, viewer)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -54,7 +56,7 @@ func AllIssuesHandler(w http.ResponseWriter, r *http.Request) {
 		issues = []database.Issue{}
 	}
 
-	open, closed, err := database.CountAllIssues(filter)
+	open, closed, err := database.CountAllIssues(filter, viewer)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -141,7 +143,9 @@ func AllPullsHandler(w http.ResponseWriter, r *http.Request) {
 		Sort:     r.URL.Query().Get("sort"),
 	}
 
-	pulls, err := database.ListAllPulls(filter)
+	viewer := repositoryViewer(r)
+
+	pulls, err := database.ListAllPulls(filter, viewer)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -151,7 +155,7 @@ func AllPullsHandler(w http.ResponseWriter, r *http.Request) {
 		pulls = []database.PullRequest{}
 	}
 
-	open, closed, merged, err := database.CountAllPulls(filter)
+	open, closed, merged, err := database.CountAllPulls(filter, viewer)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

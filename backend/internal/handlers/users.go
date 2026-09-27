@@ -27,10 +27,10 @@ type RepoInfo struct {
 	Archived   bool `json:"archived"`
 
 	// Fork and mirror support
-	Forked           bool   `json:"forked"`
-	ForkedFromOwner  string `json:"forkedFromOwner"`
-	ForkedFromName   string `json:"forkedFromName"`
-	Mirrored         bool   `json:"mirrored"`
+	Forked          bool   `json:"forked"`
+	ForkedFromOwner string `json:"forkedFromOwner"`
+	ForkedFromName  string `json:"forkedFromName"`
+	Mirrored        bool   `json:"mirrored"`
 
 	// dummy for now
 	Stars   int    `json:"stars"`
@@ -154,6 +154,14 @@ func GetRepos(w http.ResponseWriter, r *http.Request) {
 			info.ForkedFromOwner = meta.ForkedFromOwner
 			info.ForkedFromName = meta.ForkedFromName
 
+			// This listing is driven by a directory scan rather than a query,
+			// so visibility has to be enforced here. Without it the endpoint
+			// returned every repository of every user, private ones included.
+			// Skip what this caller may not see rather than failing the whole
+			// listing, so one private repository does not hide the public ones.
+			if allowed, _ := canViewRepository(r, meta); !allowed {
+				continue
+			}
 		}
 
 		// branch fallback
