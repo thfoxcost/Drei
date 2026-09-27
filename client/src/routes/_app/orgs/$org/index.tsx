@@ -137,7 +137,7 @@ function RouteComponent() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {data.tags.map((tag) => (
+              {(data.tags ?? []).map((tag) => (
                 <Badge key={tag} variant="secondary">
                   {tag}
                 </Badge>
