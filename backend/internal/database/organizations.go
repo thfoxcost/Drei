@@ -200,7 +200,17 @@ func GetOrganizationTags(orgID int64) ([]string, error) {
 		tags = append(tags, tag)
 	}
 
-	return tags, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Never return nil: a nil slice marshals to JSON null, which crashes
+	// frontend code that maps over tags without a fallback.
+	if tags == nil {
+		tags = []string{}
+	}
+
+	return tags, nil
 }
 
 // GetOrganizationBySlug returns the organization detail for the given slug.
