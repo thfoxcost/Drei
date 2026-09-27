@@ -447,6 +447,18 @@ func UpdateOrganization(orgID int64, name string, description, email, purpose *s
 	return tx.Commit(ctx)
 }
 
+// DeleteOrganization deletes the organization row. Members, tags, and
+// organization-owned repositories follow via ON DELETE CASCADE.
+func DeleteOrganization(orgID int64) error {
+	_, err := DB.Exec(
+		context.Background(),
+		`DELETE FROM organizations WHERE id = $1`,
+		orgID,
+	)
+
+	return err
+}
+
 // UpdateOrganizationAvatar sets the avatar path for an organization.
 func UpdateOrganizationAvatar(slug, avatar string) error {
 	_, err := DB.Exec(
