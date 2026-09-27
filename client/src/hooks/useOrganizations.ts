@@ -250,3 +250,27 @@ export function useCheckSlug(slug: string) {
 		staleTime: 5_000,
 	});
 }
+
+export function useDeleteOrganization(slug: string) {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (): Promise<void> => {
+			const res = await fetch(
+				`http://localhost:3200/api/orgs/${encodeURIComponent(slug)}`,
+				{
+					method: "DELETE",
+					credentials: "include",
+				},
+			);
+			if (!res.ok) {
+				const body = await res.json().catch(() => null);
+				throw new Error(body?.error ?? "Failed to delete organization");
+			}
+		},
+		onSuccess: () => {
+			queryClient.removeQueries({ queryKey: ["organization", slug] });
+			queryClient.invalidateQueries({ queryKey: ["organizations"] });
+		},
+	});
+}
