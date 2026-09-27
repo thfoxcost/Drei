@@ -381,7 +381,12 @@ func CheckMergeability(owner, repo, targetBranch, sourceBranch string) (bool, []
 
 	// Attempt a no-commit merge of the source branch. In the temp clone the
 	// branch exists as a remote tracking ref, so we merge origin/<source>.
-	mergeCmd := exec.Command("git", "-C", tmpDir, "merge", "--no-commit", "--no-ff", "origin/"+sourceBranch)
+	// The -c identity flags are required: `git merge` needs a committer
+	// identity even for --no-commit, and server/CI environments (e.g. the
+	// backend container's `drei` user) have no global git config. Without
+	// this every merge fails with "Committer identity unknown" and every PR
+	// reports as unmergeable with no conflicting files.
+	mergeCmd := exec.Command("git", "-C", tmpDir, "-c", "user.name=Drei", "-c", "user.email=drei@localhost", "merge", "--no-commit", "--no-ff", "origin/"+sourceBranch)
 	mergeErr := mergeCmd.Run()
 
 	if mergeErr == nil {
@@ -451,7 +456,9 @@ func MergeBranches(owner, repo, sourceBranch, targetBranch, authorName string, p
 
 	// Perform the merge with --no-ff to always create a merge commit. In the
 	// temp clone branches are remote tracking refs, so merge origin/<source>.
-	mergeCmd := exec.Command("git", "-C", tmpDir, "merge", "--no-ff", "-m", mergeMsg, "origin/"+sourceBranch)
+	// Explicit identity: the merge creates a commit and server environments
+	// may have no global git config.
+	mergeCmd := exec.Command("git", "-C", tmpDir, "-c", "user.name=Drei", "-c", "user.email=drei@localhost", "merge", "--no-ff", "-m", mergeMsg, "origin/"+sourceBranch)
 	if out, err := mergeCmd.CombinedOutput(); err != nil {
 		// Check for conflicting files.
 		diffCmd := exec.Command("git", "-C", tmpDir, "diff", "--name-only", "--diff-filter=U")
@@ -553,7 +560,9 @@ func RevertMerge(owner, repo, targetBranch, mergeCommitHash, authorName string) 
 	}
 
 	// -m 1 tells git to keep the first parent's (target) history.
-	revertCmd := exec.Command("git", "-C", tmpDir, "revert", "-m", "1", "--no-edit", mergeCommitHash)
+	// Explicit identity: revert creates a commit and server environments
+	// may have no global git config.
+	revertCmd := exec.Command("git", "-C", tmpDir, "-c", "user.name=Drei", "-c", "user.email=drei@localhost", "revert", "-m", "1", "--no-edit", mergeCommitHash)
 	if out, err := revertCmd.CombinedOutput(); err != nil {
 		return "", fmt.Errorf("git revert: %w: %s", err, strings.TrimSpace(string(out)))
 	}
