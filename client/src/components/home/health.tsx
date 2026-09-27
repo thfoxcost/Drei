@@ -96,25 +96,23 @@ function Message({ children }: { children: string }) {
 }
 
 export default function SystemHealth() {
-  const { data: health, isPending, sessionPending } = useHealth();
+	const { data: health, isPending, isError } = useHealth();
 
-  // isPending stays true while the query is disabled, so the session flag is
-  // what separates "still resolving the session" from "signed out".
-  if (isPending && sessionPending) {
-    return (
-      <Widget design="mumbai">
-        <WidgetContent className="flex h-48 items-center justify-center">
-          <span className="text-muted-foreground animate-pulse">
-            Loading...
-          </span>
-        </WidgetContent>
-      </Widget>
-    );
-  }
+	if (isPending) {
+		return (
+			<Widget design="mumbai">
+				<WidgetContent className="flex h-48 items-center justify-center">
+					<span className="text-muted-foreground animate-pulse">
+						Loading...
+					</span>
+				</WidgetContent>
+			</Widget>
+		);
+	}
 
-  if (!health) {
-    return <Message>Sign in to view system health.</Message>;
-  }
+	if (isError || !health) {
+		return <Message>System health is currently unavailable.</Message>;
+	}
 
   const { services, system, client, storage } = health;
 
