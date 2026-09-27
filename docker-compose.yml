@@ -1,3 +1,25 @@
+# Drei — isolated compose stack.
+#
+# Services talk to each other over the compose network via service names
+# (postgres, backend, client). Only the browser-facing ports are published
+# to the host: 3000 (client) and 3200 (backend API + git-over-HTTP).
+#
+# First run:
+#   export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+#   docker compose up --build
+#
+# Notes:
+# - Stop local dev servers first (short.sh / air / bun run dev): the
+#   published ports 3000/3200/5432 will clash otherwise.
+# - VITE_BACKEND_URL is baked into the client bundle at build time and must
+#   be reachable from the *browser*, hence http://localhost:3200.
+# - CLIENT_URL is used *server-side* by the backend to validate sessions
+#   against the client (see backend/internal/handlers/auth.go), so it must
+#   be the internal address http://client:3000.
+# - Repos live in the repos_data volume (backend default REPOS_PATH).
+#   To reuse your existing host ./repos directory instead, replace the
+#   backend volume with a bind mount: ./repos:/data/repos
+
 services:
   postgres:
     image: postgres:17
@@ -11,6 +33,52 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d pg"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: drei-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: "3200"
+      REPOS_PATH: /data/repos
+      DATABASE_URL: postgres://user:password@postgres:5432/pg
+      CLIENT_URL: http://client:3000
+      APP_ENV: production
+    ports:
+      - "3200:3200"
+    volumes:
+      - repos_data:/data/repos
+
+  client:
+    build:
+      context: ./client
+      args:
+        VITE_BACKEND_URL: http://localhost:3200
+        DB_HOST: postgres://user:password@postgres:5432/pg
+    container_name: drei-client
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      PORT: "3000"
+      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is not set. Generate one with: export BETTER_AUTH_SECRET=$(openssl rand -base64 32)}"
+      DB_HOST: postgres://user:password@postgres:5432/pg
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:
+  repos_data:
