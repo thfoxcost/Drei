@@ -3,6 +3,9 @@
 # Services talk to each other over the compose network via service names
 # (postgres, backend, client). Only the browser-facing ports are published
 # to the host: 3000 (client) and 3200 (backend API + git-over-HTTP).
+# All services share the explicit 'drei' user-defined network so that the
+# backend always resolves 'postgres' via Docker's embedded DNS (127.0.0.11)
+# instead of falling back to the host's DNS server.
 #
 # First run:
 #   export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
@@ -38,6 +41,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    networks:
+      - drei
 
   backend:
     build:
@@ -57,6 +62,8 @@ services:
       - "3200:3200"
     volumes:
       - repos_data:/data/repos
+    networks:
+      - drei
 
   client:
     build:
@@ -78,6 +85,11 @@ services:
       DB_HOST: postgres://user:password@postgres:5432/pg
     ports:
       - "3000:3000"
+    networks:
+      - drei
+
+networks:
+  drei:
 
 volumes:
   postgres_data:
