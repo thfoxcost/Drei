@@ -29,7 +29,7 @@ const maxPushesPerRepo = 10
 // issue/PR events come from the database.
 //
 //	@Summary		Get activity feed
-//	@Description	Returns the signed-in user's network activity feed (repo creations, issues, pull requests, approvals, pushes), newest first with pagination
+//	@Description	Returns the signed-in user's network activity feed (repo creations, forks, issues, pull requests, approvals, pushes), newest first with pagination
 //	@Tags			Activity
 //	@Produce		json
 //	@Param			page	query		int	false	"Page number (defaults to 1)"

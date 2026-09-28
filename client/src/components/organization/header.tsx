@@ -245,15 +245,11 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
               className="text-destructive focus:text-destructive"
               onClick={async () => {
                 await authClient.signOut()
+                window.location.href = "/"
               }}
             >
-              <a
-                href="/"
-                className="flex items-center gap-1 text-destructive"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign out
-              </a>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

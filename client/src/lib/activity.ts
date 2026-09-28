@@ -1,5 +1,6 @@
 export type ActivityType =
   | "repo_created"
+  | "repo_forked"
   | "issue_opened"
   | "issue_closed"
   | "pr_opened"
@@ -24,6 +25,7 @@ export type ActivityItem = {
   type: ActivityType;
   actor: ActivityActor;
   repo: ActivityRepo;
+  forkedFrom?: ActivityRepo;
   number?: number;
   title?: string;
   sha?: string;
