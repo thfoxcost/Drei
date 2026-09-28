@@ -6,6 +6,7 @@ import {
 } from "#/components/heatmap-calendar.tsx";
 import { Spinner } from "#/components/ui/spinner.tsx";
 import { useHeatmapYear } from "#/hooks/useHeatmapYear";
+import { useProfileHeatmapPalette } from "#/hooks/useProfileHeatmap";
 import { authClient } from "#/lib/auth-client";
 import { getContributions } from "#/lib/contributions";
 
@@ -13,6 +14,7 @@ function Dash({ username }: { username?: string }) {
 	const { data: session } = authClient.useSession();
 	const resolvedUsername = username ?? session?.user?.name ?? "";
 	const [year] = useHeatmapYear();
+	const palette = useProfileHeatmapPalette(resolvedUsername);
 	const [data, setData] = useState<HeatmapDatum[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -65,6 +67,8 @@ function Dash({ username }: { username?: string }) {
 					year={year}
 					axisLabels
 					legend={false}
+					palette={palette}
+					thresholds={[0, 1, 2, 3, 5]}
 					renderTooltip={(cell) => (
 						<div className="text-sm">
 							<div className="font-medium">
