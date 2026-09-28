@@ -56,5 +56,16 @@ function RouteComponent() {
 		return <Repo owner={username} repo={repo} />;
 	}
 
-	return <NoRepo />;
+  return (
+    <NoRepo
+      showRemoteReset
+      title="Push your first commit"
+      contentClassName="max-w-2xl"
+      description={
+        <span className="whitespace-nowrap">
+          Empty repository — push your first commit with the commands below.
+        </span>
+      }
+    />
+  );
 }

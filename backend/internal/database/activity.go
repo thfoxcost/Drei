@@ -12,6 +12,7 @@ import (
 // closed_at), so they cannot be reconstructed reliably.
 const (
 	ActivityRepoCreated = "repo_created"
+	ActivityRepoForked  = "repo_forked"
 	ActivityIssueOpened = "issue_opened"
 	ActivityIssueClosed = "issue_closed"
 	ActivityPROpened    = "pr_opened"
@@ -35,17 +36,18 @@ type ActivityRepo struct {
 }
 
 // ActivityItem is a single feed entry. Number is set for issue/PR events,
-// Sha/Message for pushes, Title for issues/PRs.
+// Sha/Message for pushes, Title for issues/PRs, ForkedFrom for fork events.
 type ActivityItem struct {
-	ID        string        `json:"id"`
-	Type      string        `json:"type"`
-	Actor     ActivityActor `json:"actor"`
-	Repo      ActivityRepo  `json:"repo"`
-	Number    *int          `json:"number,omitempty"`
-	Title     string        `json:"title,omitempty"`
-	Sha       string        `json:"sha,omitempty"`
-	Message   string        `json:"message,omitempty"`
-	CreatedAt string        `json:"createdAt"`
+	ID         string        `json:"id"`
+	Type       string        `json:"type"`
+	Actor      ActivityActor `json:"actor"`
+	Repo       ActivityRepo  `json:"repo"`
+	ForkedFrom *ActivityRepo `json:"forkedFrom,omitempty"`
+	Number     *int          `json:"number,omitempty"`
+	Title      string        `json:"title,omitempty"`
+	Sha        string        `json:"sha,omitempty"`
+	Message    string        `json:"message,omitempty"`
+	CreatedAt  string        `json:"createdAt"`
 }
 
 // activityTime is the parsed timestamp used for sorting before formatting.
@@ -133,6 +135,9 @@ func ListRepoActivityEvents(repos []ActivityRepoScope) ([]ActivityItem, error) {
 	if err := appendRepoCreatedEvents(&items, ids); err != nil {
 		return nil, err
 	}
+	if err := appendForkEvents(&items, ids); err != nil {
+		return nil, err
+	}
 	if err := appendIssueEvents(&items, ids); err != nil {
 		return nil, err
 	}
@@ -172,6 +177,7 @@ func appendRepoCreatedEvents(items *[]ActivityItem, ids []int64) error {
 		FROM repositories r
 		JOIN "user" u ON u.id = r.owner_id
 		WHERE r.id = ANY($1::bigint[])
+		  AND r.forked_from_id IS NULL
 		`,
 		ids,
 	)
@@ -199,6 +205,57 @@ func appendRepoCreatedEvents(items *[]ActivityItem, ids []int64) error {
 			Actor:     actor,
 			Repo:      ActivityRepo{Owner: owner, Name: name},
 			CreatedAt: createdAt.Format(time.RFC3339),
+		})
+	}
+
+	return rows.Err()
+}
+
+// appendForkEvents adds "user forked repo from source" entries for forked
+// repositories in scope. Forks are excluded from repo_created events above,
+// so each fork appears exactly once, as a fork.
+func appendForkEvents(items *[]ActivityItem, ids []int64) error {
+	rows, err := DB.Query(
+		context.Background(),
+		`
+		SELECT r.id, r.owner, r.name, r.created_at,
+		       u.id, COALESCE(u.name, ''), u.image,
+		       src.owner, src.name
+		FROM repositories r
+		JOIN "user" u ON u.id = r.owner_id
+		JOIN repositories src ON src.id = r.forked_from_id
+		WHERE r.id = ANY($1::bigint[])
+		  AND r.forked_from_id IS NOT NULL
+		`,
+		ids,
+	)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			id        int64
+			owner     string
+			name      string
+			createdAt time.Time
+			actor     ActivityActor
+			srcOwner  string
+			srcName   string
+		)
+
+		if err := rows.Scan(&id, &owner, &name, &createdAt, &actor.ID, &actor.Username, &actor.Avatar, &srcOwner, &srcName); err != nil {
+			return err
+		}
+
+		*items = append(*items, ActivityItem{
+			ID:         formatActivityID("repo-fork", id),
+			Type:       ActivityRepoForked,
+			Actor:      actor,
+			Repo:       ActivityRepo{Owner: owner, Name: name},
+			ForkedFrom: &ActivityRepo{Owner: srcOwner, Name: srcName},
+			CreatedAt:  createdAt.Format(time.RFC3339),
 		})
 	}
 
