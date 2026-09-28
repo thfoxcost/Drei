@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Moon, Sun, Monitor } from "lucide-react"
 import { toast } from "sonner"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "#/components/ui/button"
 import {
@@ -17,6 +18,7 @@ import {
 } from "#/components/ui/select"
 import { Separator } from "#/components/ui/separator"
 import { Spinner } from "#/components/ui/spinner"
+import { Switch } from "#/components/ui/switch"
 import { useTheme } from "@/components/theme-provider"
 import { getCurrentYear, useHeatmapYear } from "#/hooks/useHeatmapYear"
 
@@ -27,6 +29,7 @@ type Language = "en" | "ar" | "fr" | "de"
 type AppearanceData = {
     theme: "light" | "dark" | "system"
     language: Language
+    heatmapProfileColor: boolean
 }
 
 const LANGUAGE_LABELS: Record<Language, string> = {
@@ -38,11 +41,14 @@ const LANGUAGE_LABELS: Record<Language, string> = {
 
 function ContentAppearance() {
     const { theme, setTheme } = useTheme()
+    const queryClient = useQueryClient()
 
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
 
     const [language, setLanguage] = useState<Language>("en")
+
+    const [heatmapProfileColor, setHeatmapProfileColor] = useState(false)
 
     const [heatmapYear, setHeatmapYear] = useHeatmapYear()
 
@@ -79,6 +85,7 @@ function ContentAppearance() {
 
                 if (!cancelled) {
                     setLanguage(data.language)
+                    setHeatmapProfileColor(data.heatmapProfileColor === true)
                     setOriginal(data)
                 }
             } catch {
@@ -105,7 +112,8 @@ function ContentAppearance() {
         !loading &&
         original !== null &&
         (theme !== original.theme ||
-            language !== original.language)
+            language !== original.language ||
+            heatmapProfileColor !== original.heatmapProfileColor)
 
     const canSave = changed && !saving
 
@@ -147,6 +155,7 @@ function ContentAppearance() {
                     body: JSON.stringify({
                         theme,
                         language,
+                        heatmapProfileColor,
                     }),
                 },
             )
@@ -163,6 +172,11 @@ function ContentAppearance() {
             setOriginal({
                 theme,
                 language,
+                heatmapProfileColor,
+            })
+
+            await queryClient.invalidateQueries({
+                queryKey: ["appearance"],
             })
 
             toast.success(
@@ -349,6 +363,29 @@ function ContentAppearance() {
                                 )}
                             </SelectContent>
                         </Select>
+                    </div>
+                </Field>
+
+                {/* Heatmap profile color */}
+                <Field>
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <FieldLabel htmlFor="heatmap-profile-color">
+                                Profile color heatmap
+                            </FieldLabel>
+
+                            <FieldDescription>
+                                Tint your contribution heatmap
+                                with the dominant color of your
+                                profile picture.
+                            </FieldDescription>
+                        </div>
+
+                        <Switch
+                            id="heatmap-profile-color"
+                            checked={heatmapProfileColor}
+                            onCheckedChange={setHeatmapProfileColor}
+                        />
                     </div>
                 </Field>
 

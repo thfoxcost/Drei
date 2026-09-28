@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 // validThemes is the set of theme values accepted by the API.
@@ -23,8 +24,9 @@ var validLanguages = map[string]bool{
 
 // AppearanceResponse is the JSON shape returned by GET /api/user/appearance.
 type AppearanceResponse struct {
-	Theme    string `json:"theme"`
-	Language string `json:"language"`
+	Theme               string `json:"theme"`
+	Language            string `json:"language"`
+	HeatmapProfileColor bool   `json:"heatmapProfileColor"`
 }
 
 // AppearanceHandler serves GET and PUT /api/user/appearance.
@@ -77,12 +79,13 @@ func AppearanceHandler(w http.ResponseWriter, r *http.Request) {
 
 func handleGetAppearance(w http.ResponseWriter, user *AuthUser) {
 	var theme, language string
+	var heatmapProfileColor bool
 
 	err := database.DB.QueryRow(
 		context.Background(),
-		`SELECT appearance_theme, appearance_language FROM "user" WHERE id = $1`,
+		`SELECT appearance_theme, appearance_language, appearance_heatmap_profile_color FROM "user" WHERE id = $1`,
 		user.ID,
-	).Scan(&theme, &language)
+	).Scan(&theme, &language, &heatmapProfileColor)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to load appearance")
 		return
@@ -97,15 +100,17 @@ func handleGetAppearance(w http.ResponseWriter, user *AuthUser) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(AppearanceResponse{
-		Theme:    theme,
-		Language: language,
+		Theme:               theme,
+		Language:            language,
+		HeatmapProfileColor: heatmapProfileColor,
 	})
 }
 
 func handlePutAppearance(w http.ResponseWriter, r *http.Request, user *AuthUser) {
 	var req struct {
-		Theme    string `json:"theme"`
-		Language string `json:"language"`
+		Theme               string `json:"theme"`
+		Language            string `json:"language"`
+		HeatmapProfileColor *bool  `json:"heatmapProfileColor"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -123,13 +128,20 @@ func handlePutAppearance(w http.ResponseWriter, r *http.Request, user *AuthUser)
 		return
 	}
 
-	tag, err := database.DB.Exec(
-		context.Background(),
-		`UPDATE "user" SET appearance_theme = $1, appearance_language = $2 WHERE id = $3`,
-		req.Theme,
-		req.Language,
-		user.ID,
-	)
+	// The profile-color toggle is optional so older clients that don't send
+	// it leave the stored value untouched.
+	query := `UPDATE "user" SET appearance_theme = $1, appearance_language = $2`
+	args := []any{req.Theme, req.Language}
+
+	if req.HeatmapProfileColor != nil {
+		query += `, appearance_heatmap_profile_color = $3`
+		args = append(args, *req.HeatmapProfileColor)
+	}
+
+	query += ` WHERE id = $` + strconv.Itoa(len(args)+1)
+	args = append(args, user.ID)
+
+	tag, err := database.DB.Exec(context.Background(), query, args...)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to save appearance")
 		return
@@ -141,9 +153,14 @@ func handlePutAppearance(w http.ResponseWriter, r *http.Request, user *AuthUser)
 		return
 	}
 
-	writeSuccess(w, map[string]any{
+	resp := map[string]any{
 		"success":  true,
 		"theme":    req.Theme,
 		"language": req.Language,
-	})
+	}
+	if req.HeatmapProfileColor != nil {
+		resp["heatmapProfileColor"] = *req.HeatmapProfileColor
+	}
+
+	writeSuccess(w, resp)
 }

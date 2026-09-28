@@ -112,6 +112,15 @@ func handleUpdateProfile(w http.ResponseWriter, r *http.Request, user *AuthUser)
 		return
 	}
 
+	var currentName string
+
+	if err := database.DB.QueryRow(context.Background(), `
+		SELECT COALESCE(name, '') FROM "user" WHERE id = $1
+	`, user.ID).Scan(&currentName); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch profile: "+err.Error())
+		return
+	}
+
 	_, err := database.DB.Exec(context.Background(), `
 		UPDATE "user"
 		SET name = $1,
@@ -137,6 +146,13 @@ func handleUpdateProfile(w http.ResponseWriter, r *http.Request, user *AuthUser)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to update profile: "+err.Error())
 		return
+	}
+
+	// A username change renames the user's namespace everywhere it is
+	// materialized (repository owners/paths, contributor records, on-disk
+	// directories) so ownership checks keep working after the rename.
+	if req.Name != currentName {
+		database.RenameUserNamespace(user.ID, currentName, req.Name)
 	}
 
 	writeSuccess(w, map[string]any{

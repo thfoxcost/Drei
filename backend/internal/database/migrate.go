@@ -798,5 +798,22 @@ func Migrate() error {
 		return err
 	}
 
+	// Heatmap tinting: when enabled, the contribution heatmap uses shades of
+	// the user's profile picture instead of the default palette.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS appearance_heatmap_profile_color BOOLEAN NOT NULL DEFAULT FALSE;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Username references: repairs rows predating rename propagation (e.g. a
+	// rename from settings before this shipped), syncing repository owners,
+	// contributor records, and on-disk namespaces back to the account name.
+	if err := BackfillUsernameReferences(); err != nil {
+		return err
+	}
+
 	return nil
 }

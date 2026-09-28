@@ -110,7 +110,7 @@ export type HeatmapCalendarProps = {
 	 */
 	scale?: "fixed" | "quantile";
 
-	/** Absolute cutoffs used when `scale` is "fixed". Default: [2, 5, 10] */
+	/** Absolute cutoffs used when `scale` is "fixed". Default: [0, 1, 2, 3, 5] */
 	thresholds?: number[];
 
 	/** Full custom control over value -> level mapping (overrides `scale`/`thresholds`) */
@@ -270,10 +270,11 @@ export function HeatmapCalendar({
 	// Default classes are semantic => good in light/dark
 	const levels = levelClassNames ?? [
 		"bg-muted",
-		"bg-primary/20",
-		"bg-primary/35",
-		"bg-primary/55",
-		"bg-primary/75",
+		"bg-primary/25",
+		"bg-primary/45",
+		"bg-primary/65",
+		"bg-primary/85",
+		"bg-primary",
 	];
 
 	const levelCount = palette?.length ? palette.length : levels.length;
@@ -329,7 +330,9 @@ export function HeatmapCalendar({
 			const values = Array.from(valueMap.values(), (v) => v.value);
 			return quantileThresholds(values, levelCount);
 		}
-		return thresholds ?? [2, 5, 10];
+		// Five cutoffs => six levels, tuned for low daily rates so even a
+		// single contribution reads clearly above empty.
+		return thresholds ?? [0, 1, 2, 3, 5];
 	}, [scale, thresholds, valueMap, levelCount]);
 
 	const getLevel = React.useCallback(
