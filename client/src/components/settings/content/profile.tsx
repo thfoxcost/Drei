@@ -27,6 +27,7 @@ import { countries } from "@/lib/countries";
 interface ProfileData {
 	name: string;
 	email: string;
+	profession: string | null;
 	biography: string | null;
 	description: string | null;
 	country: string | null;
@@ -48,6 +49,7 @@ function ContentProfile() {
 
 	const [username, setUsername] = useState("");
 	const [email, setEmail] = useState("");
+	const [profession, setProfession] = useState("");
 	const [bio, setBio] = useState("");
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 	const [description, setDescription] = useState("");
@@ -78,6 +80,7 @@ function ContentProfile() {
 
 				setUsername(data.name);
 				setEmail(data.email);
+				setProfession(data.profession ?? "");
 				setBio(data.biography ?? "");
 				setDescription(data.description ?? "");
 				setCountry(data.country ?? "");
@@ -106,6 +109,7 @@ function ContentProfile() {
 		original !== null &&
 		(username !== original.name ||
 			email !== original.email ||
+			profession !== (original.profession ?? "") ||
 			bio !== (original.biography ?? "") ||
 			description !== (original.description ?? "") ||
 			country !== (original.country ?? "") ||
@@ -169,6 +173,7 @@ function ContentProfile() {
 				body: JSON.stringify({
 					name: username.trim(),
 					email: email.trim(),
+					profession: profession.trim() || null,
 					biography: bio || null,
 					description: description || null,
 					country: country || null,
@@ -189,6 +194,7 @@ function ContentProfile() {
 			setOriginal({
 				name: username.trim(),
 				email: email.trim(),
+				profession: profession.trim() || null,
 				biography: bio || null,
 				description: description || null,
 				country: country || null,
@@ -266,6 +272,23 @@ function ContentProfile() {
 
 						<FieldDescription>
 							We&apos;ll send updates to this address.
+						</FieldDescription>
+					</Field>
+
+					<Field className="w-full">
+						<FieldLabel htmlFor="input-field-profession">Profession</FieldLabel>
+
+						<Input
+							id="input-field-profession"
+							type="text"
+							placeholder="e.g. Frontend Engineer"
+							value={profession}
+							onChange={(event) => setProfession(event.target.value)}
+							disabled={updating}
+						/>
+
+						<FieldDescription>
+							What you do — shown in the People directory.
 						</FieldDescription>
 					</Field>
 

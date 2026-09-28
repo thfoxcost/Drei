@@ -5,6 +5,7 @@ import { getPurposeMeta } from "#/components/organization/purpose";
 import { RepoList } from "#/components/organization/repo-card";
 import { Frame, FramePanel } from "#/components/reui/frame";
 import { getLanguageColor } from "#/lib/language-color";
+import { uploadsUrl } from "#/lib/backend-url";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -65,9 +66,7 @@ function RouteComponent() {
     );
   }
 
-  const avatarUrl = data.avatar
-    ? `${import.meta.env.VITE_BACKEND_URL}/uploads/${data.avatar}`
-    : null;
+  const avatarUrl = uploadsUrl(data.avatar);
 
   const isUserAdmin = session?.user.id === data.createdBy.id;
 

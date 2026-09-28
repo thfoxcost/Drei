@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Link } from "@tanstack/react-router"
 import { authClient } from "#/lib/auth-client"
+import { backendUrl } from "#/lib/backend-url"
 import { useUserOrganizations } from "@/hooks/useOrganizations"
 import { ORGANIZATIONS } from "@/data/organizations"
 import { UserAvatar } from "@/components/UserAvatar"
@@ -211,7 +212,7 @@ export default function ReposMainHeader({
               				<DropdownMenuSubContent className="w-40">
                 				<DropdownMenuItem asChild>
                   					<a
-                    					href={`${import.meta.env.VITE_BACKEND_URL}/swagger/index.html`}
+                    					href={`${backendUrl()}/swagger/index.html`}
                     					target="_blank"
                     					rel="noopener noreferrer"
                   					>

@@ -28,6 +28,7 @@ import { Input } from "#/components/ui/input"
 import { Textarea } from "#/components/ui/textarea"
 
 import { authClient } from "#/lib/auth-client"
+import { uploadsUrl } from "#/lib/backend-url"
 import { authMiddleware } from "#/lib/middleware"
 import { useUserOrganizations } from "#/hooks/useOrganizations"
 import { Card, CardContent } from "#/components/ui/card"
@@ -241,7 +242,7 @@ function New() {
                         <Avatar className="size-5.5">
                           {selectedOrganization.avatar && (
                             <AvatarImage
-                              src={`${import.meta.env.VITE_BACKEND_URL}/uploads/${selectedOrganization.avatar}`}
+                              src={uploadsUrl(selectedOrganization.avatar) ?? ""}
                               alt={selectedOrganization.name}
                             />
                           )}
@@ -296,7 +297,7 @@ function New() {
                       <Avatar className="size-5.5">
                         {org.avatar && (
                           <AvatarImage
-                            src={`${import.meta.env.VITE_BACKEND_URL}/uploads/${org.avatar}`}
+                            src={uploadsUrl(org.avatar) ?? ""}
                             alt={org.name}
                           />
                         )}

@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
 import { useUserOrganizations } from "#/hooks/useOrganizations";
+import { uploadsUrl } from "#/lib/backend-url";
 import { authMiddleware } from "#/lib/middleware";
 
 export const Route = createFileRoute("/_app/orgs/")({
@@ -14,8 +15,7 @@ export const Route = createFileRoute("/_app/orgs/")({
 });
 
 function getAvatarUrl(avatar: string | null): string | null {
-	if (!avatar) return null;
-	return `${import.meta.env.VITE_BACKEND_URL}/uploads/${avatar}`;
+	return uploadsUrl(avatar);
 }
 
 function RouteComponent() {

@@ -16,12 +16,12 @@ export const Route = createFileRoute("/")({
 
 function Home() {
 	const { loaded } = useUserRepos();
-	// TEMP: hold the loader 4s so the animation is observable. Remove before commit.
+	// TEMP: hold the loader 6s so the animation is observable. Remove before commit.
 	const [minWaitDone, setMinWaitDone] = useState(false);
 	const showLoader = !loaded || !minWaitDone;
 
 	useEffect(() => {
-		const id = setTimeout(() => setMinWaitDone(true), 4000);
+		const id = setTimeout(() => setMinWaitDone(true), 6000);
 		return () => clearTimeout(id);
 	}, []);
 

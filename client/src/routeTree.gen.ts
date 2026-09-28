@@ -20,6 +20,7 @@ import { Route as AuthSigninRouteImport } from './routes/_auth/signin'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppReposRouteImport } from './routes/_app/repos'
 import { Route as AppPullsRouteImport } from './routes/_app/pulls'
+import { Route as AppPeopleRouteImport } from './routes/_app/people'
 import { Route as AppNewRouteImport } from './routes/_app/new'
 import { Route as AppIssuesRouteImport } from './routes/_app/issues'
 import { Route as UsernameRepoRouteRouteImport } from './routes/$username/$repo/route'
@@ -113,6 +114,11 @@ const AppReposRoute = AppReposRouteImport.update({
 const AppPullsRoute = AppPullsRouteImport.update({
   id: '/pulls',
   path: '/pulls',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPeopleRoute = AppPeopleRouteImport.update({
+  id: '/people',
+  path: '/people',
   getParentRoute: () => AppRoute,
 } as any)
 const AppNewRoute = AppNewRouteImport.update({
@@ -340,6 +346,7 @@ export interface FileRoutesByFullPath {
   '/$username/$repo': typeof UsernameRepoRouteRouteWithChildren
   '/issues': typeof AppIssuesRoute
   '/new': typeof AppNewRoute
+  '/people': typeof AppPeopleRoute
   '/pulls': typeof AppPullsRoute
   '/repos': typeof AppReposRoute
   '/settings': typeof AppSettingsRoute
@@ -391,6 +398,7 @@ export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '/issues': typeof AppIssuesRoute
   '/new': typeof AppNewRoute
+  '/people': typeof AppPeopleRoute
   '/pulls': typeof AppPullsRoute
   '/repos': typeof AppReposRoute
   '/settings': typeof AppSettingsRoute
@@ -441,6 +449,7 @@ export interface FileRoutesById {
   '/$username/$repo': typeof UsernameRepoRouteRouteWithChildren
   '/_app/issues': typeof AppIssuesRoute
   '/_app/new': typeof AppNewRoute
+  '/_app/people': typeof AppPeopleRoute
   '/_app/pulls': typeof AppPullsRoute
   '/_app/repos': typeof AppReposRoute
   '/_app/settings': typeof AppSettingsRoute
@@ -495,6 +504,7 @@ export interface FileRouteTypes {
     | '/$username/$repo'
     | '/issues'
     | '/new'
+    | '/people'
     | '/pulls'
     | '/repos'
     | '/settings'
@@ -546,6 +556,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/issues'
     | '/new'
+    | '/people'
     | '/pulls'
     | '/repos'
     | '/settings'
@@ -595,6 +606,7 @@ export interface FileRouteTypes {
     | '/$username/$repo'
     | '/_app/issues'
     | '/_app/new'
+    | '/_app/people'
     | '/_app/pulls'
     | '/_app/repos'
     | '/_app/settings'
@@ -730,6 +742,13 @@ declare module '@tanstack/react-router' {
       path: '/pulls'
       fullPath: '/pulls'
       preLoaderRoute: typeof AppPullsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/people': {
+      id: '/_app/people'
+      path: '/people'
+      fullPath: '/people'
+      preLoaderRoute: typeof AppPeopleRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/new': {
@@ -1045,6 +1064,7 @@ const AppOrgsOrgRouteRouteWithChildren = AppOrgsOrgRouteRoute._addFileChildren(
 interface AppRouteChildren {
   AppIssuesRoute: typeof AppIssuesRoute
   AppNewRoute: typeof AppNewRoute
+  AppPeopleRoute: typeof AppPeopleRoute
   AppPullsRoute: typeof AppPullsRoute
   AppReposRoute: typeof AppReposRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -1056,6 +1076,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppIssuesRoute: AppIssuesRoute,
   AppNewRoute: AppNewRoute,
+  AppPeopleRoute: AppPeopleRoute,
   AppPullsRoute: AppPullsRoute,
   AppReposRoute: AppReposRoute,
   AppSettingsRoute: AppSettingsRoute,
