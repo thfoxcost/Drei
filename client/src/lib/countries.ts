@@ -199,3 +199,8 @@ export const countries = [
 
 export type Country = (typeof countries)[number]
 export type CountryCode = Country['code']
+
+export function getCountryCode(name: string | null): string | null {
+  if (!name) return null
+  return countries.find((c) => c.name.toLowerCase() === name.toLowerCase())?.code ?? null
+}

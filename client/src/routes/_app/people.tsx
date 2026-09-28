@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-
+import { useState } from "react";
 import DashboardLayout from "#/components/layouts/dashboard-layout";
 import { PeopleTable } from "#/components/people/people-table";
+import { ReposTable } from "#/components/people/repos-table";
 import { Separator } from "#/components/ui/separator";
+import { type PeopleView, ViewToggle } from "#/components/view-toggle";
 import { authMiddleware } from "#/lib/middleware";
 
 export const Route = createFileRoute("/_app/people")({
@@ -13,12 +15,19 @@ export const Route = createFileRoute("/_app/people")({
 });
 
 function PeoplePage() {
+	const [view, setView] = useState<PeopleView>("users");
+
 	return (
 		<DashboardLayout wide>
 			<div className="my-1">
-				<h1 className="text-2xl">People</h1>
+				<div className="flex items-center justify-between gap-2">
+					<h1 className="text-2xl">
+						{view === "users" ? "People" : "Repositories"}
+					</h1>
+					<ViewToggle value={view} onValueChange={setView} />
+				</div>
 				<Separator className="my-2 mb-4" />
-				<PeopleTable />
+				{view === "users" ? <PeopleTable /> : <ReposTable />}
 			</div>
 		</DashboardLayout>
 	);
