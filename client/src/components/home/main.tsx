@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useUserOrganizations } from "#/hooks/useOrganizations";
 import { authClient } from "#/lib/auth-client";
+import { uploadsUrl } from "#/lib/backend-url";
 import Clock from "@/components/clock-06";
 import Dash from "./dash";
 import SystemHealth from "./health";
@@ -33,7 +34,7 @@ function Main() {
 									<div className="flex size-13 items-center justify-center overflow-hidden rounded-md bg-muted">
 										{org.avatar ? (
 											<img
-												src={`${import.meta.env.VITE_BACKEND_URL}/uploads/${org.avatar}`}
+												src={uploadsUrl(org.avatar) ?? ""}
 												alt={org.name}
 												className="size-full object-cover"
 											/>

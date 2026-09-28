@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import ReactCountryFlag from "react-country-flag"
 import { authClient } from "#/lib/auth-client"
 import { UserAvatar } from "@/components/UserAvatar"
+import { ProfessionIcon } from "@/components/profession-icon";
 import {
   Testimonial,
   TestimonialAuthor,
@@ -22,6 +23,7 @@ import { countries } from "@/lib/countries";
 interface ProfileData {
   name: string;
   email: string;
+  profession: string | null;
   biography: string | null;
   description: string | null;
   country: string | null;
@@ -100,20 +102,20 @@ function Profile() {
         className="w-30 h-30 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 ring-2 ring-muted ring-offset-2 ring-offset-background sm:mb-5"
       />
 
-      <div className="flex flex-row items-center gap-2 flex-wrap justify-center sm:justify-start">
-        <h1 className="text-xl sm:text-2xl font-semibold text-foreground text-center sm:text-left">
+      <div className="flex flex-row items-center gap-1 flex-wrap justify-center">
+        <h1 className="text-center text-[23px] font-bold leading-tight tracking-tight text-foreground sm:text-[25px]">
           {session?.user.name}
         </h1>
         {countryCode && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span>
+              <span className="inline-flex shrink-0 items-center">
                 <ReactCountryFlag
                   countryCode={countryCode}
                   svg
                   style={{
-                    width: "1.5em",
-                    height: "1.5em",
+                    width: "30px",
+                    borderRadius: "4px",
                   }}
                 />
               </span>
@@ -125,22 +127,29 @@ function Profile() {
         )}
       </div>
 
+      {profile?.profession && (
+        <p className="mb-1 flex w-full items-center justify-center gap-1.5 truncate text-sm text-muted-foreground sm:justify-start">
+          <ProfessionIcon className="size-4 shrink-0" />
+          <span className="truncate">{profile.profession}</span>
+        </p>
+      )}
+
       {profile?.description && (
         <p
-          className="w-full line-clamp-2 text-[16px] text-muted-foreground mb-2 text-center sm:text-left"
+          className="mt-1 w-full line-clamp-2 text-[16px] leading-snug text-foreground mb-1 text-center sm:text-left"
           title={profile.description}
         >
           {profile.description}
         </p>
       )}
 
-      <a href="/settings" className="w-full mb-2 hover:cursor-pointer">
-        <Button variant="secondary" className="w-full mt-2">Edit Profile</Button>
+      <a href="/settings" className="w-full mb-1 hover:cursor-pointer">
+        <Button variant="secondary" className="w-full mt-1">Edit Profile</Button>
       </a>
 
       {hasQuote && (
         <div
-          className="block w-80 max-w-full rounded-xl inset-ring-1 inset-ring-foreground/10 transition-[background-color] ease-out hover:bg-accent/50"
+          className="block w-full rounded-xl inset-ring-1 inset-ring-foreground/10 transition-[background-color] ease-out hover:bg-accent/50"
         >
           <Testimonial>
             {profile.quoteText && (

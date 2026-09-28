@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import type { RepoFile, TagInfo } from "#/types/repo";
+import { backendUrl } from "#/lib/backend-url";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -147,7 +148,7 @@ function Tableheader({
 
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_BACKEND_URL}/api/repos/${owner}/${repo}/branches/${encodeURIComponent(branchToDelete)}`,
+				`${backendUrl()}/api/repos/${owner}/${repo}/branches/${encodeURIComponent(branchToDelete)}`,
 				{ method: "DELETE", credentials: "include" },
 			);
 
@@ -180,7 +181,7 @@ function Tableheader({
 	};
 
 	const handleDownload = async (format: "zip" | "tar.gz") => {
-		const url = `${import.meta.env.VITE_BACKEND_URL}/api/repos/${owner}/${repo}/download?format=${format}&ref=${encodeURIComponent(currentBranch)}`;
+		const url = `${backendUrl()}/api/repos/${owner}/${repo}/download?format=${format}&ref=${encodeURIComponent(currentBranch)}`;
 
 		try {
 			const res = await fetch(url);

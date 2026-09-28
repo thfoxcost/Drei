@@ -10,6 +10,7 @@ import (
 type ProfileData struct {
 	Name             string  `json:"name"`
 	Email            string  `json:"email"`
+	Profession       *string `json:"profession"`
 	Biography        *string `json:"biography"`
 	Description      *string `json:"description"`
 	Country          *string `json:"country"`
@@ -72,14 +73,14 @@ func handleGetProfile(w http.ResponseWriter, user *AuthUser) {
 	var profile ProfileData
 
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT name, email, biography, description, country,
+		SELECT name, email, profession, biography, description, country,
 		       quote_person_name, quote_text, quote_person_title,
 		       quote_person_image, quote_verified
 		FROM "user"
 		WHERE id = $1
 	`, user.ID).Scan(
 		&profile.Name, &profile.Email,
-		&profile.Biography, &profile.Description, &profile.Country,
+		&profile.Profession, &profile.Biography, &profile.Description, &profile.Country,
 		&profile.QuotePersonName, &profile.QuoteText,
 		&profile.QuotePersonTitle, &profile.QuotePersonImage,
 		&profile.QuoteVerified,
@@ -111,23 +112,33 @@ func handleUpdateProfile(w http.ResponseWriter, r *http.Request, user *AuthUser)
 		return
 	}
 
+	var currentName string
+
+	if err := database.DB.QueryRow(context.Background(), `
+		SELECT COALESCE(name, '') FROM "user" WHERE id = $1
+	`, user.ID).Scan(&currentName); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch profile: "+err.Error())
+		return
+	}
+
 	_, err := database.DB.Exec(context.Background(), `
 		UPDATE "user"
 		SET name = $1,
 		    email = $2,
-		    biography = $3,
-		    description = $4,
-		    country = $5,
-		    quote_person_name = $6,
-		    quote_text = $7,
-		    quote_person_title = $8,
-		    quote_person_image = $9,
-		    quote_verified = $10,
+		    profession = $3,
+		    biography = $4,
+		    description = $5,
+		    country = $6,
+		    quote_person_name = $7,
+		    quote_text = $8,
+		    quote_person_title = $9,
+		    quote_person_image = $10,
+		    quote_verified = $11,
 		    "updatedAt" = NOW()
-		WHERE id = $11
+		WHERE id = $12
 	`,
 		req.Name, req.Email,
-		req.Biography, req.Description, req.Country,
+		req.Profession, req.Biography, req.Description, req.Country,
 		req.QuotePersonName, req.QuoteText,
 		req.QuotePersonTitle, req.QuotePersonImage,
 		req.QuoteVerified, user.ID,
@@ -135,6 +146,13 @@ func handleUpdateProfile(w http.ResponseWriter, r *http.Request, user *AuthUser)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to update profile: "+err.Error())
 		return
+	}
+
+	// A username change renames the user's namespace everywhere it is
+	// materialized (repository owners/paths, contributor records, on-disk
+	// directories) so ownership checks keep working after the rename.
+	if req.Name != currentName {
+		database.RenameUserNamespace(user.ID, currentName, req.Name)
 	}
 
 	writeSuccess(w, map[string]any{

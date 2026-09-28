@@ -777,5 +777,43 @@ func Migrate() error {
 		return err
 	}
 
+	// User profession (job title) shown in the People directory. Nullable so
+	// existing users simply show no profession until they set one.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS profession TEXT;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Presence heartbeat for the People directory. last_seen is refreshed by
+	// the client while a tab is open; online means seen within the last few
+	// minutes instead of merely holding a valid (days-long) session.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Heatmap tinting: when enabled, the contribution heatmap uses shades of
+	// the user's profile picture instead of the default palette.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS appearance_heatmap_profile_color BOOLEAN NOT NULL DEFAULT FALSE;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Username references: repairs rows predating rename propagation (e.g. a
+	// rename from settings before this shipped), syncing repository owners,
+	// contributor records, and on-disk namespaces back to the account name.
+	if err := BackfillUsernameReferences(); err != nil {
+		return err
+	}
+
 	return nil
 }

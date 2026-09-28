@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { authClient } from "#/lib/auth-client"
+import { backendUrl } from "#/lib/backend-url"
 import { UserAvatar } from "@/components/UserAvatar"
 import { Cmd } from "../cmd"
 import { useUserOrganizations } from "@/hooks/useOrganizations"
@@ -202,7 +203,7 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
               <DropdownMenuSubContent className="w-40">
                 <DropdownMenuItem asChild>
                   <a
-                    href={`${import.meta.env.VITE_BACKEND_URL}/swagger/index.html`}
+                    href={`${backendUrl()}/swagger/index.html`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

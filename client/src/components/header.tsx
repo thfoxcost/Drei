@@ -14,8 +14,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { authClient } from "#/lib/auth-client"
+import { backendUrl } from "#/lib/backend-url"
 import { useUserOrganizations } from "@/hooks/useOrganizations"
 import { ORGANIZATIONS } from "@/data/organizations"
+import type { ComponentType } from "react"
 import type { LucideIcon } from "lucide-react"
 import {
   ArrowLeftRight,
@@ -33,17 +35,19 @@ import {
 } from "lucide-react"
 import { Cmd } from "./cmd"
 import { UserAvatar } from "@/components/UserAvatar"
+import { PeopleIcon } from "@/components/people-icon"
 
 const NAV_ITEMS: {
   label: string
-  icon: LucideIcon
-  to?: "/repos" | "/issues" | "/orgs" | "/pulls"
+  icon: LucideIcon | ComponentType<{ className?: string }>
+  to: "/repos" | "/issues" | "/orgs" | "/pulls" | "/people"
   disabled?: boolean
 }[] = [
     { label: "Repositories", icon: BookMarked, to: "/repos" },
     { label: "Issues", icon: Bug, to: "/issues" },
     { label: "Pulls", icon: GitPullRequest, to: "/pulls" },
     { label: "Organizations", icon: Building2, to: "/orgs" },
+    { label: "People", icon: PeopleIcon, to: "/people" },
   ]
 
 export default function Header() {
@@ -262,7 +266,7 @@ export default function Header() {
               <DropdownMenuSubContent className="w-40">
                 <DropdownMenuItem asChild>
                   <a
-                    href={`${import.meta.env.VITE_BACKEND_URL}/swagger/index.html`}
+                    href={`${backendUrl()}/swagger/index.html`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
