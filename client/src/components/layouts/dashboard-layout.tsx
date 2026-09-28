@@ -2,12 +2,15 @@ import type { ReactNode } from "react";
 
 import Profile from "#/components/home/profile";
 import { authClient } from "#/lib/auth-client";
+import { cn } from "#/lib/utils.ts";
 
 interface DashboardLayoutProps {
 	children: ReactNode;
+	/** Removes the default horizontal margin so content spans full width. */
+	wide?: boolean;
 }
 
-function DashboardLayout({ children }: DashboardLayoutProps) {
+function DashboardLayout({ children, wide }: DashboardLayoutProps) {
 	const { data: session } = authClient.useSession();
 
 	const username = session?.user.name;
@@ -21,7 +24,12 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 				</div>
 			</div>
 
-			<div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0 overflow-y-auto mx-10">
+			<div
+				className={cn(
+					"flex-1 min-w-0 flex flex-col gap-4 min-h-0 overflow-y-auto",
+					!wide && "mx-10",
+				)}
+			>
 				{children}
 			</div>
 		</div>

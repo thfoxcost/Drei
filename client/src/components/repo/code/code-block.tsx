@@ -28,6 +28,7 @@ import {
 	CodeBlockItem,
 } from "@/components/kibo-ui/code-block";
 import { Markdown } from "../markdown-view";
+import { backendUrl } from "#/lib/backend-url";
 
 interface CodeblockProps {
 	code?: string;
@@ -127,7 +128,7 @@ function Codeblock({
 
 	const handleRaw = () => {
 		if (!owner || !repo || !branch || !filePath) return;
-		const base = import.meta.env.VITE_BACKEND_URL;
+		const base = backendUrl();
 		window.location.href = `${base}/api/repos/${owner}/${repo}/raw/${encodeURIComponent(branch)}/${filePath}`;
 	};
 

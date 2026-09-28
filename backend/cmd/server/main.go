@@ -50,6 +50,8 @@ func main() {
 	http.HandleFunc("/api/users/{username}/contributions", handlers.UserContributionsHandler)
 	http.HandleFunc("/api/activity", handlers.ActivityHandler)
 	http.HandleFunc("/api/users", handlers.UsersHandler)
+	http.HandleFunc("/api/people", handlers.PeopleHandler)
+	http.HandleFunc("/api/presence/heartbeat", handlers.PresenceHeartbeatHandler)
 	http.HandleFunc("/api/users/{owner}/repos", handlers.GetRepos)
 	http.HandleFunc("/api/issues", handlers.AllIssuesHandler)
 	http.HandleFunc("/api/pulls", handlers.AllPullsHandler)

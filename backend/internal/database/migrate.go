@@ -777,5 +777,26 @@ func Migrate() error {
 		return err
 	}
 
+	// User profession (job title) shown in the People directory. Nullable so
+	// existing users simply show no profession until they set one.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS profession TEXT;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Presence heartbeat for the People directory. last_seen is refreshed by
+	// the client while a tab is open; online means seen within the last few
+	// minutes instead of merely holding a valid (days-long) session.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ;
+	`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

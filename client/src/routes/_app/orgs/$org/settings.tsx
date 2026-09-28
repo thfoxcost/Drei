@@ -32,6 +32,7 @@ import {
   useDeleteOrganization,
   useUpdateOrganization,
 } from "#/hooks/useOrganizations";
+import { uploadsUrl } from "#/lib/backend-url";
 import { authClient } from "#/lib/auth-client";
 
 export const Route = createFileRoute("/_app/orgs/$org/settings")({
@@ -111,9 +112,7 @@ function RouteComponent() {
   const canEdit = isOwner && !isSessionPending;
   const isSaving = updateOrganization.isPending;
 
-  const avatarUrl = data.avatar
-    ? `${import.meta.env.VITE_BACKEND_URL}/uploads/${data.avatar}`
-    : undefined;
+  const avatarUrl = uploadsUrl(data.avatar) ?? undefined;
 
   const currentAvatar = avatarPreview ?? avatarUrl;
 
