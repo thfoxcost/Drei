@@ -1,10 +1,16 @@
+import { useTranslation } from "react-i18next"
+
 export type TodoStatus = "undone" | "progress" | "done" | "discarded"
 
-export const TODO_STATUS_LABEL: Record<TodoStatus, string> = {
-  undone: "Undone",
-  progress: "In progress",
-  done: "Done",
-  discarded: "Discarded",
+/**
+ * Translation keys rather than copy, so a language switch re-renders instead of
+ * leaving stale English behind. Render sites call `t()` on the matching key.
+ */
+export const TODO_STATUS_LABEL_KEY: Record<TodoStatus, string> = {
+  undone: "todos.status.undone",
+  progress: "todos.status.progress",
+  done: "todos.status.done",
+  discarded: "todos.status.discarded",
 }
 
 const PATHS: Record<TodoStatus, React.ReactNode> = {
@@ -40,6 +46,8 @@ export function TodoStatusIcon({
   className,
   ...props
 }: { status: TodoStatus } & React.ComponentProps<"svg">) {
+  const { t } = useTranslation()
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -57,7 +65,7 @@ export function TodoStatusIcon({
         .join(" ")}
       {...props}
     >
-      <title>{TODO_STATUS_LABEL[status]}</title>
+      <title>{t(TODO_STATUS_LABEL_KEY[status])}</title>
       {PATHS[status]}
     </svg>
   )

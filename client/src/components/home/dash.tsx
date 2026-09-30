@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import { useTranslation } from "react-i18next";
 import {
 	HeatmapCalendar,
 	type HeatmapDatum,
@@ -7,10 +7,13 @@ import {
 import { Spinner } from "#/components/ui/spinner.tsx";
 import { useHeatmapYear } from "#/hooks/useHeatmapYear";
 import { useProfileHeatmapPalette } from "#/hooks/useProfileHeatmap";
+import { i18n } from "#/i18n/i18n";
 import { authClient } from "#/lib/auth-client";
 import { getContributions } from "#/lib/contributions";
 
 function Dash({ username }: { username?: string }) {
+	const { t } = useTranslation();
+
 	const { data: session } = authClient.useSession();
 	const resolvedUsername = username ?? session?.user?.name ?? "";
 	const [year] = useHeatmapYear();
@@ -37,7 +40,9 @@ function Dash({ username }: { username?: string }) {
 			.catch((err: unknown) => {
 				if (cancelled) return;
 				setError(
-					err instanceof Error ? err.message : "Failed to load contributions",
+					err instanceof Error
+						? err.message
+						: i18n.t("dashboard.contributions.loadFailed"),
 				);
 			})
 			.finally(() => {
@@ -72,7 +77,7 @@ function Dash({ username }: { username?: string }) {
 					renderTooltip={(cell) => (
 						<div className="text-sm">
 							<div className="font-medium">
-								{cell.value} contribution{cell.value === 1 ? "" : "s"}
+								{t("dashboard.contributions.label", { count: cell.value })}
 							</div>
 							<div className="text-muted-foreground">{cell.label}</div>
 						</div>

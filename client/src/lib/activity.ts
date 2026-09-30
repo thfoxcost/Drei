@@ -1,3 +1,4 @@
+import { i18n } from "#/i18n/i18n"
 export type ActivityType =
   | "repo_created"
   | "repo_forked"
@@ -59,7 +60,9 @@ export async function getActivity(
   const res = await fetch(url, { credentials: "include", cache: "no-store" });
 
   if (!res.ok) {
-    throw new Error(`Failed to load activity (${res.status})`);
+    throw new Error(
+		`${i18n.t("errors.client.fetchActivity") as string} (${res.status})`,
+	);
   }
 
   return res.json();

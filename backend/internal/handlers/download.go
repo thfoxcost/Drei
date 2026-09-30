@@ -34,7 +34,7 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -42,7 +42,7 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	repo := r.PathValue("repo")
 
 	if _, err := database.GetRepository(owner, repo); err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
@@ -61,7 +61,7 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 		contentType = "application/gzip"
 		filename = repo + ".tar.gz"
 	default:
-		writeError(w, http.StatusBadRequest, "unsupported archive format")
+		writeErrorCoded(w, http.StatusBadRequest, "unsupported_archive_format", "unsupported archive format")
 		return
 	}
 

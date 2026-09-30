@@ -1,3 +1,5 @@
+import { formatRelative, formatShortDate } from "#/i18n/lib/format"
+
 // Parses the API's date format, which sometimes duplicates the UTC offset
 // e.g. "2026-07-23 11:25:29 -0700 -0700". We only need the first offset.
 function parseApiDate(raw: string): Date | null {
@@ -31,11 +33,9 @@ const UNITS: { unit: Intl.RelativeTimeFormatUnit; seconds: number }[] = [
   { unit: "second", seconds: 1 },
 ];
 
-const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-
 /**
- * Returns a relative-time string like "3 years ago" or "in 2 days".
- * Falls back to the raw input string if it can't be parsed.
+ * Returns a relative-time string in the active locale, e.g. "3 years ago" or
+ * "vor 3 Jahren". Falls back to the raw input string if it can't be parsed.
  */
 export function timeAgo(raw: string, now: Date = new Date()): string {
   const date = parseApiDate(raw);
@@ -47,24 +47,20 @@ export function timeAgo(raw: string, now: Date = new Date()): string {
   for (const { unit, seconds } of UNITS) {
     if (absSeconds >= seconds || unit === "second") {
       const value = Math.round(diffSeconds / seconds);
-      return rtf.format(value, unit);
+      return formatRelative(value, unit);
     }
   }
 
-  return rtf.format(0, "second");
+  return formatRelative(0, "second");
 }
 
 /**
- * Returns an absolute, readable date (e.g. "Jul 23, 2026") — useful for
- * a tooltip alongside the relative label.
+ * Returns an absolute, readable date in the active locale (e.g. "Jul 23, 2026"
+ * / "23.07.2026") — useful for a tooltip alongside the relative label.
  */
 export function absoluteDate(raw: string): string {
   const date = parseApiDate(raw);
   if (!date) return raw;
 
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatShortDate(date);
 }

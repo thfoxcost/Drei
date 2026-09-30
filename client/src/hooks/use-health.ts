@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { i18n } from "#/i18n/i18n";
 import { authClient } from "#/lib/auth-client.ts";
 
 export type ServiceState = "online" | "degraded" | "offline" | "unavailable";
@@ -67,7 +68,9 @@ export function useHealth(pollIntervalMs = 15000) {
 			});
 
 			if (!res.ok) {
-				throw new Error(`Health check failed: ${res.status}`);
+				throw new Error(
+					`${i18n.t("errors.generic.network") as string} (${res.status})`,
+				);
 			}
 
 			const data = await res.json();

@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next"
+import { apiErrorMessage } from "#/i18n/lib/api-error"
 import { useEffect, useState } from "react"
 import { Bell, Check, ChevronDown, Plus, Send, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -22,6 +24,8 @@ import { useNotification } from "#/hooks/useNotification"
 const API_BASE = "http://localhost:3200"
 
 function DiscordIcon({ className = "size-4" }: { className?: string }) {
+    const { t } = useTranslation()
+
     return (
         <svg
             role="img"
@@ -30,7 +34,7 @@ function DiscordIcon({ className = "size-4" }: { className?: string }) {
             className={className}
             fill="currentColor"
         >
-            <title>Discord</title>
+            <title>{t("settings.notifications.discordTitle")}</title>
             <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" />
         </svg>
     )
@@ -48,6 +52,8 @@ type Notification = {
 }
 
 function ContentNotifications() {
+    const { t } = useTranslation()
+
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [loading, setLoading] = useState(true)
     const [testing, setTesting] = useState<number | null>(null)
@@ -65,12 +71,12 @@ function ContentNotifications() {
                 credentials: "include",
             })
 
-            if (!res.ok) throw new Error("Failed to fetch notifications")
+            if (!res.ok) throw new Error(apiErrorMessage(null, { fallbackKey: "errors.client.fetchNotifications" }))
 
             const data = await res.json()
             setNotifications(data)
         } catch {
-            toast.error("Failed to load notifications")
+            toast.error(t("settings.notifications.loadFailed"))
         } finally {
             setLoading(false)
         }
@@ -79,7 +85,7 @@ function ContentNotifications() {
     async function addDiscordNotification() {
         const url = newUrl.trim()
         if (!url) {
-            toast.error("Enter a URL first")
+            toast.error(t("settings.notifications.enterUrl"))
             return
         }
 
@@ -97,15 +103,15 @@ function ContentNotifications() {
                 }),
             })
 
-            if (!res.ok) throw new Error("Failed to create notification")
+            if (!res.ok) throw new Error(apiErrorMessage(null, { fallbackKey: "errors.client.createNotification" }))
 
             const created = await res.json()
             setNotifications((current) => [created, ...current])
             setNewUrl("")
             setIsAdding(false)
-            toast.success("Notification created")
+            toast.success(t("settings.notifications.created"))
         } catch {
-            toast.error("Failed to create notification")
+            toast.error(t("settings.notifications.createFailed"))
         }
     }
 
@@ -116,14 +122,14 @@ function ContentNotifications() {
                 credentials: "include",
             })
 
-            if (!res.ok) throw new Error("Failed to delete notification")
+            if (!res.ok) throw new Error(apiErrorMessage(null, { fallbackKey: "errors.client.deleteNotification" }))
 
             setNotifications((current) =>
                 current.filter((n) => n.id !== id),
             )
-            toast.success("Notification removed")
+            toast.success(t("settings.notifications.removed"))
         } catch {
-            toast.error("Failed to delete notification")
+            toast.error(t("settings.notifications.removeFailed"))
         }
     }
 
@@ -133,12 +139,12 @@ function ContentNotifications() {
         try {
             const success = await sendTestNotification({
                 webhookId: notification.id,
-                title: "Drei notification test",
-                description: "This is a test notification from Drei.",
+                title: t("settings.notifications.testTitle"),
+                description: t("settings.notifications.testBody"),
             })
 
             if (success) {
-                toast.success("Test notification sent")
+                toast.success(t("settings.notifications.testSent"))
             }
         } finally {
             setTesting(null)
@@ -149,12 +155,12 @@ function ContentNotifications() {
         return (
             <div className="mx-auto mb-10 w-full max-w-5xl space-y-6">
                 <div>
-                    <h1 className="text-2xl">Notifications</h1>
+                    <h1 className="text-2xl">{t("settings.notifications.title")}</h1>
                     <Separator className="my-4" />
                 </div>
                 <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
                     <Spinner />
-                    <span>Loading notifications...</span>
+                    <span>{t("settings.notifications.loading")}</span>
                 </div>
             </div>
         )
@@ -168,11 +174,10 @@ function ContentNotifications() {
                     <Bell className="mt-0.5 size-4 text-yellow-600" />
                     <div>
                         <h3 className="text-sm font-medium text-yellow-600">
-                            Notifications are not currently used
+                            {t("settings.notifications.warningTitle")}
                         </h3>
                         <p className="mt-1 text-sm text-yellow-600/80">
-                            This notification integration is configured but is
-                            not currently connected to any application events.
+                            {t("settings.notifications.warningBody")}
                         </p>
                     </div>
                 </div>
@@ -182,9 +187,9 @@ function ContentNotifications() {
             <div>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl">Notifications</h1>
+                        <h1 className="text-2xl">{t("settings.notifications.title")}</h1>
                         <p className="text-sm text-muted-foreground">
-                            Configure notifications to receive repository events.
+                            {t("settings.notifications.subtitle")}
                         </p>
                     </div>
 
@@ -192,7 +197,7 @@ function ContentNotifications() {
                         <DropdownMenuTrigger asChild>
                             <Button>
                                 <Plus className="size-4" />
-                                New notification
+                                {t("settings.notifications.new")}
                                 <ChevronDown className="size-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -205,7 +210,7 @@ function ContentNotifications() {
                                 }}
                             >
                                 <DiscordIcon />
-                                Discord
+                                {t("settings.notifications.discordTitle")}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -218,10 +223,10 @@ function ContentNotifications() {
             {isAdding && (
                 <div className="rounded-lg border p-4">
                     <label className="text-sm font-medium">
-                        Discord Notification URL
+                        {t("settings.notifications.discordUrlLabel")}
                     </label>
                     <p className="mb-2 text-xs text-muted-foreground">
-                        Paste your Discord notification webhook URL.
+                        {t("settings.notifications.discordUrlHelp")}
                     </p>
                     <InputGroup className="[--radius:9999px]">
                         <InputGroupAddon className="pl-3 text-muted-foreground">
@@ -235,7 +240,7 @@ function ContentNotifications() {
                                     value ? `https://${value}` : "",
                                 )
                             }}
-                            placeholder="discord.com/api/webhooks/..."
+                            placeholder={t("settings.notifications.discordUrlPlaceholder")}
                         />
                         <InputGroupAddon align="inline-end">
                             <InputGroupButton
@@ -246,14 +251,14 @@ function ContentNotifications() {
                                     setNewUrl("")
                                 }}
                             >
-                                Cancel
+                                {t("common.actions.cancel")}
                             </InputGroupButton>
                             <InputGroupButton
                                 variant="ghost"
                                 size="sm"
                                 onClick={addDiscordNotification}
                             >
-                                Save
+                                {t("common.actions.save")}
                             </InputGroupButton>
                         </InputGroupAddon>
                     </InputGroup>
@@ -265,10 +270,10 @@ function ContentNotifications() {
                 <div className="flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed">
                     <Send className="mb-3 size-8 text-muted-foreground" />
                     <h3 className="font-medium">
-                        No notifications configured
+                        {t("settings.notifications.emptyTitle")}
                     </h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Add a Discord notification to start receiving events.
+                        {t("settings.notifications.emptyBody")}
                     </p>
                 </div>
             )}
@@ -286,9 +291,9 @@ function ContentNotifications() {
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                        <h3 className="font-medium">Discord</h3>
+                        <h3 className="font-medium">{t("settings.notifications.discord")}</h3>
                         <p className="text-sm text-muted-foreground truncate">
-                            Send repository activity notifications to Discord.
+                            {t("settings.notifications.discordDescription")}
                         </p>
                     </div>
 
@@ -303,12 +308,12 @@ function ContentNotifications() {
                             {testing === notification.id ? (
                                 <>
                                     <Spinner className="size-3" />
-                                    <span className="ml-1">Testing...</span>
+                                    <span className="ml-1">{t("settings.notifications.testing")}</span>
                                 </>
                             ) : (
                                 <>
                                     <Check className="size-3.5" />
-                                    Test
+                                    {t("settings.notifications.test")}
                                 </>
                             )}
                         </Button>

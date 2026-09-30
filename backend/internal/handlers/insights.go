@@ -19,7 +19,7 @@ func PulseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -27,7 +27,7 @@ func PulseHandler(w http.ResponseWriter, r *http.Request) {
 	repo := r.PathValue("repo")
 
 	if owner == "" || repo == "" {
-		writeError(w, http.StatusBadRequest, "missing required path parameters")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_required_path_parameters", "missing required path parameters")
 		return
 	}
 
@@ -42,7 +42,7 @@ func PulseHandler(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := gitrepo.GetPulse(owner, repo, branch, days)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found or has no commits")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found_or_no_commits", "repository not found or has no commits")
 		return
 	}
 
@@ -62,7 +62,7 @@ func ContributorsInsightHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -70,13 +70,13 @@ func ContributorsInsightHandler(w http.ResponseWriter, r *http.Request) {
 	repo := r.PathValue("repo")
 
 	if owner == "" || repo == "" {
-		writeError(w, http.StatusBadRequest, "missing required path parameters")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_required_path_parameters", "missing required path parameters")
 		return
 	}
 
 	insight, err := gitrepo.GetContributorsInsight(owner, repo, effectiveRef(r))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found or has no commits")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found_or_no_commits", "repository not found or has no commits")
 		return
 	}
 
@@ -97,7 +97,7 @@ func CodeFrequencyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -105,13 +105,13 @@ func CodeFrequencyHandler(w http.ResponseWriter, r *http.Request) {
 	repo := r.PathValue("repo")
 
 	if owner == "" || repo == "" {
-		writeError(w, http.StatusBadRequest, "missing required path parameters")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_required_path_parameters", "missing required path parameters")
 		return
 	}
 
 	weeks, err := gitrepo.GetCodeFrequency(owner, repo, effectiveRef(r))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found or has no commits")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found_or_no_commits", "repository not found or has no commits")
 		return
 	}
 

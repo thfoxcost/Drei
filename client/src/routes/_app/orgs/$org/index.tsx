@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Mail, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/_app/orgs/$org/")({
 
 
 function RouteComponent() {
+	const { t } = useTranslation()
   const { org } = Route.useParams();
   const navigate = useNavigate();
   const { data, isLoading, isError } = useOrganization(org);
@@ -61,7 +63,7 @@ function RouteComponent() {
   if (isError || !data) {
     return (
       <div className="flex h-[60vh] w-full items-center justify-center text-muted-foreground">
-        Organization not found
+        {t("orgs.notFound")}
       </div>
     );
   }
@@ -108,7 +110,9 @@ function RouteComponent() {
                 }`}
             >
               <span className="sr-only">
-                {data.status === "active" ? "Active" : "Suspended"}
+                {data.status === "active"
+                  ? t("orgs.overview.active")
+                  : t("orgs.overview.suspended")}
               </span>
             </span>
           </div>
@@ -129,7 +133,7 @@ function RouteComponent() {
                   </TooltipTrigger>
 
                   <TooltipContent>
-                    <p>{purposeMeta.label}</p>
+                    <p>{t(purposeMeta.labelKey)}</p>
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -174,10 +178,7 @@ function RouteComponent() {
               <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
                 <Users className="size-4" />
 
-                <span>
-                  <span className="text-foreground">{data.memberCount}</span>{" "}
-                  members
-                </span>
+                <span>{t("orgs.overview.memberCount", { count: data.memberCount })}</span>
 
                 {data.email && (
                   <>
@@ -194,7 +195,7 @@ function RouteComponent() {
                 <span className="mx-1 text-muted-foreground/60">•</span>
 
                 <span>
-                  Created:{" "}
+                  {t("orgs.overview.created")}{" "}
                   <span className="text-foreground">{createdAt}</span>
                 </span>
               </div>
@@ -210,34 +211,38 @@ function RouteComponent() {
                 disabled={isMembershipMutating}
                 onClick={() => {
                   leaveOrganization.mutate(undefined, {
-                    onSuccess: () => toast.success("Left organization"),
+                    onSuccess: () => toast.success(t("orgs.overview.leftToast")),
                     onError: (err) =>
                       toast.error(
                         err instanceof Error
                           ? err.message
-                          : "Failed to leave organization",
+                          : t("orgs.overview.leaveFailed"),
                       ),
                   });
                 }}
               >
-                {leaveOrganization.isPending ? "Leaving..." : "Leave organization"}
+                {leaveOrganization.isPending
+                  ? t("orgs.overview.leaving")
+                  : t("orgs.overview.leave")}
               </Button>
             ) : (
               <Button
                 disabled={isMembershipMutating}
                 onClick={() => {
                   joinOrganization.mutate(undefined, {
-                    onSuccess: () => toast.success("Joined organization"),
+                    onSuccess: () => toast.success(t("orgs.overview.joinedToast")),
                     onError: (err) =>
                       toast.error(
                         err instanceof Error
                           ? err.message
-                          : "Failed to join organization",
+                          : t("orgs.overview.joinFailed"),
                       ),
                   });
                 }}
               >
-                {joinOrganization.isPending ? "Joining..." : "Join organization"}
+                {joinOrganization.isPending
+                  ? t("orgs.overview.joining")
+                  : t("orgs.overview.join")}
               </Button>
             )
           )}
@@ -246,18 +251,18 @@ function RouteComponent() {
             <Button
               onClick={() => navigate({ to: "/new", search: { org } })}
             >
-              New Repository
+              {t("orgs.overview.newRepository")}
             </Button>
           ) : (
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button disabled>New Repository</Button>
+                  <Button disabled>{t("orgs.overview.newRepository")}</Button>
                 </span>
               </TooltipTrigger>
 
               <TooltipContent align="end">
-                <p>Only organization admins can create repositories</p>
+                <p>{t("orgs.overview.adminsOnly")}</p>
               </TooltipContent>
             </Tooltip>
           )}
@@ -283,7 +288,7 @@ function RouteComponent() {
                 params={{ org }}
                 className="font-medium hover:underline"
               >
-                Members
+                {t("orgs.overview.membersLink")}
               </Link>
 
               <Frame>
@@ -306,7 +311,7 @@ function RouteComponent() {
 
             {languages.length > 0 && (
               <div className="flex flex-col gap-2">
-                <span className="font-medium">Top languages</span>
+                <span className="font-medium">{t("orgs.overview.topLanguages")}</span>
 
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
                   {languages.map((language) => (

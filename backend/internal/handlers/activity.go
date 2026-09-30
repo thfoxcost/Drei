@@ -53,13 +53,13 @@ func ActivityHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	viewer, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
+		writeErrorCoded(w, http.StatusUnauthorized, "authentication_required", "authentication required")
 		return
 	}
 
@@ -67,7 +67,7 @@ func ActivityHandler(w http.ResponseWriter, r *http.Request) {
 	if raw := r.URL.Query().Get("page"); raw != "" {
 		parsed, err := strconv.Atoi(raw)
 		if err != nil || parsed < 1 {
-			writeError(w, http.StatusBadRequest, "invalid page")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_page", "invalid page")
 			return
 		}
 		page = parsed
@@ -77,7 +77,7 @@ func ActivityHandler(w http.ResponseWriter, r *http.Request) {
 	if raw := r.URL.Query().Get("limit"); raw != "" {
 		parsed, err := strconv.Atoi(raw)
 		if err != nil || parsed < 1 || parsed > 50 {
-			writeError(w, http.StatusBadRequest, "invalid limit")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_limit", "invalid limit")
 			return
 		}
 		limit = parsed

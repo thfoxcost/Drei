@@ -15,7 +15,7 @@ import (
 func resolveRepo(w http.ResponseWriter, r *http.Request) (*database.RepoInfo, bool) {
 	info, err := database.GetRepository(r.PathValue("owner"), r.PathValue("repo"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return nil, false
 	}
 
@@ -25,7 +25,7 @@ func resolveRepo(w http.ResponseWriter, r *http.Request) (*database.RepoInfo, bo
 func parseIssueNumber(w http.ResponseWriter, r *http.Request) (int, bool) {
 	number, err := strconv.Atoi(r.PathValue("number"))
 	if err != nil || number <= 0 {
-		writeError(w, http.StatusBadRequest, "invalid issue number")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_issue_number", "invalid issue number")
 		return 0, false
 	}
 
@@ -40,7 +40,7 @@ func getIssueOr404(w http.ResponseWriter, repoID int64, number int) (*database.I
 	}
 
 	if issue == nil {
-		writeError(w, http.StatusNotFound, "issue not found")
+		writeErrorCoded(w, http.StatusNotFound, "issue_not_found", "issue not found")
 		return nil, false
 	}
 
@@ -162,7 +162,7 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 		// are never trusted.
 		author, err := authenticate(r)
 		if err != nil {
-			writeError(w, http.StatusUnauthorized, "you must be signed in to create an issue")
+			writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_create_issue", "you must be signed in to create an issue")
 			return
 		}
 
@@ -173,7 +173,7 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !member {
-			writeError(w, http.StatusForbidden, "you must be a contributor of this repository to create an issue")
+			writeErrorCoded(w, http.StatusForbidden, "contributor_required_to_create_issue", "you must be a contributor of this repository to create an issue")
 			return
 		}
 
@@ -186,19 +186,19 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
 		req.Title = strings.TrimSpace(req.Title)
 
 		if req.Title == "" {
-			writeError(w, http.StatusBadRequest, "title is required")
+			writeErrorCoded(w, http.StatusBadRequest, "title_required", "title is required")
 			return
 		}
 
 		if len([]rune(req.Title)) > 200 {
-			writeError(w, http.StatusBadRequest, "title must be 200 characters or fewer")
+			writeErrorCoded(w, http.StatusBadRequest, "title_too_long", "title must be 200 characters or fewer")
 			return
 		}
 
@@ -207,7 +207,7 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 		if req.DueDate != nil && strings.TrimSpace(*req.DueDate) != "" {
 			parsed, err := time.Parse(time.RFC3339, *req.DueDate)
 			if err != nil {
-				writeError(w, http.StatusBadRequest, "invalid dueDate")
+				writeErrorCoded(w, http.StatusBadRequest, "invalid_due_date", "invalid dueDate")
 				return
 			}
 			dueDate = &parsed
@@ -236,7 +236,7 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusCreated, issue)
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -334,7 +334,7 @@ func IssueHandler(w http.ResponseWriter, r *http.Request) {
 		var raw map[string]json.RawMessage
 
 		if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
@@ -343,20 +343,20 @@ func IssueHandler(w http.ResponseWriter, r *http.Request) {
 			var description string
 
 			if err := json.Unmarshal(rawTitle, &title); err != nil {
-				writeError(w, http.StatusBadRequest, "invalid title")
+				writeErrorCoded(w, http.StatusBadRequest, "invalid_title", "invalid title")
 				return
 			}
 
 			if rawDescription, ok := raw["description"]; ok {
 				if err := json.Unmarshal(rawDescription, &description); err != nil {
-					writeError(w, http.StatusBadRequest, "invalid description")
+					writeErrorCoded(w, http.StatusBadRequest, "invalid_description", "invalid description")
 					return
 				}
 			}
 
 			dueDate, err := parseDueDate(raw["dueDate"])
 			if err != nil {
-				writeError(w, http.StatusBadRequest, "invalid dueDate")
+				writeErrorCoded(w, http.StatusBadRequest, "invalid_due_date", "invalid dueDate")
 				return
 			}
 
@@ -370,7 +370,7 @@ func IssueHandler(w http.ResponseWriter, r *http.Request) {
 			var labels []string
 
 			if err := json.Unmarshal(rawLabels, &labels); err != nil {
-				writeError(w, http.StatusBadRequest, "invalid labels")
+				writeErrorCoded(w, http.StatusBadRequest, "invalid_labels", "invalid labels")
 				return
 			}
 
@@ -393,7 +393,7 @@ func IssueHandler(w http.ResponseWriter, r *http.Request) {
 		// never trusted.
 		author, err := authenticate(r)
 		if err != nil {
-			writeError(w, http.StatusUnauthorized, "you must be signed in to delete an issue")
+			writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_delete_issue", "you must be signed in to delete an issue")
 			return
 		}
 
@@ -404,7 +404,7 @@ func IssueHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Only the issue author or the repository owner may delete an issue.
 		if author.ID != issue.Author.ID && author.ID != info.OwnerID {
-			writeError(w, http.StatusForbidden, "only the issue author or repository owner can delete an issue")
+			writeErrorCoded(w, http.StatusForbidden, "cannot_delete_issue", "only the issue author or repository owner can delete an issue")
 			return
 		}
 
@@ -416,7 +416,7 @@ func IssueHandler(w http.ResponseWriter, r *http.Request) {
 		writeSuccess(w, map[string]any{"success": true})
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -449,7 +449,7 @@ func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -467,7 +467,7 @@ func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
 	// never trusted.
 	author, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to change issue state")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_change_issue_state", "you must be signed in to change issue state")
 		return
 	}
 
@@ -477,12 +477,12 @@ func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
 	if req.State != "open" && req.State != "closed" {
-		writeError(w, http.StatusBadRequest, "state must be 'open' or 'closed'")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_issue_state", "state must be 'open' or 'closed'")
 		return
 	}
 
@@ -490,7 +490,7 @@ func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
 		switch req.Reason {
 		case "completed", "not_planned", "duplicated":
 		default:
-			writeError(w, http.StatusBadRequest, "invalid close reason")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_close_reason", "invalid close reason")
 			return
 		}
 	}
@@ -543,7 +543,7 @@ func IssueAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -559,7 +559,7 @@ func IssueAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 
 	author, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to update assignees")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_update_assignees", "you must be signed in to update assignees")
 		return
 	}
 
@@ -570,7 +570,7 @@ func IssueAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !member {
-		writeError(w, http.StatusForbidden, "you must be a contributor of this repository to update assignees")
+		writeErrorCoded(w, http.StatusForbidden, "contributor_required_to_update_assignees", "you must be a contributor of this repository to update assignees")
 		return
 	}
 
@@ -579,7 +579,7 @@ func IssueAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -676,7 +676,7 @@ func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
 		// are never trusted.
 		author, err := authenticate(r)
 		if err != nil {
-			writeError(w, http.StatusUnauthorized, "you must be signed in to comment")
+			writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_comment", "you must be signed in to comment")
 			return
 		}
 
@@ -685,14 +685,14 @@ func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
 		req.Body = strings.TrimSpace(req.Body)
 
 		if req.Body == "" {
-			writeError(w, http.StatusBadRequest, "comment body is required")
+			writeErrorCoded(w, http.StatusBadRequest, "comment_body_required", "comment body is required")
 			return
 		}
 
@@ -703,14 +703,14 @@ func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if comment.ID == 0 {
-			writeError(w, http.StatusNotFound, "issue not found")
+			writeErrorCoded(w, http.StatusNotFound, "issue_not_found", "issue not found")
 			return
 		}
 
 		writeJSON(w, http.StatusCreated, comment)
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -766,7 +766,7 @@ func IssueCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	commentID, err := strconv.ParseInt(r.PathValue("commentId"), 10, 64)
 	if err != nil || commentID <= 0 {
-		writeError(w, http.StatusBadRequest, "invalid comment id")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_comment_id", "invalid comment id")
 		return
 	}
 
@@ -777,14 +777,14 @@ func IssueCommentHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
 		req.Body = strings.TrimSpace(req.Body)
 
 		if req.Body == "" {
-			writeError(w, http.StatusBadRequest, "comment body is required")
+			writeErrorCoded(w, http.StatusBadRequest, "comment_body_required", "comment body is required")
 			return
 		}
 
@@ -795,7 +795,7 @@ func IssueCommentHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if comment.ID == 0 {
-			writeError(w, http.StatusNotFound, "comment not found")
+			writeErrorCoded(w, http.StatusNotFound, "comment_not_found", "comment not found")
 			return
 		}
 
@@ -810,7 +810,7 @@ func IssueCommentHandler(w http.ResponseWriter, r *http.Request) {
 		writeSuccess(w, map[string]any{"success": true})
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -876,14 +876,14 @@ func IssueLabelsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
 		req.Name = strings.TrimSpace(req.Name)
 
 		if req.Name == "" {
-			writeError(w, http.StatusBadRequest, "label name is required")
+			writeErrorCoded(w, http.StatusBadRequest, "label_name_required", "label name is required")
 			return
 		}
 
@@ -896,7 +896,7 @@ func IssueLabelsHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusCreated, label)
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -924,7 +924,7 @@ func IssueLabelHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodDelete {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -935,7 +935,7 @@ func IssueLabelHandler(w http.ResponseWriter, r *http.Request) {
 
 	labelID, err := strconv.ParseInt(r.PathValue("labelId"), 10, 64)
 	if err != nil || labelID <= 0 {
-		writeError(w, http.StatusBadRequest, "invalid label id")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_label_id", "invalid label id")
 		return
 	}
 

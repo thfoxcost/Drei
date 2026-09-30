@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 
 export interface MergeabilityResult {
 	mergeable: boolean;
@@ -19,7 +20,12 @@ export function usePullRequestMergeability(
 			const res = await fetch(
 				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/mergeability`,
 			);
-			if (!res.ok) throw new Error("Failed to check mergeability");
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, {
+						fallbackKey: "errors.client.checkMergeability",
+					}),
+				);
 			return res.json();
 		},
 		staleTime: 15_000,

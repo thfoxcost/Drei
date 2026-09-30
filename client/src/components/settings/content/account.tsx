@@ -1,3 +1,6 @@
+import { i18n } from "#/i18n/i18n"
+import { useTranslation } from "react-i18next"
+import { apiErrorMessage } from "#/i18n/lib/api-error"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -24,6 +27,8 @@ import { authClient } from "#/lib/auth-client"
 const API_BASE = "http://localhost:3200"
 
 function ContentAccount() {
+	const { t } = useTranslation()
+
 	const { refetch } = authClient.useSession()
 
 	// --- Email ---
@@ -54,7 +59,9 @@ function ContentAccount() {
 				})
 
 				if (!res.ok) {
-					throw new Error("Failed to load account")
+					throw new Error(
+						apiErrorMessage(null, { fallbackKey: "errors.client.fetchAccount" }),
+					)
 				}
 
 				const data = await res.json()
@@ -65,7 +72,7 @@ function ContentAccount() {
 				}
 			} catch {
 				if (!cancelled) {
-					toast.error("Failed to load account data")
+					toast.error(i18n.t("auth.account.loadFailed"))
 				}
 			} finally {
 				if (!cancelled) {
@@ -85,7 +92,7 @@ function ContentAccount() {
 	// --- Update Email ---
 	async function handleUpdateEmail() {
 		if (!email.trim()) {
-			toast.error("Email cannot be empty")
+			toast.error(t("auth.account.emailRequired"))
 			return
 		}
 
@@ -102,15 +109,17 @@ function ContentAccount() {
 			const result = await res.json()
 
 			if (!res.ok) {
-				throw new Error(result.error || "Failed to update email")
+				throw new Error(apiErrorMessage(result))
 			}
 
 			setOriginalEmail(email.trim())
 			await refetch()
-			toast.success("Email updated")
+			toast.success(t("auth.account.emailUpdated"))
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Something went wrong",
+				err instanceof Error
+					? err.message
+					: t("common.errors.somethingWentWrong"),
 			)
 		} finally {
 			setUpdatingEmail(false)
@@ -120,22 +129,22 @@ function ContentAccount() {
 	// --- Change Password ---
 	async function handleChangePassword() {
 		if (!currentPassword) {
-			toast.error("Please enter your current password")
+			toast.error(t("auth.account.enterCurrentPassword"))
 			return
 		}
 
 		if (!newPassword) {
-			toast.error("Please enter a new password")
+			toast.error(t("auth.account.enterNewPassword"))
 			return
 		}
 
 		if (newPassword.length < 8) {
-			toast.error("New password must be at least 8 characters")
+			toast.error(t("auth.account.newPasswordTooShort"))
 			return
 		}
 
 		if (newPassword !== confirmPassword) {
-			toast.error("New passwords do not match")
+			toast.error(t("auth.account.passwordsDoNotMatch"))
 			return
 		}
 
@@ -155,16 +164,18 @@ function ContentAccount() {
 			const result = await res.json()
 
 			if (!res.ok) {
-				throw new Error(result.error || "Failed to change password")
+				throw new Error(apiErrorMessage(result))
 			}
 
 			setCurrentPassword("")
 			setNewPassword("")
 			setConfirmPassword("")
-			toast.success("Password changed")
+			toast.success(t("auth.account.passwordChanged"))
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Something went wrong",
+				err instanceof Error
+					? err.message
+					: t("common.errors.somethingWentWrong"),
 			)
 		} finally {
 			setChangingPassword(false)
@@ -174,7 +185,7 @@ function ContentAccount() {
 	// --- Delete Account ---
 	async function handleDeleteAccount() {
 		if (!deletePassword) {
-			toast.error("Please enter your password")
+			toast.error(t("auth.account.enterPassword"))
 			return
 		}
 
@@ -192,17 +203,17 @@ function ContentAccount() {
 
 			if (!res.ok) {
 				throw new Error(
-					result.error || result.message || "Failed to delete account",
+					apiErrorMessage(result),
 				)
 			}
 
-			toast.success("Account deleted successfully")
+			toast.success(t("auth.account.deleted"))
 			window.location.href = "/"
 		} catch (err) {
 			toast.error(
 				err instanceof Error
 					? err.message
-					: "Something went wrong",
+					: t("common.errors.somethingWentWrong"),
 			)
 		} finally {
 			setDeleting(false)
@@ -213,12 +224,12 @@ function ContentAccount() {
 		return (
 			<div className="mx-auto mb-10 w-full max-w-5xl space-y-4">
 				<div className="pt-4">
-					<h1 className="text-xl">Account Settings</h1>
+					<h1 className="text-xl">{t("auth.account.title")}</h1>
 					<Separator className="my-2" />
 				</div>
 				<div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
 					<Spinner />
-					<span>Loading account...</span>
+					<span>{t("auth.account.loading")}</span>
 				</div>
 			</div>
 		)
@@ -227,20 +238,20 @@ function ContentAccount() {
 	return (
 		<div className="mx-auto mb-10 w-full max-w-5xl space-y-4">
 			<div className="pt-4">
-				<h1 className="text-xl">Password</h1>
+				<h1 className="text-xl">{t("auth.account.passwordHeading")}</h1>
 				<Separator className="my-2" />
 			</div>
 
 			<FieldGroup className="w-120">
 				<Field>
 					<FieldLabel htmlFor="current-password">
-						Current Password
+						{t("auth.account.currentPassword")}
 					</FieldLabel>
 
 					<Input
 						id="current-password"
 						type="password"
-						placeholder="Enter your current password"
+						placeholder={t("auth.account.currentPasswordPlaceholder")}
 						value={currentPassword}
 						onChange={(e) => setCurrentPassword(e.target.value)}
 						disabled={changingPassword}
@@ -248,13 +259,13 @@ function ContentAccount() {
 					/>
 
 					<FieldLabel htmlFor="new-password">
-						New Password
+						{t("auth.account.newPassword")}
 					</FieldLabel>
 
 					<Input
 						id="new-password"
 						type="password"
-						placeholder="Enter your new password"
+						placeholder={t("auth.account.newPasswordPlaceholder")}
 						value={newPassword}
 						onChange={(e) => setNewPassword(e.target.value)}
 						disabled={changingPassword}
@@ -262,13 +273,13 @@ function ContentAccount() {
 					/>
 
 					<FieldLabel htmlFor="confirm-password">
-						Confirm New Password
+						{t("auth.account.confirmNewPassword")}
 					</FieldLabel>
 
 					<Input
 						id="confirm-password"
 						type="password"
-						placeholder="Confirm your new password"
+						placeholder={t("auth.account.confirmNewPasswordPlaceholder")}
 						value={confirmPassword}
 						onChange={(e) => setConfirmPassword(e.target.value)}
 						disabled={changingPassword}
@@ -288,24 +299,22 @@ function ContentAccount() {
 						{changingPassword ? (
 							<>
 								<Spinner />
-								<span className="ml-2">Changing...</span>
+								<span className="ml-2">{t("auth.account.changing")}</span>
 							</>
-						) : (
-							"Change Password"
-						)}
+						) : t("auth.account.changePassword")}
 					</Button>
 				</div>
 			</FieldGroup>
 
 			<div className="pt-4">
-				<h1 className="text-xl">Email</h1>
+				<h1 className="text-xl">{t("auth.account.emailHeading")}</h1>
 				<Separator className="my-2" />
 			</div>
 
 			<FieldGroup className="w-120">
 				<Field>
 					<FieldLabel htmlFor="email">
-						Email Address
+						{t("auth.account.emailLabel")}
 					</FieldLabel>
 
 					<Input
@@ -318,7 +327,7 @@ function ContentAccount() {
 					/>
 
 					<FieldDescription>
-						This email address will be used for your account.
+						{t("auth.account.emailDescription")}
 					</FieldDescription>
 				</Field>
 
@@ -330,30 +339,27 @@ function ContentAccount() {
 						{updatingEmail ? (
 							<>
 								<Spinner />
-								<span className="ml-2">Updating...</span>
+								<span className="ml-2">{t("auth.account.updating")}</span>
 							</>
-						) : (
-							"Update Email"
-						)}
+						) : t("auth.account.updateEmail")}
 					</Button>
 				</div>
 			</FieldGroup>
 
 			<div className="pt-8">
 				<h1 className="mb-2 text-2xl text-destructive">
-					Danger Zone
+					{t("auth.account.dangerHeading")}
 				</h1>
 
 				<div className="max-w-full rounded-sm border border-destructive">
 					<div className="flex flex-row items-center justify-between gap-4 p-4">
 						<div className="flex flex-col">
 							<span className="font-bold">
-								Delete your account
+								{t("auth.account.deleteLabel")}
 							</span>
 
 							<span className="text-sm">
-								Permanently delete your account and all
-								associated data. This action cannot be undone.
+								{t("auth.account.deleteHelp")}
 							</span>
 						</div>
 
@@ -364,7 +370,7 @@ function ContentAccount() {
 								setDeleteOpen(true)
 							}}
 						>
-							Delete account
+							{t("auth.account.deleteButton")}
 						</Button>
 					</div>
 				</div>
@@ -381,19 +387,17 @@ function ContentAccount() {
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>
-							Delete your account?
+							{t("auth.account.deleteDialogTitle")}
 						</DialogTitle>
 
 						<DialogDescription>
-							This action cannot be undone. This will
-							permanently delete your account and all of your
-							associated data.
+							{t("auth.account.deleteDialogDescription")}
 						</DialogDescription>
 					</DialogHeader>
 
 					<div className="space-y-2">
 						<FieldLabel htmlFor="delete-password">
-							Confirm your password
+							{t("auth.account.confirmPasswordLabel")}
 						</FieldLabel>
 
 						<Input
@@ -403,14 +407,13 @@ function ContentAccount() {
 							onChange={(event) =>
 								setDeletePassword(event.target.value)
 							}
-							placeholder="Enter your password"
+							placeholder={t("auth.account.confirmPasswordPlaceholder")}
 							autoFocus
 							disabled={deleting}
 						/>
 
 						<p className="text-sm text-muted-foreground">
-							Enter your password to confirm that you want to
-							permanently delete your account.
+							{t("auth.account.confirmPasswordHelp")}
 						</p>
 					</div>
 
@@ -420,7 +423,7 @@ function ContentAccount() {
 							onClick={() => setDeleteOpen(false)}
 							disabled={deleting}
 						>
-							Cancel
+							{t("common.actions.cancel")}
 						</Button>
 
 						<Button
@@ -431,11 +434,11 @@ function ContentAccount() {
 							{deleting ? (
 								<>
 									<Spinner />
-									Deleting...
+									<span className="ml-2">
+										{t("auth.account.deleting")}
+									</span>
 								</>
-							) : (
-								"Delete my account"
-							)}
+							) : t("auth.account.deleteConfirm")}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

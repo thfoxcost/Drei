@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 import type { Commit } from "#/types/repo";
 
 export function usePRCommits(
@@ -16,7 +17,10 @@ export function usePRCommits(
 			const res = await fetch(
 				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/compare/commits?${params}`,
 			);
-			if (!res.ok) throw new Error("Failed to fetch commits");
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, { fallbackKey: "errors.client.fetchCommits" }),
+				);
 			return res.json();
 		},
 		enabled: !!owner && !!repo && !!base && !!head && base !== head,

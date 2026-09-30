@@ -6,6 +6,7 @@ import {
 	GitPullRequestClosed,
 } from "lucide-react";
 import { useMemo } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import {
 	type ChartConfig,
@@ -17,17 +18,11 @@ import { usePullRequests } from "#/hooks/PRs/use-pull-requests";
 import { usePulse } from "#/hooks/useInsights";
 import { useIssues } from "#/hooks/useIssues";
 import { useRepoData } from "#/hooks/useRepoData";
+import { formatShortDate } from "#/i18n/lib/format";
 
 export const Route = createFileRoute("/$username/$repo/insight/")({
 	component: RouteComponent,
 });
-
-const chartConfig = {
-	commits: {
-		label: "Commits",
-		color: "rgb(59 130 246)",
-	},
-} satisfies ChartConfig;
 
 function getInitials(name: string) {
 	const trimmed = name.trim();
@@ -39,10 +34,11 @@ function getInitials(name: string) {
 
 function formatRange(start: string, end: string) {
 	const fmt = (iso: string) =>
-		new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso).toLocaleDateString(
-			"en-US",
-			{ month: "long", day: "numeric", year: "numeric" },
-		);
+		formatShortDate(new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso), {
+			month: "long",
+			day: "numeric",
+			year: "numeric",
+		});
 	try {
 		return `${fmt(start)} - ${fmt(end)}`;
 	} catch {
@@ -51,11 +47,19 @@ function formatRange(start: string, end: string) {
 }
 
 function RouteComponent() {
+	const { t } = useTranslation();
 	const { username, repo } = Route.useParams();
 	const { data: repoData } = useRepoData(username, repo);
 	const { data: issues } = useIssues(username, repo);
 	const { data: pulls } = usePullRequests(username, repo);
 	const { data: pulse } = usePulse(username, repo, 7);
+
+	const chartConfig = {
+		commits: {
+			label: t("repo.charts.commits"),
+			color: "rgb(59 130 246)",
+		},
+	} satisfies ChartConfig;
 
 	const mergedPRs = pulls?.merged ?? 0;
 	const closedPRs = pulls?.closed ?? 0;
@@ -95,19 +99,21 @@ function RouteComponent() {
 	return (
 		<div className="flex w-full flex-col gap-4">
 			<span className="text-2xl font-medium">
-				{pulse ? formatRange(pulse.start, pulse.end) : "Last 7 days"}
+				{pulse
+					? formatRange(pulse.start, pulse.end)
+					: t("insights.pulse.heading")}
 			</span>
 
 			<div className="w-full">
 				<div className="rounded-t-md border bg-accent/40 px-4 py-2">
-					Overview
+					{t("insights.pulse.overview")}
 				</div>
 
 				<div className="grid grid-cols-2 divide-x border border-t-0">
 					<div className="px-5 py-4">
 						<div className="mb-2 flex items-center justify-between">
 							<span className="text-sm text-muted-foreground">
-								Pull Requests
+								{t("insights.pulse.pullRequests")}
 							</span>
 							<span className="font-semibold">{totalPRs}</span>
 						</div>
@@ -126,19 +132,21 @@ function RouteComponent() {
 						<div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
 							<span className="flex items-center gap-1.5">
 								<span className="size-2 rounded-full bg-purple-500" />
-								{mergedPRs} merged
+								{mergedPRs} {t("insights.pulse.merged")}
 							</span>
 
 							<span className="flex items-center gap-1.5">
 								<span className="size-2 rounded-full bg-red-500" />
-								{closedPRs} closed
+								{closedPRs} {t("insights.pulse.closed")}
 							</span>
 						</div>
 					</div>
 
 					<div className="px-5 py-4">
 						<div className="mb-2 flex items-center justify-between">
-							<span className="text-sm text-muted-foreground">Issues</span>
+							<span className="text-sm text-muted-foreground">
+								{t("insights.pulse.issues")}
+							</span>
 							<span className="font-semibold">{totalIssues}</span>
 						</div>
 
@@ -156,12 +164,12 @@ function RouteComponent() {
 						<div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
 							<span className="flex items-center gap-1.5">
 								<span className="size-2 rounded-full bg-purple-500" />
-								{closedIssues} closed
+								{closedIssues} {t("insights.pulse.closed")}
 							</span>
 
 							<span className="flex items-center gap-1.5">
 								<span className="size-2 rounded-full bg-green-500" />
-								{openIssues} new
+								{openIssues} {t("insights.pulse.new")}
 							</span>
 						</div>
 					</div>
@@ -176,7 +184,7 @@ function RouteComponent() {
 							</div>
 
 							<span className="text-sm text-muted-foreground">
-								Merged Pull Requests
+								{t("insights.pulse.mergedPrs")}
 							</span>
 						</div>
 
@@ -187,7 +195,7 @@ function RouteComponent() {
 							</div>
 
 							<span className="text-sm text-muted-foreground">
-								Closed Pull Requests
+								{t("insights.pulse.closedPrs")}
 							</span>
 						</div>
 					</div>
@@ -200,7 +208,7 @@ function RouteComponent() {
 							</div>
 
 							<span className="text-sm text-muted-foreground">
-								Closed Issues
+								{t("insights.pulse.closedIssues")}
 							</span>
 						</div>
 
@@ -210,52 +218,62 @@ function RouteComponent() {
 								<span className="text-base font-medium">{openIssues}</span>
 							</div>
 
-							<span className="text-sm text-muted-foreground">New Issues</span>
+							<span className="text-sm text-muted-foreground">
+								{t("insights.pulse.newIssues")}
+							</span>
 						</div>
 					</div>
 				</div>
 
 				<div className="grid grid-cols-2 divide-x rounded-b-md border border-t-0">
 					<div className="px-5 py-4 text-sm leading-7 text-muted-foreground">
-						Excluding merges,{" "}
-						<strong className="font-semibold text-foreground">
-							{pulse?.authors ?? 0}{" "}
-							{(pulse?.authors ?? 0) === 1 ? "author" : "authors"}
-						</strong>{" "}
-						has pushed{" "}
-						<strong className="font-semibold text-foreground">
-							{pulse?.commits ?? 0}{" "}
-							{(pulse?.commits ?? 0) === 1 ? "commit" : "commits"}
-						</strong>{" "}
-						to{" "}
-						<strong className="font-semibold text-foreground">
-							{pulse?.defaultBranch ?? repoData?.defaultBranch ?? "main"}
-						</strong>{" "}
-						and{" "}
-						<strong className="font-semibold text-foreground">
-							{pulse?.commits ?? 0}{" "}
-							{(pulse?.commits ?? 0) === 1 ? "commit" : "commits"}
-						</strong>{" "}
-						to all branches. On{" "}
-						{pulse?.defaultBranch ?? repoData?.defaultBranch ?? "main"},{" "}
-						<strong className="font-semibold text-foreground">
-							{pulse?.filesChanged ?? 0} files
-						</strong>{" "}
-						have changed and there have been{" "}
-						<strong className="font-semibold text-green-500">
-							{pulse?.additions ?? 0} additions
-						</strong>{" "}
-						and{" "}
-						<strong className="font-semibold text-red-500">
-							{pulse?.deletions ?? 0} deletions
-						</strong>
-						.
+						{/*
+							`<Trans>` keeps this one sentence fully translatable (word
+							order lives in the catalog) while restoring the original
+							`<strong>` emphasis and the green/red colouring on the
+							addition and deletion counts. The named tags in the catalog
+							string are what the components map onto.
+						*/}
+						<Trans
+							i18nKey="insights.pulse.narrative.summaryTrans"
+							values={{
+								authors: t("insights.pulse.narrative.author", {
+									count: pulse?.authors ?? 0,
+								}),
+								commits: t("insights.pulse.narrative.commit", {
+									count: pulse?.commits ?? 0,
+								}),
+								secondCommits: t("insights.pulse.narrative.secondCommit", {
+									count: pulse?.commits ?? 0,
+								}),
+								branch:
+									pulse?.defaultBranch ?? repoData?.defaultBranch ?? "main",
+								files: t("insights.pulse.narrative.files", {
+									count: pulse?.filesChanged ?? 0,
+								}),
+								additions: t("insights.pulse.narrative.additions", {
+									count: pulse?.additions ?? 0,
+								}),
+								deletions: t("insights.pulse.narrative.deletions", {
+									count: pulse?.deletions ?? 0,
+								}),
+							}}
+							components={{
+								authors: <strong className="font-semibold text-foreground" />,
+								commits: <strong className="font-semibold text-foreground" />,
+								commits2: <strong className="font-semibold text-foreground" />,
+								branch: <strong className="font-semibold text-foreground" />,
+								files: <strong className="font-semibold text-foreground" />,
+								additions: <strong className="font-semibold text-green-500" />,
+								deletions: <strong className="font-semibold text-red-500" />,
+							}}
+						/>
 					</div>
 
 					<div className="px-5 py-2">
 						{topContributors.length === 0 ? (
 							<div className="flex h-[140px] items-center justify-center text-sm text-muted-foreground">
-								No commits yet.
+								{t("insights.pulse.noCommits")}
 							</div>
 						) : (
 							<ChartContainer config={chartConfig} className="h-[140px] w-full">

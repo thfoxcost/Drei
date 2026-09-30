@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
@@ -19,6 +20,7 @@ function getAvatarUrl(avatar: string | null): string | null {
 }
 
 function RouteComponent() {
+	const { t } = useTranslation();
 	const {
 		data: orgs = [],
 		isLoading,
@@ -34,9 +36,9 @@ function RouteComponent() {
 				</div>
 			) : isError ? (
 				<div className="flex flex-col items-center gap-3 text-muted-foreground">
-					<span>Failed to load organizations</span>
+					<span>{t("orgs.loadFailed")}</span>
 					<Button variant="outline" size="sm" onClick={() => refetch()}>
-						Retry
+						{t("orgs.retry")}
 					</Button>
 				</div>
 			) : (
@@ -69,7 +71,7 @@ function RouteComponent() {
 
 					<Link
 						to="/orgs/new"
-						aria-label="Create organization"
+						aria-label={t("orgs.create")}
 						className="flex size-40 shrink-0 items-center justify-center rounded-xl bg-accent transition-colors hover:bg-accent/80"
 					>
 						<Plus size={80} className="text-muted-foreground" />

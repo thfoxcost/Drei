@@ -12,6 +12,7 @@ import {
 	Pen,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -55,6 +56,7 @@ import type {
 } from "./content/types/conversation";
 
 function PRdetail({ pull }: { pull: string }) {
+	const { t } = useTranslation();
 	const { username, repo } = useParams({ strict: false });
 	const [activeTab, setActiveTab] = useState("conversation");
 	const [quoteText, setQuoteText] = useState("");
@@ -158,11 +160,13 @@ function PRdetail({ pull }: { pull: string }) {
 					body: JSON.stringify({ body }),
 				},
 			);
-			if (!res.ok) throw new Error("Failed to add comment");
-			toast.success("Comment added");
+			if (!res.ok) throw new Error(t("pulls.detail.addCommentFailed"));
+			toast.success(t("pulls.detail.commentAdded"));
 			await refresh();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error ? err.message : t("common.errors.somethingWentWrong"),
+			);
 		}
 	}
 
@@ -177,11 +181,13 @@ function PRdetail({ pull }: { pull: string }) {
 					body: JSON.stringify({ body }),
 				},
 			);
-			if (!res.ok) throw new Error("Failed to update comment");
-			toast.success("Comment updated");
+			if (!res.ok) throw new Error(t("pulls.detail.updateCommentFailed"));
+			toast.success(t("pulls.detail.commentUpdated"));
 			await refresh();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error ? err.message : t("common.errors.somethingWentWrong"),
+			);
 		}
 	}
 
@@ -194,11 +200,13 @@ function PRdetail({ pull }: { pull: string }) {
 					credentials: "include",
 				},
 			);
-			if (!res.ok) throw new Error("Failed to delete comment");
-			toast.success("Comment deleted");
+			if (!res.ok) throw new Error(t("pulls.detail.deleteCommentFailed"));
+			toast.success(t("pulls.detail.commentDeleted"));
 			await refresh();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error ? err.message : t("common.errors.somethingWentWrong"),
+			);
 		}
 	}
 
@@ -211,11 +219,13 @@ function PRdetail({ pull }: { pull: string }) {
 					credentials: "include",
 				},
 			);
-			if (!res.ok) throw new Error("Failed to delete review");
-			toast.success("Review deleted");
+			if (!res.ok) throw new Error(t("pulls.detail.deleteReviewFailed"));
+			toast.success(t("pulls.detail.reviewDeleted"));
 			await refresh();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error ? err.message : t("common.errors.somethingWentWrong"),
+			);
 		}
 	}
 
@@ -235,12 +245,14 @@ function PRdetail({ pull }: { pull: string }) {
 			);
 			if (!res.ok) {
 				const data = await res.json().catch(() => ({}));
-				throw new Error(data.error || "Failed to close pull request");
+				throw new Error(data.error || t("pulls.detail.closeFailed"));
 			}
-			toast.success("Pull request closed");
+			toast.success(t("pulls.detail.closedToast"));
 			await refresh();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error ? err.message : t("common.errors.somethingWentWrong"),
+			);
 		}
 	}
 
@@ -257,12 +269,14 @@ function PRdetail({ pull }: { pull: string }) {
 			);
 			if (!res.ok) {
 				const data = await res.json().catch(() => ({}));
-				throw new Error(data.error || "Failed to reopen pull request");
+				throw new Error(data.error || t("pulls.detail.reopenFailed"));
 			}
-			toast.success("Pull request reopened");
+			toast.success(t("pulls.detail.reopenedToast"));
 			await refresh();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error ? err.message : t("common.errors.somethingWentWrong"),
+			);
 		}
 	}
 
@@ -282,12 +296,14 @@ function PRdetail({ pull }: { pull: string }) {
 					body: JSON.stringify({ title: trimmed, description: pr.description ?? "" }),
 				},
 			);
-			if (!res.ok) throw new Error("Failed to update title");
-			toast.success("Title updated");
+			if (!res.ok) throw new Error(t("pulls.detail.updateTitleFailed"));
+			toast.success(t("pulls.detail.titleUpdated"));
 			setIsEditingTitle(false);
 			await refresh();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error ? err.message : t("common.errors.somethingWentWrong"),
+			);
 		}
 	}
 
@@ -419,10 +435,10 @@ function PRdetail({ pull }: { pull: string }) {
 		return (
 			<div className="flex flex-col items-center gap-2 p-10">
 				<p className="text-sm text-muted-foreground">
-					Failed to load pull request.
+					{t("pulls.detail.loadFailed")}
 				</p>
 				<Button variant="outline" onClick={() => refresh()}>
-					Retry
+					{t("common.actions.retry")}
 				</Button>
 			</div>
 		);
@@ -443,10 +459,10 @@ function PRdetail({ pull }: { pull: string }) {
 		mergePullRequest(undefined, {
 			onSuccess: () => {
 				justMerged.current = true;
-				toast.success("Pull request merged");
+				toast.success(t("pulls.detail.mergedToast"));
 			},
 			onError: (err) => {
-				toast.error(err.message || "Failed to merge");
+				toast.error(err.message || t("pulls.detail.mergeFailed"));
 			},
 		});
 	}
@@ -454,10 +470,10 @@ function PRdetail({ pull }: { pull: string }) {
 	function handleRevert() {
 		revertMerge(undefined, {
 			onSuccess: () => {
-				toast.success("Pull request reverted");
+				toast.success(t("pulls.detail.revertedToast"));
 			},
 			onError: (err) => {
-				toast.error(err.message || "Failed to revert");
+				toast.error(err.message || t("pulls.detail.revertFailed"));
 			},
 		});
 	}
@@ -490,7 +506,7 @@ function PRdetail({ pull }: { pull: string }) {
 						{isOpen && mergeState === "checking" && (
 							<Button variant="outline" disabled>
 								<Spinner className="size-4" />
-								Checking...
+								{t("pulls.detail.checking")}
 							</Button>
 						)}
 
@@ -507,7 +523,7 @@ function PRdetail({ pull }: { pull: string }) {
 									height="24"
 									viewBox="0 0 24 24"
 									role="img"
-									aria-label="Mergeable"
+									aria-label={t("pulls.detail.mergeable")}
 								>
 									<g fill="none">
 										<path
@@ -518,7 +534,7 @@ function PRdetail({ pull }: { pull: string }) {
 										/>
 									</g>
 								</svg>
-								Merge pull request
+								{t("pulls.detail.merge")}
 							</Button>
 						)}
 
@@ -531,7 +547,7 @@ function PRdetail({ pull }: { pull: string }) {
 									height="24"
 									viewBox="0 0 24 24"
 									role="img"
-									aria-label="Conflicts"
+									aria-label={t("pulls.detail.conflicts")}
 								>
 									<g fill="none">
 										<path
@@ -542,7 +558,7 @@ function PRdetail({ pull }: { pull: string }) {
 										/>
 									</g>
 								</svg>
-								{mergeabilityData?.error ?? "Conflicts"}
+								{mergeabilityData?.error ?? t("pulls.detail.conflicts")}
 							</Button>
 						)}
 
@@ -566,8 +582,8 @@ function PRdetail({ pull }: { pull: string }) {
 							variant="secondary"
 							className="h-7 gap-1.5 bg-green-600 text-sm text-foreground"
 						>
-							<GitPullRequest className="size-4 shrink-0" />
-							<span className="font-bold">Open</span>
+						<GitPullRequest className="size-4 shrink-0" />
+						<span className="font-bold">{t("pulls.state.open")}</span>
 						</Badge>
 					)}
 
@@ -576,8 +592,8 @@ function PRdetail({ pull }: { pull: string }) {
 							variant="secondary"
 							className="h-7 gap-1.5 bg-purple-700 text-sm text-foreground"
 						>
-							<GitMerge className="size-4 shrink-0" />
-							<span className="font-bold">Merged</span>
+						<GitMerge className="size-4 shrink-0" />
+						<span className="font-bold">{t("pulls.state.merged")}</span>
 						</Badge>
 					)}
 
@@ -586,8 +602,8 @@ function PRdetail({ pull }: { pull: string }) {
 							variant="secondary"
 							className="h-7 gap-1.5 bg-red-600 text-sm text-foreground"
 						>
-							<GitPullRequestClosed className="size-4 shrink-0" />
-							<span className="font-bold">Closed</span>
+						<GitPullRequestClosed className="size-4 shrink-0" />
+						<span className="font-bold">{t("pulls.state.closed")}</span>
 						</Badge>
 					)}
 
@@ -595,8 +611,12 @@ function PRdetail({ pull }: { pull: string }) {
 						<span className="font-semibold underline">
 							{pr.author.username}
 						</span>{" "}
-						{isMerged ? "merged" : "wants to merge"} into{" "}
-						<ReuiBadge variant="save-info">{pr.targetBranch}</ReuiBadge> from{" "}
+						{isMerged
+							? t("pulls.state.mergedLower")
+							: t("pulls.state.wantsToMerge")}{" "}
+						{t("pulls.state.into")}{" "}
+						<ReuiBadge variant="save-info">{pr.targetBranch}</ReuiBadge>{" "}
+						{t("pulls.state.from")}{" "}
 						<ReuiBadge variant="save-info">{pr.sourceBranch}</ReuiBadge>
 					</span>
 
@@ -606,7 +626,7 @@ function PRdetail({ pull }: { pull: string }) {
 						className="text-muted-foreground"
 						onClick={() => {
 							navigator.clipboard.writeText(pr.sourceBranch);
-							toast.success("Branch name copied");
+							toast.success(t("pulls.detail.branchCopied"));
 						}}
 					>
 						<Copy />
@@ -635,8 +655,8 @@ function PRdetail({ pull }: { pull: string }) {
 										gap-1.5
 									"
 								>
-									<MessageSquare className="size-4" />
-									Conversation
+								<MessageSquare className="size-4" />
+								{t("pulls.detail.tabs.conversation")}
 									<Badge
 										variant="secondary"
 										className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
@@ -658,8 +678,8 @@ function PRdetail({ pull }: { pull: string }) {
 										gap-1.5
 									"
 								>
-									<GitCommit className="size-4" />
-									Commits
+								<GitCommit className="size-4" />
+								{t("pulls.detail.tabs.commits")}
 									<Badge
 										variant="secondary"
 										className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
@@ -682,8 +702,8 @@ function PRdetail({ pull }: { pull: string }) {
 										gap-1.5
 									"
 								>
-									<ListChecks className="size-4" />
-									Checks
+								<ListChecks className="size-4" />
+								{t("pulls.detail.tabs.checks")}
 									<Badge
 										variant="secondary"
 										className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
@@ -705,8 +725,8 @@ function PRdetail({ pull }: { pull: string }) {
 										gap-1.5
 									"
 								>
-									<FileDiff className="size-4" />
-									Files changed
+								<FileDiff className="size-4" />
+								{t("pulls.detail.tabs.files")}
 									<Badge
 										variant="secondary"
 										className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs font-medium"
@@ -947,11 +967,11 @@ function PRdetail({ pull }: { pull: string }) {
 							/>
 						</TabsContent>
 
-						<TabsContent value="checks">
-							<p className="text-sm text-muted-foreground">
-								Checks for this pull request go here.
-							</p>
-						</TabsContent>
+					<TabsContent value="checks">
+						<p className="text-sm text-muted-foreground">
+							{t("pulls.detail.checksEmpty")}
+						</p>
+					</TabsContent>
 
 						<TabsContent value="changes">
 							<Changedfiles owner={username} repo={repo} pullNumber={number} />

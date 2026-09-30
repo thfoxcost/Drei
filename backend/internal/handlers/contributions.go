@@ -49,13 +49,13 @@ func UserContributionsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	username := r.PathValue("username")
 	if username == "" {
-		writeError(w, http.StatusBadRequest, "username is required")
+		writeErrorCoded(w, http.StatusBadRequest, "username_required", "username is required")
 		return
 	}
 
@@ -63,7 +63,7 @@ func UserContributionsHandler(w http.ResponseWriter, r *http.Request) {
 	if raw := r.URL.Query().Get("year"); raw != "" {
 		parsed, err := strconv.Atoi(raw)
 		if err != nil || parsed < 1970 || parsed > 2100 {
-			writeError(w, http.StatusBadRequest, "invalid year")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_year", "invalid year")
 			return
 		}
 		year = parsed
@@ -71,7 +71,7 @@ func UserContributionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	ident, err := database.GetContributionIdentity(username)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeErrorCoded(w, http.StatusNotFound, "user_not_found", "user not found")
 		return
 	}
 

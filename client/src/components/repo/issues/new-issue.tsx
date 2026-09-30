@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { Check, Circle, Settings, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { Contributor } from "#/components/repo/contributor-avatars";
 import { MarkdownEditor } from "#/components/repo/issues/markdown-editor";
@@ -31,7 +32,7 @@ type IssueLabel = {
 
 type LabelOption = {
 	name: string;
-	description: string;
+	descriptionKey: string;
 	dot: string;
 };
 
@@ -48,37 +49,37 @@ const labelStyles: Record<string, string> = {
 const labelOptions: LabelOption[] = [
 	{
 		name: "bug",
-		description: "Something isn't working correctly",
+		descriptionKey: "issues.labelPresets.bug",
 		dot: "fill-red-500 text-red-500",
 	},
 	{
 		name: "documentation",
-		description: "Documentation improvements or updates",
+		descriptionKey: "issues.labelPresets.documentation",
 		dot: "fill-blue-500 text-blue-500",
 	},
 	{
 		name: "duplicate",
-		description: "This issue already exists",
+		descriptionKey: "issues.labelPresets.duplicate",
 		dot: "fill-gray-400 text-gray-400",
 	},
 	{
 		name: "enhancement",
-		description: "A new feature or improvement",
+		descriptionKey: "issues.labelPresets.enhancement",
 		dot: "fill-cyan-500 text-cyan-500",
 	},
 	{
 		name: "good first issue",
-		description: "Good for new contributors",
+		descriptionKey: "issues.labelPresets.goodFirstIssue",
 		dot: "fill-violet-500 text-violet-500",
 	},
 	{
 		name: "question",
-		description: "Further information is needed",
+		descriptionKey: "issues.labelPresets.question",
 		dot: "fill-pink-500 text-pink-500",
 	},
 	{
 		name: "invalid",
-		description: "This issue doesn't seem valid",
+		descriptionKey: "issues.labelPresets.invalid",
 		dot: "fill-yellow-500 text-yellow-500",
 	},
 ];
@@ -88,6 +89,7 @@ function getInitials(name: string): string {
 }
 
 function NewIssue() {
+	const { t } = useTranslation();
 	const { username, repo } = useParams({ strict: false });
 	const navigate = useNavigate();
 	const { data: session } = authClient.useSession();
@@ -116,7 +118,7 @@ function NewIssue() {
 			const res = await fetch(
 				`http://localhost:3200/api/repos/${username}/${repo}/labels`,
 			);
-			if (!res.ok) throw new Error("Failed to fetch labels");
+			if (!res.ok) throw new Error(t("issues.labels.fetchFailed"));
 			const json = (await res.json()) as {
 				labels?: { name: string; color: string | null }[];
 			};
@@ -139,7 +141,7 @@ function NewIssue() {
 
 			return {
 				name: label.name,
-				description: option?.description ?? "Label on this repository",
+				descriptionKey: option?.descriptionKey ?? "issues.labels.defaultLabel",
 				dot: option?.dot ?? "fill-gray-400 text-gray-400",
 			};
 		});
@@ -197,7 +199,7 @@ function NewIssue() {
 		if (!canSubmit) return;
 
 		if (!session?.user.id) {
-			toast.error("You must be signed in to create an issue");
+			toast.error(t("issues.new.signInRequired"));
 			return;
 		}
 
@@ -225,17 +227,21 @@ function NewIssue() {
 
 			if (!res.ok) {
 				throw new Error(
-					result.error || result.message || "Failed to create issue",
+					result.error || result.message || t("issues.new.createFailed"),
 				);
 			}
 
-			toast.success(`Issue #${result.number} created`);
+			toast.success(t("issues.new.createdToast", { number: result.number }));
 
 			navigate({
 				to: `/${username}/${repo}/issues/${result.number}`,
 			});
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error
+					? err.message
+					: t("common.errors.somethingWentWrong"),
+			);
 		} finally {
 			setSubmitting(false);
 		}
@@ -256,7 +262,7 @@ function NewIssue() {
 					</AvatarFallback>
 				</Avatar>
 
-				<span className="font-semibold">Create new issue</span>
+				<span className="font-semibold">{t("issues.new.heading")}</span>
 			</div>
 
 			<div className="mt-4 grid grid-cols-1 items-start gap-8 md:grid-cols-[1fr_240px] mx-10">
@@ -265,14 +271,14 @@ function NewIssue() {
 					{/* Title */}
 					<div className="space-y-2">
 						<Label htmlFor="issue-title">
-							Add a title
+							{t("issues.new.titleLabel")}
 							<span className="text-destructive">*</span>
 						</Label>
 
 						<Input
 							id="issue-title"
 							type="text"
-							placeholder="Issue title"
+							placeholder={t("issues.new.titlePlaceholder")}
 							maxLength={200}
 							value={title}
 							onChange={(e) => setTitle(e.target.value)}
@@ -282,12 +288,14 @@ function NewIssue() {
 
 					{/* Description */}
 					<div className="space-y-2">
-						<Label htmlFor="issue-description">Add a description</Label>
+						<Label htmlFor="issue-description">
+							{t("issues.new.descriptionLabel")}
+						</Label>
 
 						<MarkdownEditor
 							id="issue-description"
 							uploadUrl={`http://localhost:3200/api/repos/${username}/${repo}/issues/images`}
-							placeholder="Type your description here... Supports Markdown and image uploads."
+							placeholder={t("issues.new.descriptionPlaceholder")}
 							value={description}
 							onChange={setDescription}
 							disabled={submitting}
@@ -304,7 +312,7 @@ function NewIssue() {
 								})
 							}
 						>
-							Cancel
+							{t("common.actions.cancel")}
 						</Button>
 
 						<Button
@@ -315,10 +323,10 @@ function NewIssue() {
 							{submitting ? (
 								<>
 									<Spinner />
-									<span className="ml-2">Creating...</span>
+									<span className="ml-2">{t("issues.new.creating")}</span>
 								</>
 							) : (
-								"Create issue"
+								t("issues.new.create")
 							)}
 						</Button>
 					</div>
@@ -333,7 +341,9 @@ function NewIssue() {
 								variant="ghost"
 								className="flex w-full items-center justify-between px-2 text-muted-foreground"
 							>
-								<span className="text-xs font-bold">Assignees</span>
+								<span className="text-xs font-bold">
+									{t("issues.new.assignees")}
+								</span>
 
 								<Settings className="size-4" />
 							</Button>
@@ -341,10 +351,12 @@ function NewIssue() {
 
 						<DropdownMenuContent className="w-60 p-1">
 							<DropdownMenuGroup>
-								<DropdownMenuLabel>Select Assignees</DropdownMenuLabel>
+								<DropdownMenuLabel>
+									{t("issues.new.selectAssignees")}
+								</DropdownMenuLabel>
 
 								<Input
-									placeholder="Filter assignees"
+									placeholder={t("issues.new.filterAssignees")}
 									value={assigneeQuery}
 									onChange={(e) => setAssigneeQuery(e.target.value)}
 								/>
@@ -355,7 +367,7 @@ function NewIssue() {
 							<DropdownMenuGroup>
 								{filteredContributors.length === 0 ? (
 									<DropdownMenuItem disabled>
-										No contributors found
+										{t("issues.filters.noContributors")}
 									</DropdownMenuItem>
 								) : (
 									filteredContributors.map((contributor) => (
@@ -394,7 +406,7 @@ function NewIssue() {
 					<div className="mt-1">
 						{assignees.length === 0 ? (
 							<span className="px-2 text-xs text-muted-foreground">
-								No one assigned
+								{t("issues.new.noOneAssigned")}
 							</span>
 						) : (
 							assignees.map((assignee) => (
@@ -402,7 +414,7 @@ function NewIssue() {
 									key={assignee.id}
 									variant="ghost"
 									className="w-full justify-between text-xs"
-									title="Remove assignee"
+									title={t("issues.new.removeAssignee")}
 									onClick={() => toggleAssignee(assignee)}
 								>
 									<span className="flex items-center gap-2">
@@ -437,7 +449,9 @@ function NewIssue() {
 									variant="ghost"
 									className="flex w-full items-center justify-between px-2 text-muted-foreground"
 								>
-									<span className="text-xs font-bold">Labels</span>
+									<span className="text-xs font-bold">
+										{t("issues.new.labels")}
+									</span>
 
 									<Settings className="size-4" />
 								</Button>
@@ -446,11 +460,11 @@ function NewIssue() {
 							<DropdownMenuContent className="w-72 p-1">
 								<DropdownMenuGroup>
 									<DropdownMenuLabel className="px-2 py-1.5">
-										Select labels
+										{t("issues.new.selectLabels")}
 									</DropdownMenuLabel>
 
 									<Input
-										placeholder="Filter labels"
+										placeholder={t("issues.new.filterLabels")}
 										className="h-8"
 										value={labelQuery}
 										onChange={(e) => setLabelQuery(e.target.value)}
@@ -473,7 +487,7 @@ function NewIssue() {
 												</div>
 
 												<span className="pl-5 text-[11px] leading-tight text-muted-foreground">
-													{label.description}
+													{t(label.descriptionKey)}
 												</span>
 											</DropdownMenuItem>
 
@@ -485,7 +499,7 @@ function NewIssue() {
 
 									{filteredLabels.length === 0 && (
 										<DropdownMenuItem disabled>
-											No labels found
+											{t("issues.new.noLabelsFound")}
 										</DropdownMenuItem>
 									)}
 								</DropdownMenuGroup>
@@ -495,7 +509,7 @@ function NewIssue() {
 						{/* Selected labels */}
 						{labels.length === 0 ? (
 							<span className="px-2 text-xs text-muted-foreground">
-								No labels
+								{t("issues.new.noLabels")}
 							</span>
 						) : (
 							<div className="flex flex-wrap gap-1.5 px-2">

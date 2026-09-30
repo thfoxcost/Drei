@@ -1,5 +1,6 @@
 import { useParams } from "@tanstack/react-router";
 import { CloudBackup } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import {
@@ -16,20 +17,10 @@ import {
 	useRunBackup,
 	useToggleBackup,
 } from "#/hooks/useBackup";
-
-function formatBytes(bytes: number): string {
-	if (!bytes) return "0 B";
-	const units = ["B", "KB", "MB", "GB"];
-	let value = bytes;
-	let unit = 0;
-	while (value >= 1024 && unit < units.length - 1) {
-		value /= 1024;
-		unit += 1;
-	}
-	return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
-}
+import { formatBytes, formatDateTime } from "#/i18n/lib/format";
 
 function Backup() {
+	const { t } = useTranslation();
 	const { username, repo } = useParams({ strict: false });
 	const { data, isLoading } = useBackupStatus(username, repo);
 	const toggle = useToggleBackup(username, repo);
@@ -41,28 +32,39 @@ function Backup() {
 	async function handleToggle() {
 		try {
 			await toggle.mutateAsync(!enabled);
-			toast.success(enabled ? "Backups disabled" : "Backups enabled");
+			toast.success(
+				enabled
+					? t("repo.settings.backup.disabledToast")
+					: t("repo.settings.backup.enabledToast"),
+			);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error
+					? err.message
+					: t("common.errors.somethingWentWrong"),
+			);
 		}
 	}
 
 	async function handleRun() {
 		try {
 			await run.mutateAsync();
-			toast.success("Backup created");
+			toast.success(t("repo.settings.backup.createdToast"));
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error
+					? err.message
+					: t("common.errors.somethingWentWrong"),
+			);
 		}
 	}
 
 	return (
 		<div className="max-w-3xl space-y-2">
-			<h1 className="text-2xl">Backup</h1>
+			<h1 className="text-2xl">{t("repo.settings.backup.title")}</h1>
 			<Separator className="my-2" />
 			<p className="text-muted-foreground">
-				Automatically back up this repository to protect your code and Git
-				history. Only the newest snapshot is kept.
+				{t("repo.settings.backup.description")}
 			</p>
 
 			<Alert className="my-7 max-w-5xl border-blue-500/30 bg-blue-500/10 text-blue-950 dark:text-blue-100">
@@ -70,27 +72,32 @@ function Backup() {
 
 				<AlertTitle>
 					{isLoading
-						? "Repository backup"
+						? t("repo.settings.backup.alertTitle")
 						: enabled
-							? "Backups enabled"
-							: "Repository backup"}
+							? t("repo.settings.backup.alertEnabled")
+							: t("repo.settings.backup.alertTitle")}
 				</AlertTitle>
 
 				<AlertDescription>
 					{isLoading ? (
-						"Loading backup status..."
+						t("repo.settings.backup.loading")
 					) : enabled ? (
 						data?.lastBackupAt ? (
 							<>
-								Last backup {new Date(data.lastBackupAt).toLocaleString()} (
-								{data.commitHash.slice(0, 7)}, {formatBytes(data.size)}) —{" "}
-								{data.isLatest ? "up to date." : "new commits available."}
+								{t("repo.settings.backup.lastBackup", {
+									date: formatDateTime(new Date(data.lastBackupAt)),
+									hash: data.commitHash.slice(0, 7),
+									size: formatBytes(data.size),
+								})}
+								{data.isLatest
+									? t("repo.settings.backup.upToDate")
+									: t("repo.settings.backup.newCommits")}
 							</>
 						) : (
-							"No backup created yet. Run the first backup to protect this repository."
+							t("repo.settings.backup.noBackup")
 						)
 					) : (
-						"Enable backups to protect your code and Git history."
+						t("repo.settings.backup.enableHint")
 					)}
 				</AlertDescription>
 
@@ -104,10 +111,12 @@ function Backup() {
 							{run.isPending ? (
 								<>
 									<Spinner />
-									<span className="ml-2">Backing up...</span>
+									<span className="ml-2">
+										{t("repo.settings.backup.backingUp")}
+									</span>
 								</>
 							) : (
-								"Back up now"
+								t("repo.settings.backup.backupNow")
 							)}
 						</Button>
 					)}
@@ -119,12 +128,12 @@ function Backup() {
 						{toggle.isPending ? (
 							<>
 								<Spinner />
-								<span className="ml-2">Saving...</span>
+								<span className="ml-2">{t("common.actions.saving")}</span>
 							</>
 						) : enabled ? (
-							"Disable"
+							t("repo.settings.backup.disable")
 						) : (
-							"Enable"
+							t("repo.settings.backup.enable")
 						)}
 					</Button>
 				</AlertAction>

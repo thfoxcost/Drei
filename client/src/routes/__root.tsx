@@ -10,6 +10,7 @@ import { ThemeProvider } from '#/components/theme-provider'
 import { TooltipProvider } from "#/components/ui/tooltip"
 import { PresenceHeartbeat } from '#/components/presence-heartbeat'
 import { TodoProvider } from '#/components/todo-provider'
+import { LocaleProvider } from "#/i18n/locale-provider"
 
 export const Route = createRootRoute({
   head: () => ({
@@ -27,8 +28,7 @@ export const Route = createRootRoute({
       {
         name: 'description',
         content: 'Self-hosted git platform for repositories, issues, and pull requests.',
-      },
-      {
+      },      {
         name: 'theme-color',
         content: '#0a0a0a',
       },
@@ -79,28 +79,35 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        {/*
+          `lang` is the server-rendered default. `LocaleProvider` stamps the
+          real value with a pre-paint script and then keeps it in sync, so
+          screen readers and hyphenation see the right language immediately.
+        */}
         <ThemeProvider defaultTheme="system" storageKey="theme">
-          <TooltipProvider>
-            <QueryClientProvider client={queryClient}>
-              <TodoProvider>
-                {children}
-                <PresenceHeartbeat />
-              </TodoProvider>
-            </QueryClientProvider>
-            <Toaster />
-            <TanStackDevtools
-              config={{
-                position: 'top-right',
-              }}
-              plugins={[
-                {
-                  name: 'Tanstack Router',
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-              ]}
-            />
-            <Scripts />
-          </TooltipProvider>
+          <LocaleProvider>
+            <TooltipProvider>
+              <QueryClientProvider client={queryClient}>
+                <TodoProvider>
+                  {children}
+                  <PresenceHeartbeat />
+                </TodoProvider>
+              </QueryClientProvider>
+              <Toaster />
+              <TanStackDevtools
+                config={{
+                  position: 'top-right',
+                }}
+                plugins={[
+                  {
+                    name: 'Tanstack Router',
+                    render: <TanStackRouterDevtoolsPanel />,
+                  },
+                ]}
+              />
+              <Scripts />
+            </TooltipProvider>
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

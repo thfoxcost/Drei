@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next"
+import { i18n } from "#/i18n/i18n"
+import { authErrorMessage } from "#/i18n/lib/api-error"
 import { useSound } from "@/hooks/use-sound";
 import { useForm } from "@tanstack/react-form";
 import { Field, FieldLabel, FieldError, FieldDescription } from "@/components/ui/field";
@@ -18,13 +21,19 @@ import { authClient } from "@/lib/auth-client";
 import { error006Sound } from "@/sounds/error-006";
 import { confirmation001Sound } from "@/sounds/confirmation-001";
 
-const formSchema = z.object({
-	email: z.email("invalid email"),
-	password: z.string().min(8, "Password must be at least 8 characters."),
-	callbackURL: z.string(),
-});
+// Built per submit so validation messages follow the active language.
+const getFormSchema = () =>
+	z.object({
+		email: z.email(i18n.t("auth.email.invalid") as string),
+		password: z.string().min(
+			8,
+			i18n.t("auth.password.tooShort") as string,
+		),
+		callbackURL: z.string(),
+	});
 
 export function SignInPage() {
+	const { t } = useTranslation();
 	const [playSuccess] = useSound(confirmation001Sound);
 	const [playError] = useSound(error006Sound);
 
@@ -35,7 +44,7 @@ export function SignInPage() {
 			callbackURL: "/",
 		},
 		validators: {
-			onSubmit: formSchema,
+			onSubmit: getFormSchema(),
 		},
 		onSubmit: async ({ value }) => {
 			await authClient.signIn.email(
@@ -48,12 +57,12 @@ export function SignInPage() {
 				{
                     onSuccess: () => {
                         playSuccess();
-                        toast.success(`Welcome Back !`);
+                        toast.success(t("auth.signIn.welcome"));
                          window.location.href = value.callbackURL;
                     },
 					onError: (ctx) => {
 						playError();
-						toast.error(ctx.error.message);
+						toast.error(authErrorMessage(ctx.error));
 					},
 				}
 			);
@@ -78,7 +87,7 @@ export function SignInPage() {
 
 				<div className="w-full max-w-sm animate-in">
 					<div className="mb-5">
-						<img src="/logo.svg" width="70" alt="logo" className="mx-auto" />
+						<img src="/logo.svg" width="70" alt={t("auth.logoAlt")} className="mx-auto" />
 					</div>
 					<div className="space-y-4">
 						<form
@@ -96,7 +105,7 @@ export function SignInPage() {
 										field.state.meta.isTouched && !field.state.meta.isValid;
 									return (
 										<Field data-invalid={isInvalid}>
-											<FieldLabel htmlFor={field.name}>Email</FieldLabel>
+											<FieldLabel htmlFor={field.name}>{t("auth.email.label")}</FieldLabel>
 											<InputGroup>
 												<InputGroupInput
 													id={field.name}
@@ -105,7 +114,7 @@ export function SignInPage() {
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e.target.value)}
 													aria-invalid={isInvalid}
-													placeholder="example@email.com"
+													placeholder={t("auth.email.placeholder")}
 													autoComplete="off"
 												/>
 												<InputGroupAddon align="inline-start">
@@ -127,7 +136,7 @@ export function SignInPage() {
 										field.state.meta.isTouched && !field.state.meta.isValid;
 									return (
 										<Field data-invalid={isInvalid}>
-											<FieldLabel htmlFor={field.name}>Password</FieldLabel>
+											<FieldLabel htmlFor={field.name}>{t("auth.password.label")}</FieldLabel>
 											<InputGroup>
 												<InputGroupInput
 													id={field.name}
@@ -136,7 +145,7 @@ export function SignInPage() {
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e.target.value)}
 													aria-invalid={isInvalid}
-													placeholder="Password"
+													placeholder={t("auth.password.placeholder")}
 													type="password"
 													autoComplete="current-password"
 												/>
@@ -153,10 +162,10 @@ export function SignInPage() {
 							/>
 
 							<Button className="w-full mt-1" size="default" type="submit">
-								Continue With Email
+								{t("auth.signIn.submit")}
 							</Button>
 						</form>
-						<AuthDivider>OR</AuthDivider>
+						<AuthDivider>{t("auth.divider")}</AuthDivider>
 						<div className="grid grid-cols-1 gap-2 space-y-2">
 							<Button className="w-full" type="button" variant="outline">
 								<GithubIcon data-icon="inline-start" />
@@ -164,7 +173,7 @@ export function SignInPage() {
 							</Button>
 						</div>
 						<FieldDescription className="text-center">
-							Don&apos;t have an account? <a href="/signup">Sign up</a>
+							{t("auth.signIn.noAccount")} <a href="/signup">{t("auth.signIn.signUpLink")}</a>
 						</FieldDescription>
 					</div>
 				</div>

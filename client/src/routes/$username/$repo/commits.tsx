@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
 	createFileRoute,
 	Outlet,
@@ -40,6 +41,7 @@ import {
 } from "#/components/ui/popover";
 import { Spinner } from "#/components/ui/spinner";
 import { useRepoData } from "#/hooks/useRepoData";
+import { dateFnsLocale } from "#/i18n/lib/format";
 import { absoluteDate } from "#/lib/time-ago";
 import type { Commit } from "#/types/repo";
 import { Separator } from "#/components/ui/separator";
@@ -73,10 +75,12 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-function formatDateRange(range?: DateRange): string {
-  if (!range?.from) return "Date";
-  if (!range.to) return format(range.from, "MMM d, yyyy");
-  return `${format(range.from, "MMM d, yyyy")} - ${format(range.to, "MMM d, yyyy")}`;
+function formatDateRange(range: DateRange | undefined, fallback: string): string {
+  if (!range?.from) return fallback;
+  if (!range.to) {
+    return format(range.from, "MMM d, yyyy", { locale: dateFnsLocale() });
+  }
+  return `${format(range.from, "MMM d, yyyy", { locale: dateFnsLocale() })} - ${format(range.to, "MMM d, yyyy", { locale: dateFnsLocale() })}`;
 }
 
 interface UsersFilterProps {
@@ -94,6 +98,7 @@ function UsersFilter({
   onQueryChange,
   onSelect,
 }: UsersFilterProps) {
+  const { t } = useTranslation();
   const filteredContributors = contributors.filter((contributor) =>
     contributor.username.toLowerCase().includes(query.trim().toLowerCase()),
   );
@@ -103,7 +108,7 @@ function UsersFilter({
       <DropdownMenuTrigger asChild>
         <Button variant="outline">
           <Users className="h-4 w-4" />
-          {selected ?? "Users"}
+          {selected ?? t("pulls.filters.users")}
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
@@ -111,7 +116,7 @@ function UsersFilter({
       <DropdownMenuContent className="w-60">
         <DropdownMenuGroup>
           <Input
-            placeholder="Search users"
+            placeholder={t("repo.commits.searchUsers")}
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
           />
@@ -128,7 +133,7 @@ function UsersFilter({
           >
             <span className="flex items-center gap-2">
               {!selected && <Check size={14} />}
-              Any user
+              {t("repo.commits.anyUser")}
             </span>
           </DropdownMenuItem>
 
@@ -159,7 +164,7 @@ function UsersFilter({
           ))}
 
           {filteredContributors.length === 0 && (
-            <DropdownMenuItem disabled>No users found</DropdownMenuItem>
+            <DropdownMenuItem disabled>{t("pulls.filters.noUsers")}</DropdownMenuItem>
           )}
         </DropdownMenuGroup>
       </DropdownMenuContent>
@@ -173,6 +178,7 @@ interface DateFilterProps {
 }
 
 function DateFilter({ value, onChange }: DateFilterProps) {
+  const { t } = useTranslation();
   const hasSelection = Boolean(value?.from);
 
   return (
@@ -181,7 +187,7 @@ function DateFilter({ value, onChange }: DateFilterProps) {
         <PopoverTrigger asChild>
           <Button variant="outline">
             <CalendarIcon className="h-4 w-4" />
-            <span>{formatDateRange(value)}</span>
+            <span>{formatDateRange(value, t("repo.commits.dateLabel"))}</span>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </Button>
         </PopoverTrigger>
@@ -201,7 +207,7 @@ function DateFilter({ value, onChange }: DateFilterProps) {
                 size="sm"
                 onClick={() => onChange(undefined)}
               >
-                Clear
+                {t("common.actions.clear")}
               </Button>
             </div>
           )}
@@ -212,7 +218,7 @@ function DateFilter({ value, onChange }: DateFilterProps) {
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="Clear date filter"
+          aria-label={t("repo.commits.clearDateFilter")}
           onClick={() => onChange(undefined)}
         >
           <X className="h-3.5 w-3.5" />
@@ -223,6 +229,7 @@ function DateFilter({ value, onChange }: DateFilterProps) {
 }
 
 function RouteComponent() {
+	const { t } = useTranslation();
 	const { username, repo }: { username: string; repo: string } =
 		Route.useParams();
 	const { ref } = Route.useSearch();
@@ -280,10 +287,14 @@ function RouteComponent() {
       const date = parsed ?? new Date(commit.date);
       const valid = !Number.isNaN(date.getTime());
 
-      const dateKey = valid ? format(date, "yyyy-MM-dd") : `raw:${commit.date}`;
-      const label = valid
-        ? `Commits on ${format(date, "MMM d, yyyy")}`
-        : `Commits on ${absoluteDate(commit.date)}`;
+      const dateKey = valid
+        ? format(date, "yyyy-MM-dd", { locale: dateFnsLocale() })
+        : `raw:${commit.date}`;
+      const label = t("pulls.commits.onDate", {
+        date: valid
+          ? format(date, "MMM d, yyyy", { locale: dateFnsLocale() })
+          : absoluteDate(commit.date),
+      });
 
       let group = byKey.get(dateKey);
 
@@ -297,7 +308,7 @@ function RouteComponent() {
     }
 
     return groups;
-  }, [filteredCommits]);
+  }, [filteredCommits, t]);
 
   if (isCommitDetail) {
     return <Outlet />;
@@ -334,7 +345,7 @@ function RouteComponent() {
 
   return (
     <div className="mx-30 my-3">
-      <h1 className="text-2xl">Commits</h1>
+      <h1 className="text-2xl">{t("repo.table.commits")}</h1>
       <Separator className='my-2 mb-4' />
 
 		<div className="my-2 flex flex-row items-center justify-between gap-2">
@@ -371,7 +382,7 @@ function RouteComponent() {
       <div>
         {groupedCommits.length === 0 ? (
           <p className="p-10 text-center text-sm text-muted-foreground">
-            No commits found matching the current filters.
+            {t("repo.commits.noMatch")}
           </p>
         ) : (
           <div className="space-y-[-4px]">

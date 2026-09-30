@@ -1,4 +1,8 @@
-"use client";
+import { useTranslation } from "react-i18next";
+
+import { dateFnsLocale } from "#/i18n/lib/format";
+
+("use client");
 
 import { Link } from "@tanstack/react-router";
 import { format, formatDistanceToNowStrict } from "date-fns";
@@ -193,7 +197,10 @@ function OwnerHover({
 								<span>—</span>
 							)}
 							<span>
-								Joined {format(new Date(person.joinedAt), "MMM, yyyy")}
+								Joined{" "}
+								{format(new Date(person.joinedAt), "MMM, yyyy", {
+									locale: dateFnsLocale(),
+								})}
 							</span>
 						</div>
 					</div>
@@ -206,6 +213,7 @@ function OwnerHover({
 }
 
 export function ReposTable() {
+	const { t } = useTranslation();
 	const { data: repos = [], isLoading, isError, refetch } = useAllRepos();
 	const { data: people = [] } = usePeople();
 	const peopleByName = useMemo(() => {
@@ -275,15 +283,19 @@ export function ReposTable() {
 	}
 
 	const typeLabel =
-		type === "all" ? "Type" : type === "source" ? "Source" : "Forked";
-	const languageLabel = language ?? "Language";
+		type === "all"
+			? t("people.reposTable.filterTypeLabel")
+			: type === "source"
+				? t("repositories.types.source")
+				: t("repositories.types.forked");
+	const languageLabel = language ?? t("people.reposTable.filterLanguageLabel");
 
 	if (isLoading) {
 		return (
 			<Card className="p-0">
 				<div className="flex items-center justify-center gap-2 p-10 text-muted-foreground">
 					<Spinner />
-					<span>Loading repositories...</span>
+					<span>{t("people.reposTable.loading")}</span>
 				</div>
 			</Card>
 		);
@@ -294,10 +306,10 @@ export function ReposTable() {
 			<Card className="p-0">
 				<div className="flex flex-col items-center gap-2 p-10">
 					<p className="text-sm text-muted-foreground">
-						Failed to load repositories.
+						{t("people.reposTable.loadFailed")}
 					</p>
 					<Button variant="outline" size="sm" onClick={() => refetch()}>
-						Retry
+						{t("common.actions.retry")}
 					</Button>
 				</div>
 			</Card>
@@ -308,7 +320,7 @@ export function ReposTable() {
 		return (
 			<Card className="p-0">
 				<p className="p-10 text-center text-sm text-muted-foreground">
-					No repositories found.
+					{t("people.reposTable.empty")}
 				</p>
 			</Card>
 		);
@@ -322,7 +334,7 @@ export function ReposTable() {
 			<div className="flex flex-wrap items-center gap-2">
 				<InputGroup className="min-w-52 flex-1">
 					<InputGroupInput
-						placeholder="Search by name, owner, or description..."
+						placeholder={t("people.reposTable.searchPlaceholder")}
 						value={query}
 						onChange={(e) => {
 							setQuery(e.target.value);
@@ -333,7 +345,7 @@ export function ReposTable() {
 						<Search size={16} />
 					</InputGroupAddon>
 					<InputGroupAddon align="inline-end">
-						{sorted.length} result{sorted.length === 1 ? "" : "s"}
+						{t("common.counts.results", { count: sorted.length })}
 					</InputGroupAddon>
 				</InputGroup>
 
@@ -342,7 +354,7 @@ export function ReposTable() {
 						<Button
 							variant="outline"
 							className="gap-1.5"
-							aria-label="Filter by type"
+							aria-label={t("people.reposTable.filterType")}
 						>
 							{typeLabel}
 							<ChevronDown className="size-4 opacity-60" />
@@ -356,12 +368,14 @@ export function ReposTable() {
 								resetPage();
 							}}
 						>
-							<DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="all">
+								{t("repositories.types.all")}
+							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value="source">
-								Source
+								{t("repositories.types.source")}
 							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value="forked">
-								Forked
+								{t("repositories.types.forked")}
 							</DropdownMenuRadioItem>
 						</DropdownMenuRadioGroup>
 					</DropdownMenuContent>
@@ -372,7 +386,7 @@ export function ReposTable() {
 						<Button
 							variant="outline"
 							className="gap-1.5"
-							aria-label="Filter by language"
+							aria-label={t("people.reposTable.filterLanguage")}
 						>
 							{languageLabel}
 							<ChevronDown className="size-4 opacity-60" />
@@ -386,7 +400,9 @@ export function ReposTable() {
 								resetPage();
 							}}
 						>
-							<DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="all">
+								{t("repositories.types.all")}
+							</DropdownMenuRadioItem>
 							{availableLanguages.map((name) => (
 								<DropdownMenuRadioItem key={name} value={name}>
 									{name}
@@ -404,7 +420,7 @@ export function ReposTable() {
 							<tr className="border-b text-left font-medium text-muted-foreground">
 								<th className="px-3 py-2 whitespace-nowrap">
 									<SortHeader
-										label="Repository"
+										label={t("people.reposTable.columns.repository")}
 										sortKey="name"
 										activeKey={sortKey}
 										dir={sortDir}
@@ -412,20 +428,26 @@ export function ReposTable() {
 									/>
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
-									<PlainHeader label="Owner" />
+									<PlainHeader label={t("people.reposTable.columns.owner")} />
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
-									<PlainHeader label="Description" />
+									<PlainHeader
+										label={t("people.reposTable.columns.description")}
+									/>
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
-									<PlainHeader label="Language" />
+									<PlainHeader
+										label={t("people.reposTable.columns.language")}
+									/>
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
-									<PlainHeader label="Open issues" />
+									<PlainHeader
+										label={t("people.reposTable.columns.openIssues")}
+									/>
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
 									<SortHeader
-										label="Updated"
+										label={t("people.reposTable.columns.updated")}
 										sortKey="updated"
 										activeKey={sortKey}
 										dir={sortDir}
@@ -505,7 +527,7 @@ export function ReposTable() {
 										colSpan={6}
 										className="px-3 py-10 text-center text-sm text-muted-foreground"
 									>
-										No repositories match the current search and filters.
+										{t("people.reposTable.noMatch")}
 									</td>
 								</tr>
 							)}
@@ -516,12 +538,15 @@ export function ReposTable() {
 
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<p className="text-sm text-muted-foreground">
-					Showing {rangeStart}–{rangeEnd} of {sorted.length}{" "}
-					{sorted.length === 1 ? "repository" : "repositories"}
+					{t("common.counts.showingOf", {
+						from: rangeStart,
+						to: rangeEnd,
+						total: sorted.length,
+					})}
 				</p>
 				<div className="flex items-center gap-2">
 					<select
-						aria-label="Rows per page"
+						aria-label={t("common.actions.rowsPerPage")}
 						value={pageSize}
 						onChange={(e) => {
 							setPageSize(Number(e.target.value));
@@ -531,7 +556,7 @@ export function ReposTable() {
 					>
 						{PAGE_SIZE_OPTIONS.map((size) => (
 							<option key={size} value={size}>
-								{size} / page
+								{t("common.counts.perPage", { size })}
 							</option>
 						))}
 					</select>
@@ -540,19 +565,22 @@ export function ReposTable() {
 						size="icon-sm"
 						disabled={safePageIndex === 0}
 						onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
-						aria-label="Previous page"
+						aria-label={t("common.actions.previousPage")}
 					>
 						<ChevronLeft />
 					</Button>
 					<span className="text-sm text-muted-foreground">
-						{safePageIndex + 1} / {pageCount}
+						{t("common.counts.pageIndicator", {
+							page: safePageIndex + 1,
+							total: pageCount,
+						})}
 					</span>
 					<Button
 						variant="outline"
 						size="icon-sm"
 						disabled={safePageIndex >= pageCount - 1}
 						onClick={() => setPageIndex((i) => Math.min(pageCount - 1, i + 1))}
-						aria-label="Next page"
+						aria-label={t("common.actions.nextPage")}
 					>
 						<ChevronRight />
 					</Button>

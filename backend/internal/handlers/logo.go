@@ -38,7 +38,7 @@ func LogoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -47,7 +47,7 @@ func LogoHandler(w http.ResponseWriter, r *http.Request) {
 
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
@@ -62,30 +62,30 @@ func LogoHandler(w http.ResponseWriter, r *http.Request) {
 
 	file, _, err := r.FormFile("logo")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "missing logo file")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_logo_file", "missing logo file")
 		return
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "failed to read uploaded file")
+		writeErrorCoded(w, http.StatusBadRequest, "failed_to_read_uploaded_file", "failed to read uploaded file")
 		return
 	}
 
 	if len(data) == 0 {
-		writeError(w, http.StatusBadRequest, "uploaded file is empty")
+		writeErrorCoded(w, http.StatusBadRequest, "uploaded_file_empty", "uploaded file is empty")
 		return
 	}
 
 	if len(data) > maxLogoSize {
-		writeError(w, http.StatusBadRequest, "image is too large. Maximum size is 2 MB")
+		writeErrorCoded(w, http.StatusBadRequest, "image_too_large_2mb", "image is too large. Maximum size is 2 MB")
 		return
 	}
 
 	ext, ok := imageExtension(data)
 	if !ok {
-		writeError(w, http.StatusBadRequest, "unsupported file type. Please upload a PNG, JPG, WebP, or GIF image")
+		writeErrorCoded(w, http.StatusBadRequest, "unsupported_image_type", "unsupported file type. Please upload a PNG, JPG, WebP, or GIF image")
 		return
 	}
 

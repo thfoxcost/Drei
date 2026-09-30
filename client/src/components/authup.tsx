@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next"
+import { i18n } from "#/i18n/i18n"
+import { authErrorMessage } from "#/i18n/lib/api-error"
 import { useSound } from "@/hooks/use-sound";
 import { useForm } from "@tanstack/react-form";
 import { Field, FieldLabel, FieldError, FieldDescription } from "@/components/ui/field";
@@ -18,14 +21,24 @@ import { authClient } from "@/lib/auth-client";
 import { error006Sound } from "@/sounds/error-006";
 import { confirmation001Sound } from "@/sounds/confirmation-001";
 
-const formSchema = z.object({
-    name: z.string().trim().min(2, "Name must be at least 2 characters.").regex(/^[^\s]/, "Name cannot start with a space"),
-    email: z.email("invalid email"),
-    password: z.string().min(8, "Password must be at least 8 characters."),
-    callbackURL: z.string(),
-});
+// Built per submit so validation messages follow the active language.
+const getFormSchema = () =>
+    z.object({
+        name: z
+            .string()
+            .trim()
+            .min(2, i18n.t("auth.name.tooShort") as string)
+            .regex(/^[^\s]/, i18n.t("auth.name.leadingSpace") as string),
+        email: z.email(i18n.t("auth.email.invalid") as string),
+        password: z.string().min(
+            8,
+            i18n.t("auth.password.tooShort") as string,
+        ),
+        callbackURL: z.string(),
+    });
 
 export function SignUpPage() {
+    const { t } = useTranslation();
     // Hooks called once, at the top level of the component — not inside callbacks
     const [playSuccess] = useSound(confirmation001Sound);
     const [playError] = useSound(error006Sound);
@@ -38,7 +51,7 @@ export function SignUpPage() {
             callbackURL: "/",
         },
         validators: {
-            onSubmit: formSchema,
+            onSubmit: getFormSchema(),
         },
         onSubmit: async ({ value }) => {
             await authClient.signUp.email(
@@ -51,7 +64,7 @@ export function SignUpPage() {
                 {
                     onSuccess: () => {
                         playSuccess();
-                        toast.success("Account created!");
+                        toast.success(t("auth.signUp.created"));
 
                         setTimeout(() => {
                             window.location.href = value.callbackURL;
@@ -59,7 +72,7 @@ export function SignUpPage() {
                     },
                     onError: (ctx) => {
                         playError();
-                        toast.error(ctx.error.message);
+                        toast.error(authErrorMessage(ctx.error));
                     },
                 }
             );
@@ -83,7 +96,7 @@ export function SignUpPage() {
 
                 <div className="w-full max-w-sm animate-in">
                     <div className="mb-5">
-                        <img src="/logo.svg" width="70" alt="logo" className="mx-auto" />
+                        <img src="/logo.svg" width="70" alt={t("auth.logoAlt")} className="mx-auto" />
                     </div>
                     <div className="space-y-4">
                         <form
@@ -101,7 +114,7 @@ export function SignUpPage() {
                                         field.state.meta.isTouched && !field.state.meta.isValid;
                                     return (
                                         <Field data-invalid={isInvalid}>
-                                            <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                                            <FieldLabel htmlFor={field.name}>{t("auth.name.label")}</FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
                                                     id={field.name}
@@ -110,7 +123,7 @@ export function SignUpPage() {
                                                     onBlur={field.handleBlur}
                                                     onChange={(e) => field.handleChange(e.target.value)}
                                                     aria-invalid={isInvalid}
-                                                    placeholder="Jane Doe"
+                                                    placeholder={t("auth.name.placeholder")}
                                                     autoComplete="name"
                                                 />
                                                 <InputGroupAddon align="inline-start">
@@ -132,7 +145,7 @@ export function SignUpPage() {
                                         field.state.meta.isTouched && !field.state.meta.isValid;
                                     return (
                                         <Field data-invalid={isInvalid}>
-                                            <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                                            <FieldLabel htmlFor={field.name}>{t("auth.email.label")}</FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
                                                     id={field.name}
@@ -141,7 +154,7 @@ export function SignUpPage() {
                                                     onBlur={field.handleBlur}
                                                     onChange={(e) => field.handleChange(e.target.value)}
                                                     aria-invalid={isInvalid}
-                                                    placeholder="example@email.com"
+                                                    placeholder={t("auth.email.placeholder")}
                                                     autoComplete="off"
                                                 />
                                                 <InputGroupAddon align="inline-start">
@@ -163,7 +176,7 @@ export function SignUpPage() {
                                         field.state.meta.isTouched && !field.state.meta.isValid;
                                     return (
                                         <Field data-invalid={isInvalid}>
-                                            <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                                            <FieldLabel htmlFor={field.name}>{t("auth.password.label")}</FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
                                                     id={field.name}
@@ -172,7 +185,7 @@ export function SignUpPage() {
                                                     onBlur={field.handleBlur}
                                                     onChange={(e) => field.handleChange(e.target.value)}
                                                     aria-invalid={isInvalid}
-                                                    placeholder="Password"
+                                                    placeholder={t("auth.password.placeholder")}
                                                     type="password"
                                                     autoComplete="new-password"
                                                 />
@@ -189,18 +202,18 @@ export function SignUpPage() {
                             />
 
                             <Button className="w-full mt-1" size="default" type="submit">
-                                Create Account
+                                {t("auth.signUp.submit")}
                             </Button>
                         </form>
-                        <AuthDivider>OR</AuthDivider>
+                        <AuthDivider>{t("auth.divider")}</AuthDivider>
                         <div className="grid grid-cols-1 gap-2 space-y-2">
                             <Button className="w-full" type="button" variant="outline">
                                 <GithubIcon data-icon="inline-start" />
-                                Sign up with GitHub
+                                {t("auth.signUp.withGitHub")}
                             </Button>
                         </div>
                         <FieldDescription className="px-6 text-center">
-                            Already have an account? <a href="/signin">Sign in</a>
+                            {t("auth.signUp.hasAccount")} <a href="/signin">{t("auth.signUp.signInLink")}</a>
                         </FieldDescription>
                     </div>
                 </div>

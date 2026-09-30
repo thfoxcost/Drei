@@ -61,7 +61,7 @@ func PullsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		user, err := authenticate(r)
 		if err != nil {
-			writeError(w, http.StatusUnauthorized, "you must be signed in to create a pull request")
+			writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_create_pull", "you must be signed in to create a pull request")
 			return
 		}
 
@@ -72,7 +72,7 @@ func PullsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !member {
-			writeError(w, http.StatusForbidden, "you must be a contributor of this repository to create a pull request")
+			writeErrorCoded(w, http.StatusForbidden, "contributor_required_to_create_pull", "you must be a contributor of this repository to create a pull request")
 			return
 		}
 
@@ -87,14 +87,14 @@ func PullsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
 		req.Title = strings.TrimSpace(req.Title)
 
 		if req.Title == "" {
-			writeError(w, http.StatusBadRequest, "title is required")
+			writeErrorCoded(w, http.StatusBadRequest, "title_required", "title is required")
 			return
 		}
 
@@ -102,28 +102,28 @@ func PullsHandler(w http.ResponseWriter, r *http.Request) {
 		req.TargetBranch = strings.TrimSpace(req.TargetBranch)
 
 		if req.SourceBranch == "" {
-			writeError(w, http.StatusBadRequest, "sourceBranch is required")
+			writeErrorCoded(w, http.StatusBadRequest, "source_branch_required", "sourceBranch is required")
 			return
 		}
 
 		if req.TargetBranch == "" {
-			writeError(w, http.StatusBadRequest, "targetBranch is required")
+			writeErrorCoded(w, http.StatusBadRequest, "target_branch_required", "targetBranch is required")
 			return
 		}
 
 		if req.SourceBranch == req.TargetBranch {
-			writeError(w, http.StatusBadRequest, "source and target branches must be different")
+			writeErrorCoded(w, http.StatusBadRequest, "branches_must_differ", "source and target branches must be different")
 			return
 		}
 
 		// Verify both branches exist in the Git repository.
 		if err := gitrepo.VerifyBranchExists(info.Owner, info.Name, req.SourceBranch); err != nil {
-			writeError(w, http.StatusBadRequest, "source branch not found")
+			writeErrorCoded(w, http.StatusBadRequest, "source_branch_not_found", "source branch not found")
 			return
 		}
 
 		if err := gitrepo.VerifyBranchExists(info.Owner, info.Name, req.TargetBranch); err != nil {
-			writeError(w, http.StatusBadRequest, "target branch not found")
+			writeErrorCoded(w, http.StatusBadRequest, "target_branch_not_found", "target branch not found")
 			return
 		}
 
@@ -172,7 +172,7 @@ func PullsHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusCreated, pull)
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -279,7 +279,7 @@ func PullHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
@@ -287,7 +287,7 @@ func PullHandler(w http.ResponseWriter, r *http.Request) {
 		req.Description = strings.TrimSpace(req.Description)
 
 		if req.Title == "" {
-			writeError(w, http.StatusBadRequest, "title is required")
+			writeErrorCoded(w, http.StatusBadRequest, "title_required", "title is required")
 			return
 		}
 
@@ -305,7 +305,7 @@ func PullHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, updated)
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -321,7 +321,7 @@ func PullCloseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -337,7 +337,7 @@ func PullCloseHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to close a pull request")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_close_pull", "you must be signed in to close a pull request")
 		return
 	}
 
@@ -365,7 +365,7 @@ func PullReopenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -381,7 +381,7 @@ func PullReopenHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to reopen a pull request")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_reopen_pull", "you must be signed in to reopen a pull request")
 		return
 	}
 
@@ -410,7 +410,7 @@ func PullMergeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -426,7 +426,7 @@ func PullMergeHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to merge a pull request")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_merge_pull", "you must be signed in to merge a pull request")
 		return
 	}
 
@@ -437,7 +437,7 @@ func PullMergeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !member {
-		writeError(w, http.StatusForbidden, "you must be a contributor of this repository to merge a pull request")
+		writeErrorCoded(w, http.StatusForbidden, "contributor_required_to_merge_pull", "you must be a contributor of this repository to merge a pull request")
 		return
 	}
 
@@ -447,7 +447,7 @@ func PullMergeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pull.State != "open" {
-		writeError(w, http.StatusConflict, "pull request is not open")
+		writeErrorCoded(w, http.StatusConflict, "pull_request_not_open", "pull request is not open")
 		return
 	}
 
@@ -490,7 +490,7 @@ func PullRevertHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -506,7 +506,7 @@ func PullRevertHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to revert a pull request")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_revert_pull", "you must be signed in to revert a pull request")
 		return
 	}
 
@@ -517,7 +517,7 @@ func PullRevertHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !member {
-		writeError(w, http.StatusForbidden, "you must be a contributor of this repository")
+		writeErrorCoded(w, http.StatusForbidden, "contributor_required", "you must be a contributor of this repository")
 		return
 	}
 
@@ -527,12 +527,12 @@ func PullRevertHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pull.State != "merged" {
-		writeError(w, http.StatusConflict, "only merged pull requests can be reverted")
+		writeErrorCoded(w, http.StatusConflict, "only_merged_pull_revertible", "only merged pull requests can be reverted")
 		return
 	}
 
 	if pull.MergeCommitHash == nil {
-		writeError(w, http.StatusInternalServerError, "merge commit hash not found")
+		writeErrorCoded(w, http.StatusInternalServerError, "merge_commit_not_found", "merge commit hash not found")
 		return
 	}
 
@@ -569,7 +569,7 @@ func PullCompareCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -583,7 +583,7 @@ func PullCompareCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	mergeCommit := strings.TrimSpace(r.URL.Query().Get("mergeCommit"))
 
 	if base == "" || head == "" {
-		writeError(w, http.StatusBadRequest, "base and head query parameters are required")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_base_head_params", "base and head query parameters are required")
 		return
 	}
 
@@ -627,7 +627,7 @@ func PullCompareHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -640,7 +640,7 @@ func PullCompareHandler(w http.ResponseWriter, r *http.Request) {
 	head := strings.TrimSpace(r.URL.Query().Get("head"))
 
 	if base == "" || head == "" {
-		writeError(w, http.StatusBadRequest, "base and head query parameters are required")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_base_head_params", "base and head query parameters are required")
 		return
 	}
 
@@ -666,7 +666,7 @@ func PullDuplicateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -679,7 +679,7 @@ func PullDuplicateHandler(w http.ResponseWriter, r *http.Request) {
 	target := strings.TrimSpace(r.URL.Query().Get("target"))
 
 	if source == "" || target == "" {
-		writeError(w, http.StatusBadRequest, "source and target query parameters are required")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_source_target_params", "source and target query parameters are required")
 		return
 	}
 
@@ -707,7 +707,7 @@ func PullEventsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -755,7 +755,7 @@ func PRAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -771,7 +771,7 @@ func PRAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 
 	author, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to update assignees")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_update_assignees", "you must be signed in to update assignees")
 		return
 	}
 
@@ -782,7 +782,7 @@ func PRAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !member {
-		writeError(w, http.StatusForbidden, "you must be a contributor of this repository to update assignees")
+		writeErrorCoded(w, http.StatusForbidden, "contributor_required_to_update_assignees", "you must be a contributor of this repository to update assignees")
 		return
 	}
 
@@ -796,7 +796,7 @@ func PRAssigneeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -826,7 +826,7 @@ func PRReviewerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -842,7 +842,7 @@ func PRReviewerHandler(w http.ResponseWriter, r *http.Request) {
 
 	author, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to update reviewers")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_update_reviewers", "you must be signed in to update reviewers")
 		return
 	}
 
@@ -853,7 +853,7 @@ func PRReviewerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !member {
-		writeError(w, http.StatusForbidden, "you must be a contributor of this repository to update reviewers")
+		writeErrorCoded(w, http.StatusForbidden, "contributor_required_to_update_reviewers", "you must be a contributor of this repository to update reviewers")
 		return
 	}
 
@@ -867,7 +867,7 @@ func PRReviewerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -897,7 +897,7 @@ func PRLabelHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -913,7 +913,7 @@ func PRLabelHandler(w http.ResponseWriter, r *http.Request) {
 
 	author, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to update labels")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_update_labels", "you must be signed in to update labels")
 		return
 	}
 
@@ -924,7 +924,7 @@ func PRLabelHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !member {
-		writeError(w, http.StatusForbidden, "you must be a contributor of this repository to update labels")
+		writeErrorCoded(w, http.StatusForbidden, "contributor_required_to_update_labels", "you must be a contributor of this repository to update labels")
 		return
 	}
 
@@ -938,7 +938,7 @@ func PRLabelHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -962,7 +962,7 @@ func PRNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -978,7 +978,7 @@ func PRNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to update notifications")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_update_notifications", "you must be signed in to update notifications")
 		return
 	}
 
@@ -992,7 +992,7 @@ func PRNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -1018,7 +1018,7 @@ func PullMergeabilityHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -1099,7 +1099,7 @@ func PullDeleteSourceBranchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodDelete {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -1115,7 +1115,7 @@ func PullDeleteSourceBranchHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required", "you must be signed in")
 		return
 	}
 
@@ -1126,7 +1126,7 @@ func PullDeleteSourceBranchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !member {
-		writeError(w, http.StatusForbidden, "you must be a contributor of this repository")
+		writeErrorCoded(w, http.StatusForbidden, "contributor_required", "you must be a contributor of this repository")
 		return
 	}
 
@@ -1136,12 +1136,12 @@ func PullDeleteSourceBranchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pull.State != "merged" {
-		writeError(w, http.StatusConflict, "source branch can only be deleted after merge")
+		writeErrorCoded(w, http.StatusConflict, "branch_not_merged", "source branch can only be deleted after merge")
 		return
 	}
 
 	if pull.SourceBranch == pull.TargetBranch {
-		writeError(w, http.StatusBadRequest, "source and target branches are the same")
+		writeErrorCoded(w, http.StatusBadRequest, "branches_must_differ", "source and target branches are the same")
 		return
 	}
 
@@ -1162,7 +1162,7 @@ func PullDeleteSourceBranchHandler(w http.ResponseWriter, r *http.Request) {
 func parsePullNumber(w http.ResponseWriter, r *http.Request) (int, bool) {
 	number, err := strconv.Atoi(r.PathValue("number"))
 	if err != nil || number <= 0 {
-		writeError(w, http.StatusBadRequest, "invalid pull request number")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_pull_request_number", "invalid pull request number")
 		return 0, false
 	}
 
@@ -1178,7 +1178,7 @@ func getPullOr404(w http.ResponseWriter, repoID int64, number int) (*database.Pu
 	}
 
 	if pull == nil {
-		writeError(w, http.StatusNotFound, "pull request not found")
+		writeErrorCoded(w, http.StatusNotFound, "pull_request_not_found", "pull request not found")
 		return nil, false
 	}
 
@@ -1276,7 +1276,7 @@ func PullFilesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -1355,7 +1355,7 @@ func PullViewedFilesHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required", "you must be signed in")
 		return
 	}
 
@@ -1378,7 +1378,7 @@ func PullViewedFilesHandler(w http.ResponseWriter, r *http.Request) {
 			Files []string `json:"files"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 		if err := database.SetPRViewedFiles(pull.ID, user.ID, req.Files); err != nil {
@@ -1393,11 +1393,11 @@ func PullViewedFilesHandler(w http.ResponseWriter, r *http.Request) {
 			Viewed   bool   `json:"viewed"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 		if req.FilePath == "" {
-			writeError(w, http.StatusBadRequest, "filePath is required")
+			writeErrorCoded(w, http.StatusBadRequest, "file_path_required", "filePath is required")
 			return
 		}
 		if req.Viewed {
@@ -1431,6 +1431,6 @@ func PullViewedFilesHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }

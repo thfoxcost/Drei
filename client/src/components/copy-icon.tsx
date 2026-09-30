@@ -1,4 +1,8 @@
+import { useTranslation } from "react-i18next";
+
 export function CopyIcon(props: React.ComponentProps<"svg">) {
+	const { t } = useTranslation();
+
 	return (
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -12,7 +16,7 @@ export function CopyIcon(props: React.ComponentProps<"svg">) {
 			strokeLinejoin="round"
 			{...props}
 		>
-			<title>Copy</title>
+			<title>{t("common.actions.copy")}</title>
 			<path d="M19.5 15H16a1 1 0 0 0-1 1v3.5M4 17V5a1 1 0 0 1 1-1h12m3 10.172V8a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h6.172a2 2 0 0 0 1.414-.586l3.828-3.828A2 2 0 0 0 20 14.172" />
 		</svg>
 	);

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Line, LineChart } from "recharts";
 import { formatBytes } from "#/lib/format";
 import { getLanguageColor } from "#/lib/language-color";
@@ -30,6 +31,7 @@ import {
 import { Spinner } from "../ui/spinner";
 
 function RepoCard({ repo, owner }: { repo: OrganizationRepo; owner: string }) {
+  const { t } = useTranslation();
   const {
     name,
     description,
@@ -45,7 +47,7 @@ function RepoCard({ repo, owner }: { repo: OrganizationRepo; owner: string }) {
     activity,
   } = repo;
 
-  const displayLanguage = language ?? "Unknown";
+  const displayLanguage = language ?? t("common.states.unknown");
 
   return (
     <div className="p-4">
@@ -61,20 +63,24 @@ function RepoCard({ repo, owner }: { repo: OrganizationRepo; owner: string }) {
             </Link>
 
             <Badge variant="outline" className="ml-2 text-muted-foreground">
-              {visibility ? "Public" : "Private"}
+              {visibility
+                ? t("repositories.visibility.public")
+                : t("repositories.visibility.private")}
             </Badge>
           </div>
 
           {forked && forkedFromOwner && (
             <span className="text-xs text-muted-foreground">
-              Forked from{" "}
+              {t("repositories.filters.forkedFrom")}{" "}
               <span className="underline">
                 {forkedFromOwner}/{forkedFromName}
               </span>
             </span>
           )}
 
-          <span className="text-sm text-muted-foreground">{description}</span>
+          <span className="text-sm text-muted-foreground">
+            {description || t("repo.sidebar.noDescription")}
+          </span>
 
           <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
@@ -102,7 +108,11 @@ function RepoCard({ repo, owner }: { repo: OrganizationRepo; owner: string }) {
               </span>
             </div>
 
-            <span>Updated {timeAgo(lastUpdatedAt)}</span>
+            <span>
+              {t("repositories.filters.updated", {
+                time: timeAgo(lastUpdatedAt),
+              })}
+            </span>
           </div>
         </div>
 
@@ -128,14 +138,18 @@ function RepoCard({ repo, owner }: { repo: OrganizationRepo; owner: string }) {
 }
 
 function EmptyState({ query }: { query: string }) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border py-12 text-center">
       <FolderSearch className="text-muted-foreground" size={28} />
 
-      <p className="text-sm font-medium">No repositories found</p>
+      <p className="text-sm font-medium">{t("repositories.empty")}</p>
 
       <p className="text-sm text-muted-foreground">
-        {query ? `Nothing matches "${query}"` : "No repositories yet"}
+        {query
+          ? t("repositories.nothingMatches", { query })
+          : t("repositories.noRepositoriesYet")}
       </p>
     </div>
   );
@@ -145,17 +159,17 @@ type SortOption = "last-updated" | "name";
 
 type TypeOption = "all" | "source" | "forked" | "public" | "private";
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "last-updated", label: "Last updated" },
-  { value: "name", label: "Name" },
+const SORT_OPTIONS: { value: SortOption; key: string }[] = [
+  { value: "last-updated", key: "repositories.sort.lastUpdated" },
+  { value: "name", key: "repositories.sort.name" },
 ];
 
-const TYPE_OPTIONS: { value: TypeOption; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "source", label: "Source" },
-  { value: "forked", label: "Forked" },
-  { value: "public", label: "Public" },
-  { value: "private", label: "Private" },
+const TYPE_OPTIONS: { value: TypeOption; key: string }[] = [
+  { value: "all", key: "repositories.types.all" },
+  { value: "source", key: "repositories.types.source" },
+  { value: "forked", key: "repositories.types.forked" },
+  { value: "public", key: "repositories.visibility.public" },
+  { value: "private", key: "repositories.visibility.private" },
 ];
 
 interface RepoListProps {
@@ -166,6 +180,7 @@ interface RepoListProps {
 }
 
 function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortOption | null>(null);
   const [type, setType] = useState<TypeOption | null>(null);
@@ -229,16 +244,26 @@ function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
 
   const sortLabel =
     sort == null
-      ? "Sort"
-      : (SORT_OPTIONS.find((option) => option.value === sort)?.label ?? sort);
+      ? t("repositories.sort.label")
+      : t(
+          SORT_OPTIONS.find((option) => option.value === sort)?.key ??
+            "repositories.sort.label",
+        );
 
   const typeLabel =
     type == null
-      ? "Type"
-      : (TYPE_OPTIONS.find((option) => option.value === type)?.label ?? type);
+      ? t("repositories.filters.type")
+      : t(
+          TYPE_OPTIONS.find((option) => option.value === type)?.key ??
+            "repositories.filters.type",
+        );
 
   const languageLabel =
-    language == null ? "Languages" : language === "all" ? "All" : language;
+    language == null
+      ? t("repositories.filters.language")
+      : language === "all"
+        ? t("repositories.types.all")
+        : language;
 
   if (isLoading) {
     return (
@@ -253,10 +278,10 @@ function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
       <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border py-12 text-center">
         <FolderSearch className="text-muted-foreground" size={28} />
 
-        <p className="text-sm font-medium">No repositories found</p>
+        <p className="text-sm font-medium">{t("repositories.empty")}</p>
 
         <p className="text-sm text-muted-foreground">
-          Failed to load repositories
+          {t("repositories.loadFailed")}
         </p>
       </div>
     );
@@ -267,7 +292,7 @@ function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
       <div className="flex flex-wrap items-center gap-2">
         <InputGroup className="min-w-52 flex-1">
           <InputGroupInput
-            placeholder="Search repositories..."
+            placeholder={t("repositories.searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -277,8 +302,7 @@ function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
           </InputGroupAddon>
 
           <InputGroupAddon align="inline-end">
-            {filtered.length} result
-            {filtered.length === 1 ? "" : "s"}
+            {t("common.counts.results", { count: filtered.length })}
           </InputGroupAddon>
         </InputGroup>
 
@@ -287,7 +311,7 @@ function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
             <Button
               variant="outline"
               className="gap-1.5"
-              aria-label="Select Sort"
+              aria-label={t("common.actions.selectSort")}
             >
               {sortLabel}
               <ChevronDown className="size-4 opacity-60" />
@@ -301,7 +325,7 @@ function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
             >
               {SORT_OPTIONS.map((option) => (
                 <DropdownMenuRadioItem key={option.value} value={option.value}>
-                  {option.label}
+                  {t(option.key)}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -313,7 +337,7 @@ function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
             <Button
               variant="outline"
               className="gap-1.5"
-              aria-label="Select Type"
+              aria-label={t("common.actions.selectType")}
             >
               {typeLabel}
               <ChevronDown className="size-4 opacity-60" />
@@ -327,7 +351,7 @@ function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
             >
               {TYPE_OPTIONS.map((option) => (
                 <DropdownMenuRadioItem key={option.value} value={option.value}>
-                  {option.label}
+                  {t(option.key)}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -339,7 +363,7 @@ function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
             <Button
               variant="outline"
               className="gap-1.5"
-              aria-label="Select Languages"
+              aria-label={t("common.actions.selectLanguages")}
             >
               {languageLabel}
               <ChevronDown className="size-4 opacity-60" />
@@ -351,7 +375,9 @@ function RepoList({ owner, repos, isLoading, isError }: RepoListProps) {
               value={language ?? "all"}
               onValueChange={setLanguage}
             >
-              <DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="all">
+                {t("repositories.types.all")}
+              </DropdownMenuRadioItem>
 
               {languages.map((lang) => (
                 <DropdownMenuRadioItem key={lang} value={lang}>

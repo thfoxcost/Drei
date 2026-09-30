@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { File, Folder, SearchIcon } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { RepoFile } from "#/types/repo";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ interface FileSearchProps {
 }
 
 export function FileSearch({ files, owner, repo, branch }: FileSearchProps) {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const [open, setOpen] = useState(false);
 
@@ -59,18 +61,18 @@ export function FileSearch({ files, owner, repo, branch }: FileSearchProps) {
 				className="max-w-[328px]"
 			>
 				<SearchIcon className="size-4" />
-				<span className="truncate">Search files...</span>
+				<span className="truncate">{t("repo.code.searchFiles")}</span>
 				<Kbd className="ml-auto px-2">/</Kbd>
 			</Button>
 			<CommandDialog open={open} onOpenChange={setOpen}>
 				<Command className="**:data-[selected=true]:bg-muted **:data-selected:bg-transparent">
 					<CommandInput
-						placeholder="Search files..."
+						placeholder={t("repo.code.searchFiles")}
 						className="placeholder:text-muted-foreground/80"
 					/>
 					<CommandList>
-						<CommandEmpty>No files found</CommandEmpty>
-						<CommandGroup heading="Files">
+						<CommandEmpty>{t("common.states.noFilesFound")}</CommandEmpty>
+						<CommandGroup heading={t("repo.code.files")}>
 							{files.map((file) => (
 								<CommandItem
 									key={file.path}

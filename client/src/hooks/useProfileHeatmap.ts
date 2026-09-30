@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useUsers } from "#/hooks/useUsers";
+import { i18n } from "#/i18n/i18n";
 import { authClient } from "#/lib/auth-client";
 import { backendUrl } from "#/lib/backend-url";
 
@@ -19,7 +20,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 		const img = new Image();
 		img.onload = () => resolve(img);
 		img.onerror = () =>
-			reject(new Error("Failed to load image for color sampling"));
+			reject(new Error(i18n.t("errors.client.colorSampleFailed") as string));
 		img.src = src;
 	});
 }

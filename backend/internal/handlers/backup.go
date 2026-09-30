@@ -22,7 +22,7 @@ func canViewBackup(w http.ResponseWriter, r *http.Request, info *database.RepoIn
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "authentication required for private repositories")
+		writeErrorCoded(w, http.StatusUnauthorized, "auth_required_for_private_repos", "authentication required for private repositories")
 		return false
 	}
 
@@ -42,7 +42,7 @@ func canViewBackup(w http.ResponseWriter, r *http.Request, info *database.RepoIn
 		}
 	}
 
-	writeError(w, http.StatusForbidden, "this repository is private")
+	writeErrorCoded(w, http.StatusForbidden, "repository_is_private", "this repository is private")
 
 	return false
 }
@@ -57,12 +57,12 @@ func requireBackupToggle(w http.ResponseWriter, r *http.Request, info *database.
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
+		writeErrorCoded(w, http.StatusUnauthorized, "authentication_required", "authentication required")
 		return false
 	}
 
 	if user.ID != info.OwnerID {
-		writeError(w, http.StatusForbidden, "only the repository owner can manage backups")
+		writeErrorCoded(w, http.StatusForbidden, "only_owner_manages_backups", "only the repository owner can manage backups")
 		return false
 	}
 
@@ -124,7 +124,7 @@ func BackupStatusHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -133,7 +133,7 @@ func BackupStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
@@ -175,7 +175,7 @@ func BackupToggleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -184,7 +184,7 @@ func BackupToggleHandler(w http.ResponseWriter, r *http.Request) {
 
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
@@ -197,7 +197,7 @@ func BackupToggleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -236,7 +236,7 @@ func BackupRunHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -245,7 +245,7 @@ func BackupRunHandler(w http.ResponseWriter, r *http.Request) {
 
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
@@ -256,7 +256,7 @@ func BackupRunHandler(w http.ResponseWriter, r *http.Request) {
 	// Anyone with access may run a backup, but the request must belong to a
 	// signed-in user so anonymous visitors cannot trigger disk writes.
 	if _, err := authenticate(r); err != nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
+		writeErrorCoded(w, http.StatusUnauthorized, "authentication_required", "authentication required")
 		return
 	}
 
@@ -267,7 +267,7 @@ func BackupRunHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !enabled {
-		writeError(w, http.StatusConflict, "backups are disabled for this repository")
+		writeErrorCoded(w, http.StatusConflict, "backups_disabled", "backups are disabled for this repository")
 		return
 	}
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiErrorMessage } from "#/i18n/lib/api-error"
 
 interface HourlyData {
   time: string[];
@@ -40,7 +41,7 @@ export function useWeather(lat: number | null, lon: number | null) {
           `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m,is_day&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=7`,
         );
         if (!response.ok) {
-          throw new Error("Failed to fetch weather data");
+          throw new Error(apiErrorMessage(null, { fallbackKey: "errors.client.fetchWeather" }));
         }
         const result = await response.json();
 

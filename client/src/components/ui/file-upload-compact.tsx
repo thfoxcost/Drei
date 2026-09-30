@@ -1,4 +1,5 @@
 import { useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { ImageUp } from "lucide-react"
 
 import { cn } from "#/lib/utils.ts"
@@ -23,6 +24,7 @@ function FileUploadCompact({
 	className,
 	onSelect,
 }: FileUploadCompactProps) {
+	const { t } = useTranslation()
 	const inputRef = useRef<HTMLInputElement>(null)
 
 	return (
@@ -55,7 +57,7 @@ function FileUploadCompact({
 				)}
 
 				<span className="text-sm text-muted-foreground group-hover:text-primary">
-					{uploading ? "Uploading..." : "Upload logo"}
+					{uploading ? t("common.actions.uploading") : t("common.actions.uploadLogo")}
 				</span>
 			</label>
 

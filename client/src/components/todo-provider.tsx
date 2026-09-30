@@ -1,3 +1,4 @@
+import { i18n } from "#/i18n/i18n"
 import {
   createContext,
   useCallback,
@@ -241,10 +242,10 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
 
       toast(item.title, {
         id: `todo-reminder-${item.id}`,
-        description: "To-do reminder",
+        description: i18n.t("nav.todos.reminderToastDescription") as string,
         duration: Number.POSITIVE_INFINITY,
         action: {
-          label: "Remind me later",
+          label: i18n.t("nav.todos.remindMeLater") as string,
           onClick: () => snooze(item),
         },
       })

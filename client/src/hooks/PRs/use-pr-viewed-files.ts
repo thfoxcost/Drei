@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error"
 
 export function usePRViewedFiles(
 	owner: string,
@@ -15,7 +16,7 @@ export function usePRViewedFiles(
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
 				throw new Error(
-					body?.error ?? "Failed to fetch viewed files",
+					apiErrorMessage(body),
 				);
 			}
 			return res.json();
@@ -51,7 +52,7 @@ export function useTogglePRViewedFile(
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
 				throw new Error(
-					body?.error ?? "Failed to update viewed file",
+					apiErrorMessage(body),
 				);
 			}
 			return res.json() as Promise<{ viewedFiles: string[] }>;

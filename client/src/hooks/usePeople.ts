@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 
 export interface PersonOrg {
 	id: number;
@@ -35,7 +36,10 @@ export function usePeople() {
 			const res = await fetch("http://localhost:3200/api/people", {
 				credentials: "include",
 			});
-			if (!res.ok) throw new Error("Failed to fetch people");
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, { fallbackKey: "errors.client.fetchPeople" }),
+				);
 			const data = await res.json();
 			return data.people ?? [];
 		},

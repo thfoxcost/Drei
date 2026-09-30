@@ -2,15 +2,17 @@ import { Link } from "@tanstack/react-router";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { Check, Code2, Copy, GitCommitHorizontal } from "lucide-react";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback } from "#/components/ui/avatar";
 import { Spinner } from "#/components/ui/spinner";
 import { usePRCommits } from "#/hooks/PRs/use-pr-commits";
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
+import { dateFnsLocale, formatShortDate } from "#/i18n/lib/format";
 import type { Commit } from "#/types/repo";
 
 type DateGroup = {
 	dateKey: string;
-	label: string;
+	date: Date;
 	commits: Commit[];
 };
 
@@ -24,13 +26,12 @@ function groupByDate(commits: Commit[]): DateGroup[] {
 
 	for (const commit of commits) {
 		const date = new Date(commit.date);
-		const dateKey = format(date, "yyyy-MM-dd");
-		const label = `Commits on ${format(date, "MMM d, yyyy")}`;
+		const dateKey = format(date, "yyyy-MM-dd", { locale: dateFnsLocale() });
 
 		let group = byKey.get(dateKey);
 
 		if (!group) {
-			group = { dateKey, label, commits: [] };
+			group = { dateKey, date, commits: [] };
 			byKey.set(dateKey, group);
 			groups.push(group);
 		}
@@ -52,6 +53,7 @@ function CommitRow({
 	owner: string;
 	repo: string;
 }) {
+	const { t } = useTranslation();
 	const { isCopied, copyToClipboard } = useCopyToClipboard();
 	const shortHash = commit.hash.slice(0, 7);
 	const title = commit.message.split("\n")[0];
@@ -78,13 +80,14 @@ function CommitRow({
 					</Avatar>
 
 					<span className="truncate">
-						{commit.author} committed{" "}
-						{formatDistanceToNowStrict(new Date(commit.date), {
-							addSuffix: true,
+						{t("pulls.commits.committed", {
+							author: commit.author,
+							time: formatDistanceToNowStrict(new Date(commit.date), {
+								addSuffix: true,
+								locale: dateFnsLocale(),
+							}),
 						})}
 					</span>
-
-
 				</div>
 			</div>
 
@@ -99,7 +102,11 @@ function CommitRow({
 				<button
 					type="button"
 					onClick={() => copyToClipboard(commit.hash)}
-					aria-label={isCopied ? "Copied" : "Copy commit hash"}
+					aria-label={
+						isCopied
+							? t("common.actions.copied")
+							: t("pulls.commits.copyHash")
+					}
 					className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 				>
 					{isCopied ? (
@@ -111,7 +118,7 @@ function CommitRow({
 
 				<Link
 					to={`/${owner}/${repo}/commits/${commit.hash}`}
-					aria-label="View commit"
+					aria-label={t("pulls.commits.viewCommit")}
 					className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 				>
 					<Code2 className="size-4" />
@@ -130,6 +137,7 @@ interface CommitsProps {
 }
 
 function Commits({ owner, repo, base, head, mergeCommitHash }: CommitsProps) {
+	const { t } = useTranslation();
 	const {
 		data: commits,
 		isLoading,
@@ -142,7 +150,7 @@ function Commits({ owner, repo, base, head, mergeCommitHash }: CommitsProps) {
 		return (
 			<div className="flex items-center justify-center py-8 text-muted-foreground">
 				<Spinner className="mr-2" />
-				<span>Loading commits...</span>
+				<span>{t("pulls.commits.loading")}</span>
 			</div>
 		);
 	}
@@ -150,7 +158,7 @@ function Commits({ owner, repo, base, head, mergeCommitHash }: CommitsProps) {
 	if (isError) {
 		return (
 			<div className="py-8 text-center text-sm text-muted-foreground">
-				Failed to load commits.
+				{t("pulls.commits.loadFailed")}
 			</div>
 		);
 	}
@@ -158,7 +166,7 @@ function Commits({ owner, repo, base, head, mergeCommitHash }: CommitsProps) {
 	if (!commits || commits.length === 0) {
 		return (
 			<div className="py-8 text-center text-sm text-muted-foreground">
-				No commits found between these branches.
+				{t("pulls.commits.empty")}
 			</div>
 		);
 	}
@@ -180,7 +188,11 @@ function Commits({ owner, repo, base, head, mergeCommitHash }: CommitsProps) {
 							className="absolute left-0 top-2 size-5 rounded-full bg-background text-muted-foreground"
 						/>
 
-						<p className="pt-2 text-sm text-muted-foreground">{group.label}</p>
+						<p className="pt-2 text-sm text-muted-foreground">
+							{t("pulls.commits.onDate", {
+								date: formatShortDate(group.date),
+							})}
+						</p>
 
 						<div className="mt-1.5 overflow-hidden rounded-lg border">
 							{group.commits.map((commit, i) => (

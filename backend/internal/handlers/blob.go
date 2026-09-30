@@ -31,7 +31,7 @@ func BlobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -42,13 +42,13 @@ func BlobHandler(w http.ResponseWriter, r *http.Request) {
 	filePath = strings.TrimPrefix(filePath, "/")
 
 	if owner == "" || repo == "" || filePath == "" {
-		writeError(w, http.StatusBadRequest, "missing required parameters")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_required_parameters", "missing required parameters")
 		return
 	}
 
 	file, err := gitrepo.GetFile(owner, repo, branch, filePath)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "file not found")
+		writeErrorCoded(w, http.StatusNotFound, "file_not_found", "file not found")
 		return
 	}
 

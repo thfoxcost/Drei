@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import { GitMerge } from "lucide-react"
 import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import { Item, ItemContent, ItemTitle, ItemDescription, ItemActions } from "@/components/ui/item"
 import { Button } from "@/components/ui/button"
 import { usePullRequests } from "#/hooks/PRs/use-pull-requests"
@@ -21,6 +22,7 @@ function isNewBranch(dateStr: string): boolean {
 }
 
 function NewPrIndicator({ owner, repo, branches, branchDates, defaultBranch }: NewPrIndicatorProps) {
+	const { t } = useTranslation()
 	const { data: prs } = usePullRequests(owner, repo, { state: "open" })
 
 	const openSourceBranches = new Set(
@@ -43,18 +45,26 @@ function NewPrIndicator({ owner, repo, branches, branchDates, defaultBranch }: N
 				<ItemContent>
 					<ItemTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-300">
 						<GitMerge className="h-4 w-4" />
-						{freshBranches.length} new branch{freshBranches.length > 1 ? "es" : ""} ready for a pull request
+						{t("pulls.indicator.branchesReady", { count: freshBranches.length })}
 					</ItemTitle>
 					<ItemDescription className="text-yellow-700 dark:text-yellow-400">
 						{freshBranches.length === 1
-							? `The ${target} branch was recently pushed and has no pull request yet.`
-							: `Branches ${freshBranches.slice(0, 3).join(", ")}${freshBranches.length > 3 ? ` and ${freshBranches.length - 3} more` : ""} were recently pushed and have no pull request yet.`}
+							? t("pulls.indicator.singleBranch", { target })
+							: t("pulls.indicator.multiBranch", {
+								branches: freshBranches.slice(0, 3).join(", "),
+								andMore:
+									freshBranches.length > 3
+										? t("pulls.indicator.andMore", {
+												count: freshBranches.length - 3,
+											})
+										: "",
+							})}
 					</ItemDescription>
 				</ItemContent>
 				<ItemActions>
 					<Button asChild className="bg-green-600 hover:bg-green-700 text-white">
 						<Link to={`/${owner}/${repo}/compare/${defaultBranch}...${target}`}>
-							Create pull request
+							{t("pulls.indicator.create")}
 						</Link>
 					</Button>
 				</ItemActions>

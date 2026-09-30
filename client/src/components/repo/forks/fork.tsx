@@ -1,8 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Check, Info, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Badge } from "#/components/reui/badge";
 import { UserAvatar } from "#/components/UserAvatar";
 import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
@@ -63,6 +63,7 @@ function useRepoNameValidation(name: string): {
 }
 
 function Fork({ owner, reponame }: ForkProp) {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const { data: session } = authClient.useSession();
 	const { data: upstreamRepo } = useRepoData(owner, reponame);
@@ -111,10 +112,10 @@ function Fork({ owner, reponame }: ForkProp) {
 			const data = await res.json();
 
 			if (!res.ok) {
-				throw new Error(data.error || "Failed to fork repository");
+				throw new Error(data.error || t("repo.fork.failed"));
 			}
 
-			toast.success(data.message || "Repository forked successfully");
+			toast.success(data.message || t("repo.fork.success"));
 
 			navigate({
 				to: "/$username/$repo",
@@ -127,7 +128,7 @@ function Fork({ owner, reponame }: ForkProp) {
 			if (err instanceof Error) {
 				toast.error(err.message);
 			} else {
-				toast.error("Something went wrong while forking");
+				toast.error(t("repo.fork.error"));
 			}
 		} finally {
 			setCreating(false);
@@ -136,11 +137,10 @@ function Fork({ owner, reponame }: ForkProp) {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-medium">Create a new fork</h1>
+			<h1 className="text-2xl font-medium">{t("repo.fork.createHeading")}</h1>
 
 			<span className="text-sm text-muted-foreground">
-				A fork is a copy of a repository. Forking a repository allows you to
-				freely experiment with changes without affecting the original project.
+				{t("repo.fork.createIntro")}
 			</span>
 
 			<Separator className="my-2" />
@@ -149,7 +149,9 @@ function Fork({ owner, reponame }: ForkProp) {
 				<div className="flex items-end gap-2">
 					{/* Owner */}
 					<div className="shrink-0">
-						<FieldLabel className="mb-2 block">Owner*</FieldLabel>
+						<FieldLabel className="mb-2 block">
+							{t("repo.fork.ownerLabel")}
+						</FieldLabel>
 
 						<DropdownMenu>
 							<Button variant="outline">
@@ -160,13 +162,13 @@ function Fork({ owner, reponame }: ForkProp) {
 								/>
 
 								<span className="text-xs">
-									@{session?.user.name ?? "Unknown User"}
+									@{session?.user.name ?? t("common.states.unknownUser")}
 								</span>
 							</Button>
 
 							<DropdownMenuContent className="w-auto">
 								<p className="p-2 text-sm text-muted-foreground">
-									Organization selector coming soon.
+									{t("repo.fork.orgSelectorSoon")}
 								</p>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -174,14 +176,16 @@ function Fork({ owner, reponame }: ForkProp) {
 
 					{/* Repository name */}
 					<Field className="flex-1">
-						<FieldLabel className="block">Repository name*</FieldLabel>
+						<FieldLabel className="block">
+							{t("repo.fork.nameLabel")}
+						</FieldLabel>
 
 						<div className="relative">
 							<Input
 								value={name}
 								id="repo-name"
 								name="name"
-								placeholder="awesome-project"
+								placeholder={t("repo.fork.namePlaceholder")}
 								required
 								className={inputClasses}
 								onChange={(e) => setName(e.target.value)}
@@ -200,20 +204,21 @@ function Fork({ owner, reponame }: ForkProp) {
 			</div>
 
 			<p className="mt-2 text-sm text-muted-foreground">
-				By default, forks are named the same as their upstream repository. You
-				can customize the name to distinguish it further.
+				{t("repo.fork.nameHelp")}
 			</p>
 
 			{/* Description */}
 			<Field className="mt-4">
-				<FieldLabel htmlFor="description">Description</FieldLabel>
+				<FieldLabel htmlFor="description">
+					{t("repo.fork.descriptionLabel")}
+				</FieldLabel>
 
 				<Textarea
 					id="description"
 					name="description"
 					rows={3}
 					maxLength={350}
-					placeholder="Tell people what your repository is about..."
+					placeholder={t("repo.fork.descriptionPlaceholder")}
 					value={description}
 					onChange={(e) => {
 						descriptionEdited.current = true;
@@ -221,9 +226,7 @@ function Fork({ owner, reponame }: ForkProp) {
 					}}
 				/>
 
-				<FieldDescription>
-					Briefly describe your repository (optional, max 350 characters).
-				</FieldDescription>
+				<FieldDescription>{t("repo.fork.descriptionHelp")}</FieldDescription>
 			</Field>
 
 			<Separator className="my-4" />
@@ -239,13 +242,10 @@ function Fork({ owner, reponame }: ForkProp) {
 
 					<FieldContent>
 						<FieldLabel htmlFor="copy-main-only">
-							Copy the <Badge variant="outline">main</Badge> branch only
+							{t("repo.fork.copyMainLabel")}
 						</FieldLabel>
 
-						<FieldDescription>
-							Only copy the <span className="font-medium">main</span> branch
-							instead of all branches.
-						</FieldDescription>
+						<FieldDescription>{t("repo.fork.copyMainHelp")}</FieldDescription>
 					</FieldContent>
 				</Field>
 			</div>
@@ -254,18 +254,18 @@ function Fork({ owner, reponame }: ForkProp) {
 
 			<span className="flex items-center gap-2 text-sm text-muted-foreground">
 				<Info size={18} />
-				You are creating a fork in your personal account.
+				{t("repo.fork.personalNote")}
 			</span>
 
 			<div className="mt-2 flex justify-end gap-2">
 				<Button variant="outline" onClick={handleBack}>
-					Back
+					{t("common.actions.back")}
 				</Button>
 				<Button
 					onClick={handleCreateFork}
 					disabled={creating || validation === "taken" || !name.trim()}
 				>
-					{creating ? "Creating..." : "Create fork"}
+					{creating ? t("repo.fork.creating") : t("repo.fork.create")}
 				</Button>
 			</div>
 		</div>
