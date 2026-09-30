@@ -1,9 +1,11 @@
+import { useTranslation } from "react-i18next"
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import { MoonIcon, SunIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function Pattern() {
+  const { t } = useTranslation()
   const { theme, setTheme } = useTheme()
 
   const isDark = theme === "dark"
@@ -27,7 +29,7 @@ export function Pattern() {
       size="icon"
       onClick={toggleTheme}
       className="relative"
-      aria-label="Toggle theme"
+      aria-label={t("common.actions.toggleTheme")}
     >
       <SunIcon
         className={cn(

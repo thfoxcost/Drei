@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Moon, Sun, Monitor } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "#/components/ui/button"
 import {
@@ -19,36 +19,33 @@ import {
 import { Separator } from "#/components/ui/separator"
 import { Spinner } from "#/components/ui/spinner"
 import { Switch } from "#/components/ui/switch"
-import { useTheme } from "@/components/theme-provider"
+import { useTheme } from "#/components/theme-provider"
 import { getCurrentYear, useHeatmapYear } from "#/hooks/useHeatmapYear"
-
-const API_BASE = "http://localhost:3200"
-
-type Language = "en" | "ar" | "fr" | "de"
-
-type AppearanceData = {
-    theme: "light" | "dark" | "system"
-    language: Language
-    heatmapProfileColor: boolean
-}
-
-const LANGUAGE_LABELS: Record<Language, string> = {
-    en: "🇬🇧 English",
-    ar: "🇵🇸 العربية",
-    fr: "🇫🇷 Français",
-    de: "🇩🇪 Deutsch",
-}
+import {
+    useAppearanceSettings,
+    useUpdateAppearance,
+} from "#/hooks/useAppearanceSettings"
+import {
+    LOCALE_LABELS,
+    SUPPORTED_LOCALES,
+    UPCOMING_LOCALES,
+    type Locale,
+} from "#/i18n/config"
+import { useLocale } from "#/i18n/locale-provider"
 
 function ContentAppearance() {
+    const { t } = useTranslation()
     const { theme, setTheme } = useTheme()
-    const queryClient = useQueryClient()
+    const { locale, setLocale } = useLocale()
+    const { data, isLoading } = useAppearanceSettings()
+    const updateAppearance = useUpdateAppearance()
 
-    const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
 
-    const [language, setLanguage] = useState<Language>("en")
-
     const [heatmapProfileColor, setHeatmapProfileColor] = useState(false)
+    const [originalHeatmapProfileColor, setOriginalHeatmapProfileColor] =
+        useState(false)
+    const [originalTheme, setOriginalTheme] = useState(theme)
 
     const [heatmapYear, setHeatmapYear] = useHeatmapYear()
 
@@ -62,58 +59,20 @@ function ContentAppearance() {
         ]),
     ).sort((a, b) => b - a)
 
-    const [original, setOriginal] =
-        useState<AppearanceData | null>(null)
-
+    // Seed the local form from the persisted settings once they arrive. The
+    // active language is owned by the LocaleProvider, not by this component.
     useEffect(() => {
-        let cancelled = false
+        if (!data) return
 
-        async function fetchAppearance() {
-            try {
-                const res = await fetch(
-                    `${API_BASE}/api/user/appearance`,
-                    {
-                        credentials: "include",
-                    },
-                )
-
-                if (!res.ok) {
-                    throw new Error("Failed to load appearance")
-                }
-
-                const data: AppearanceData = await res.json()
-
-                if (!cancelled) {
-                    setLanguage(data.language)
-                    setHeatmapProfileColor(data.heatmapProfileColor === true)
-                    setOriginal(data)
-                }
-            } catch {
-                if (!cancelled) {
-                    toast.error(
-                        "Failed to load appearance settings",
-                    )
-                }
-            } finally {
-                if (!cancelled) {
-                    setLoading(false)
-                }
-            }
-        }
-
-        fetchAppearance()
-
-        return () => {
-            cancelled = true
-        }
-    }, [])
+        setHeatmapProfileColor(data.heatmapProfileColor === true)
+        setOriginalHeatmapProfileColor(data.heatmapProfileColor === true)
+        setOriginalTheme(data.theme)
+    }, [data])
 
     const changed =
-        !loading &&
-        original !== null &&
-        (theme !== original.theme ||
-            language !== original.language ||
-            heatmapProfileColor !== original.heatmapProfileColor)
+        !isLoading &&
+        (theme !== originalTheme ||
+            heatmapProfileColor !== originalHeatmapProfileColor)
 
     const canSave = changed && !saving
 
@@ -138,67 +97,66 @@ function ContentAppearance() {
         system: <Monitor className="size-4" />,
     }
 
+    const themeLabels = {
+        light: t("settings.appearance.themeLight"),
+        dark: t("settings.appearance.themeDark"),
+        system: t("settings.appearance.themeSystem"),
+    } as const
+
+    /**
+     * The language applies and persists immediately rather than waiting for the
+     * Save button, which only governs the remaining appearance fields. The
+     * optimistic local update comes first so the UI never lags the selection.
+     */
+    async function handleLanguageChange(next: string) {
+        const typed = next as Locale
+        if (typed === locale) return
+
+        setLocale(typed)
+
+        try {
+            await updateAppearance.mutateAsync({ language: typed })
+        } catch (err) {
+            toast.error(
+                err instanceof Error
+                    ? err.message
+                    : t("settings.appearance.saveFailed"),
+            )
+        }
+    }
+
     async function handleSave() {
         if (!canSave) return
 
         setSaving(true)
 
         try {
-            const res = await fetch(
-                `${API_BASE}/api/user/appearance`,
-                {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        theme,
-                        language,
-                        heatmapProfileColor,
-                    }),
-                },
-            )
-
-            const result = await res.json()
-
-            if (!res.ok) {
-                throw new Error(
-                    result.error ||
-                    "Failed to save appearance",
-                )
-            }
-
-            setOriginal({
+            await updateAppearance.mutateAsync({
                 theme,
-                language,
                 heatmapProfileColor,
             })
 
-            await queryClient.invalidateQueries({
-                queryKey: ["appearance"],
-            })
+            setOriginalHeatmapProfileColor(heatmapProfileColor)
+            setOriginalTheme(theme)
 
-            toast.success(
-                "Appearance settings saved",
-            )
+            toast.success(t("settings.appearance.saved"))
         } catch (err) {
             toast.error(
                 err instanceof Error
                     ? err.message
-                    : "Something went wrong",
+                    : t("settings.appearance.saveFailed"),
             )
         } finally {
             setSaving(false)
         }
     }
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="mx-auto mb-10 w-full max-w-5xl space-y-4">
                 <div>
                     <h1 className="text-2xl">
-                        Appearance
+                        {t("settings.appearance.title")}
                     </h1>
 
                     <Separator className="my-2" />
@@ -207,7 +165,7 @@ function ContentAppearance() {
                 <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
                     <Spinner />
                     <span>
-                        Loading appearance...
+                        {t("settings.appearance.loading")}
                     </span>
                 </div>
             </div>
@@ -218,7 +176,7 @@ function ContentAppearance() {
         <div className="mx-auto mb-10 w-full max-w-5xl space-y-6">
             <div>
                 <h1 className="text-2xl">
-                    Appearance
+                    {t("settings.appearance.title")}
                 </h1>
 
                 <Separator className="my-2" />
@@ -228,12 +186,11 @@ function ContentAppearance() {
                 {/* Theme */}
                 <Field>
                     <FieldLabel>
-                        Theme
+                        {t("settings.appearance.themeLabel")}
                     </FieldLabel>
 
                     <FieldDescription>
-                        Choose the appearance of the
-                        application.
+                        {t("settings.appearance.themeDescription")}
                     </FieldDescription>
 
                     <div className="flex flex-wrap gap-2">
@@ -270,7 +227,7 @@ function ContentAppearance() {
                                     }
 
                                     <span className="capitalize">
-                                        {option}
+                                        {themeLabels[option]}
                                     </span>
                                 </Button>
                             )
@@ -281,21 +238,18 @@ function ContentAppearance() {
                 {/* Language */}
                 <Field>
                     <FieldLabel>
-                        Language
+                        {t("settings.appearance.languageLabel")}
                     </FieldLabel>
 
                     <FieldDescription>
-                        Choose the language used by
-                        the application.
+                        {t("settings.appearance.languageDescription")}
                     </FieldDescription>
 
                     <div className="max-w-sm">
                         <Select
-                            value={language}
-                            onValueChange={(value) =>
-                                setLanguage(
-                                    value as Language,
-                                )
+                            value={locale}
+                            onValueChange={
+                                handleLanguageChange
                             }
                         >
                             <SelectTrigger className="w-full">
@@ -303,21 +257,30 @@ function ContentAppearance() {
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem value="en">
-                                    🇬🇧 English
-                                </SelectItem>
+                                {SUPPORTED_LOCALES.map(
+                                    (code) => (
+                                        <SelectItem
+                                            key={code}
+                                            value={code}
+                                        >
+                                            {
+                                                LOCALE_LABELS[code]
+                                            }
+                                        </SelectItem>
+                                    ),
+                                )}
 
-                                <SelectItem value="ar" disabled>
-                                    🇵🇸 العربية
-                                </SelectItem>
-
-                                <SelectItem value="fr" disabled>
-                                    🇫🇷 Français
-                                </SelectItem>
-
-                                <SelectItem value="de" disabled>
-                                    🇩🇪 Deutsch
-                                </SelectItem>
+                                {UPCOMING_LOCALES.map(
+                                    ({ code, label }) => (
+                                        <SelectItem
+                                            key={code}
+                                            value={code}
+                                            disabled
+                                        >
+                                            {label}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
@@ -326,13 +289,11 @@ function ContentAppearance() {
                 {/* Contribution heatmap year */}
                 <Field>
                     <FieldLabel>
-                        Contribution heatmap
+                        {t("settings.appearance.heatmapLabel")}
                     </FieldLabel>
 
                     <FieldDescription>
-                        Choose which calendar year your
-                        contribution heatmap displays.
-                        Applies instantly.
+                        {t("settings.appearance.heatmapDescription")}
                     </FieldDescription>
 
                     <div className="max-w-sm">
@@ -371,13 +332,11 @@ function ContentAppearance() {
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <FieldLabel htmlFor="heatmap-profile-color">
-                                Profile color heatmap
+                                {t("settings.appearance.heatmapColorLabel")}
                             </FieldLabel>
 
                             <FieldDescription>
-                                Tint your contribution heatmap
-                                with the dominant color of your
-                                profile picture.
+                                {t("settings.appearance.heatmapColorDescription")}
                             </FieldDescription>
                         </div>
 
@@ -393,7 +352,7 @@ function ContentAppearance() {
                 <div className="flex justify-end gap-2 pt-4">
                     <Button variant="outline">
                         <a href="/">
-                            Back
+                            {t("common.actions.back")}
                         </a>
                     </Button>
                     <Button
@@ -404,11 +363,11 @@ function ContentAppearance() {
                             <>
                                 <Spinner />
                                 <span className="ml-2">
-                                    Saving...
+                                    {t("common.actions.saving")}
                                 </span>
                             </>
                         ) : (
-                            "Save"
+                            t("common.actions.save")
                         )}
                     </Button>
                 </div>

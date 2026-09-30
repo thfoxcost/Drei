@@ -2,8 +2,8 @@ import { useNavigate } from "@tanstack/react-router";
 import {
 	Archive,
 	BookMarked,
-	ChevronDown,
 	Check,
+	ChevronDown,
 	GitFork,
 	GitMerge,
 	GitPullRequest,
@@ -12,6 +12,7 @@ import {
 	Search,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Contributor } from "#/components/repo/contributor-avatars";
 import PullRequestItem from "#/components/repo/pulls/pr-item";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
@@ -41,15 +42,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "../ui/separator";
 
-const sortOptions: { value: PRSort; label: string }[] = [
-	{ value: "newest", label: "Newest" },
-	{ value: "oldest", label: "Oldest" },
-	{ value: "recently-updated", label: "Most recently updated" },
-	{ value: "least-updated", label: "Least recently updated" },
-	{ value: "most-commented", label: "Most commented" },
-	{ value: "least-commented", label: "Least commented" },
-	{ value: "source-branch", label: "Source branch" },
-	{ value: "target-branch", label: "Target branch" },
+const sortOptions: { value: PRSort; key: string }[] = [
+	{ value: "newest", key: "pulls.sort.newest" },
+	{ value: "oldest", key: "pulls.sort.oldest" },
+	{ value: "recently-updated", key: "pulls.sort.mostRecentlyUpdated" },
+	{ value: "least-updated", key: "pulls.sort.leastRecentlyUpdated" },
+	{ value: "most-commented", key: "pulls.sort.mostCommented" },
+	{ value: "least-commented", key: "pulls.sort.leastCommented" },
+	{ value: "source-branch", key: "pulls.sort.sourceBranch" },
+	{ value: "target-branch", key: "pulls.sort.targetBranch" },
 ];
 
 function getInitials(name: string): string {
@@ -74,6 +75,7 @@ function UserAvatar({ user }: { user: Contributor }) {
 }
 
 function Pulls() {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const { data: session } = authClient.useSession();
 	const { repos } = useUserRepos();
@@ -105,8 +107,10 @@ function Pulls() {
 	const { data: users = [] } = useUsers();
 
 	const activeAuthor = users.find((user) => user.id === author);
-	const activeSortLabel =
-		sortOptions.find((option) => option.value === sort)?.label ?? "Sort";
+	const activeSortLabel = t(
+		sortOptions.find((option) => option.value === sort)?.key ??
+			"pulls.sort.label",
+	);
 
 	const authorList = matchQuery(users, authorQuery);
 
@@ -114,7 +118,7 @@ function Pulls() {
 
 	return (
 		<div className=" my-1">
-			<h1 className="text-2xl">All pull requests</h1>
+			<h1 className="text-2xl">{t("pulls.allPulls")}</h1>
 			<Separator className="my-2 mb-4" />
 			<div className="my-2 flex flex-row items-center justify-between">
 				<Tabs
@@ -127,17 +131,17 @@ function Pulls() {
 					<TabsList>
 						<TabsTrigger value="open">
 							<GitPullRequest />
-							Open {data ? `(${data.open})` : ""}
+							{t("pulls.openTab", { count: data ? data.open : 0 })}
 						</TabsTrigger>
 
 						<TabsTrigger value="closed">
 							<GitPullRequestClosed />
-							Closed {data ? `(${data.closed})` : ""}
+							{t("pulls.closedTab", { count: data ? data.closed : 0 })}
 						</TabsTrigger>
 
 						<TabsTrigger value="merged">
 							<GitMerge />
-							Merged {data ? `(${data.merged})` : ""}
+							{t("pulls.mergedTab", { count: data ? data.merged : 0 })}
 						</TabsTrigger>
 					</TabsList>
 				</Tabs>
@@ -145,7 +149,7 @@ function Pulls() {
 				<Field className="mx-3 w-full">
 					<InputGroup>
 						<InputGroupInput
-							placeholder="Search pull requests..."
+							placeholder={t("pulls.searchPlaceholder")}
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
 						/>
@@ -155,8 +159,9 @@ function Pulls() {
 						</InputGroupAddon>
 
 						<InputGroupAddon align="inline-end">
-							{data?.pulls.length ?? 0} result
-							{(data?.pulls.length ?? 0) === 1 ? "" : "s"}
+							{t("common.counts.results", {
+								count: data?.pulls.length ?? 0,
+							})}
 						</InputGroupAddon>
 					</InputGroup>
 				</Field>
@@ -165,7 +170,9 @@ function Pulls() {
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="outline">
-								{activeAuthor ? activeAuthor.username : "Author"}
+								{activeAuthor
+									? activeAuthor.username
+									: t("pulls.filters.author")}
 								<ChevronDown />
 							</Button>
 						</DropdownMenuTrigger>
@@ -173,7 +180,7 @@ function Pulls() {
 						<DropdownMenuContent className="w-auto">
 							<DropdownMenuGroup>
 								<Input
-									placeholder="Type to search"
+									placeholder={t("common.states.typeToSearch")}
 									className="w-[200px]"
 									value={authorQuery}
 									onChange={(e) => setAuthorQuery(e.target.value)}
@@ -191,7 +198,7 @@ function Pulls() {
 								>
 									<span className="flex items-center gap-2">
 										{!activeAuthor && <Check size={14} />}
-										Any author
+										{t("pulls.filters.anyAuthor")}
 									</span>
 								</DropdownMenuItem>
 
@@ -211,7 +218,9 @@ function Pulls() {
 								))}
 
 								{authorList.length === 0 && (
-									<DropdownMenuItem disabled>No users found</DropdownMenuItem>
+									<DropdownMenuItem disabled>
+										{t("pulls.filters.noUsers")}
+									</DropdownMenuItem>
 								)}
 							</DropdownMenuGroup>
 						</DropdownMenuContent>
@@ -234,7 +243,7 @@ function Pulls() {
 									>
 										<span className="flex items-center gap-2">
 											{sort === option.value && <Check size={14} />}
-											{option.label}
+											{t(option.key)}
 										</span>
 									</DropdownMenuItem>
 								))}
@@ -245,19 +254,21 @@ function Pulls() {
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button>
-								New Pull Request
+								{t("pulls.newPull")}
 								<ChevronDown className="size-4 opacity-60" />
 							</Button>
 						</DropdownMenuTrigger>
 
 						<DropdownMenuContent align="end" className="w-56 p-1">
-							<DropdownMenuLabel>Choose your repo</DropdownMenuLabel>
+							<DropdownMenuLabel>
+								{t("pulls.filters.chooseRepo")}
+							</DropdownMenuLabel>
 
 							<DropdownMenuSeparator />
 
 							{repos.length === 0 ? (
 								<DropdownMenuItem disabled>
-									No repositories found
+									{t("pulls.filters.noRepositories")}
 								</DropdownMenuItem>
 							) : (
 								repos.map((repo) => (
@@ -300,15 +311,15 @@ function Pulls() {
 				) : isError ? (
 					<div className="flex flex-col items-center gap-2 p-10">
 						<p className="text-sm text-muted-foreground">
-							Failed to load pull requests.
+							{t("pulls.loadFailed")}
 						</p>
 						<Button variant="outline" onClick={() => refetch()}>
-							Retry
+							{t("common.actions.retry")}
 						</Button>
 					</div>
 				) : (data?.pulls.length ?? 0) === 0 ? (
 					<p className="p-10 text-center text-sm text-muted-foreground">
-						No {tab} pull requests found.
+						{t("pulls.empty", { tab })}
 					</p>
 				) : (
 					data?.pulls.map((pr) => (

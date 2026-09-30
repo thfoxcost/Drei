@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { useUserOrganizations } from "#/hooks/useOrganizations";
 import { authClient } from "#/lib/auth-client";
 import { uploadsUrl } from "#/lib/backend-url";
@@ -10,6 +11,8 @@ import Profile from "./profile";
 import Weather from "./weather-07";
 
 function Main() {
+	const { t } = useTranslation();
+
 	const navigate = useNavigate();
 	const { data: orgs = [] } = useUserOrganizations();
 	const { data: session } = authClient.useSession();
@@ -49,7 +52,7 @@ function Main() {
 						</div>
 					) : (
 						<div className="flex h-14 items-center justify-center rounded-lg border border-dashed border-border px-4 text-sm text-muted-foreground">
-							@{session?.user.name ?? "username"}
+							@{session?.user.name ?? t("common.states.unknownUser")}
 						</div>
 					)}
 				</div>

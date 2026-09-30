@@ -1,11 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 import type { BranchCompare } from "./use-pull-compare";
 
-export function usePRChangedFiles(
-	owner: string,
-	repo: string,
-	number: number,
-) {
+export function usePRChangedFiles(owner: string, repo: string, number: number) {
 	return useQuery({
 		queryKey: ["pr-files", owner, repo, number],
 		queryFn: async (): Promise<BranchCompare> => {
@@ -14,9 +11,7 @@ export function usePRChangedFiles(
 			);
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
-				throw new Error(
-					body?.error ?? "Failed to fetch changed files",
-				);
+				throw new Error(apiErrorMessage(body));
 			}
 			return res.json();
 		},

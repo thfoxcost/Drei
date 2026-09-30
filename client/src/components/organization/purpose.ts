@@ -9,16 +9,21 @@ import {
 
 export interface OrganizationPurpose {
   value: string;
-  label: string;
+  /** Translation key for the human-readable label. */
+  labelKey: string;
   icon: LucideIcon;
 }
 
 export const organizationPurposes: OrganizationPurpose[] = [
-  { value: "work", label: "Work", icon: BriefcaseBusiness },
-  { value: "school", label: "School", icon: GraduationCap },
-  { value: "hardware", label: "Hardware", icon: Cpu },
-  { value: "software", label: "Software", icon: Code2 },
-  { value: "recreational", label: "Recreational", icon: Gamepad2 },
+  { value: "work", labelKey: "orgs.purposes.work", icon: BriefcaseBusiness },
+  { value: "school", labelKey: "orgs.purposes.school", icon: GraduationCap },
+  { value: "hardware", labelKey: "orgs.purposes.hardware", icon: Cpu },
+  { value: "software", labelKey: "orgs.purposes.software", icon: Code2 },
+  {
+    value: "recreational",
+    labelKey: "orgs.purposes.recreational",
+    icon: Gamepad2,
+  },
 ];
 
 // getPurposeMeta resolves the icon and label for an organization purpose.

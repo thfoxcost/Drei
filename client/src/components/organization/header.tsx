@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { useEffect, useState } from "react"
 import {
   ArrowLeftRight,
@@ -33,7 +34,8 @@ import {
 
 
 export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
-  const { data: session } = authClient.useSession()
+    const { t } = useTranslation()
+const { data: session } = authClient.useSession()
   const [biography, setBiography] = useState<string | null>(null)
   const { toggle } = useTodo()
   const todosEnabled = useTodosEnabled()
@@ -60,18 +62,18 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
   return (
     <header className="mr-3 flex items-center justify-between gap-2 bg-muted/10 py-2 sm:px-2 sm:py-1">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <a href="/" aria-label="Home">
+        <a href="/" aria-label={t("nav.items.home")}>
           <img
             draggable={false}
             src="/logo-light.svg"
-            alt="Logo"
+            alt={t("nav.items.logo")}
             className="block h-6 w-6 shrink-0 dark:hidden sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
           />
 
           <img
             draggable={false}
             src="/logo-dark.svg"
-            alt="Logo"
+            alt={t("nav.items.logo")}
             className="hidden h-6 w-6 shrink-0 dark:block sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
           />
         </a>
@@ -92,12 +94,12 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Create</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("nav.create.label")}</DropdownMenuLabel>
 
             <DropdownMenuItem>
               <a href="/new" className="flex items-center gap-1">
                 <FolderPlus className="mr-1.5 h-4 w-4" />
-                New repository
+                {t("nav.create.newRepository")}
               </a>
 
             </DropdownMenuItem>
@@ -105,7 +107,7 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
             <DropdownMenuItem>
               <CircleDot className="mr-1.5 h-4 w-4" />
               <a href="/issues" className="flex items-center gap-1">
-                New issue
+                {t("nav.create.newIssue")}
               </a>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -115,7 +117,7 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
           <Button
             variant="outline"
             size="icon"
-            aria-label="Search"
+            aria-label={t("nav.items.search")}
             onClick={toggle}
           >
             <CopyIcon />
@@ -147,7 +149,7 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
 
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate font-semibold text-sm text-foreground">
-                    {session?.user.name ?? "Unknown User"}
+                    {session?.user.name ?? t("common.states.unknownUser")}
                   </span>
 
                   <span className="truncate text-xs text-muted-foreground">
@@ -170,7 +172,7 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
 
             <DropdownMenuItem asChild>
               <a href="/settings" className="truncate">
-                {biography || "No biography yet"}
+                {biography || t("nav.user.noBiography")}
               </a>
             </DropdownMenuItem>
 
@@ -179,21 +181,21 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
             <DropdownMenuItem asChild>
               <a href="/">
                 <User className="mr-1 h-4 w-4" />
-                Profile
+                {t("nav.user.profile")}
               </a>
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
               <a href="/repos">
                 <BookMarked className="mr-1 h-4 w-4" />
-                Repositories
+                {t("nav.user.repositories")}
               </a>
             </DropdownMenuItem>
 
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Building2 className="mr-1 h-4 w-4" />
-                Organizations
+                {t("nav.user.organizations")}
               </DropdownMenuSubTrigger>
 
               <DropdownMenuSubContent className="w-56">
@@ -206,14 +208,14 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
             <DropdownMenuItem asChild>
               <a href="/settings">
                 <Settings className="mr-1 h-4 w-4" />
-                Settings
+                {t("nav.user.settings")}
               </a>
             </DropdownMenuItem>
 
             <DropdownMenuSub >
               <DropdownMenuSubTrigger>
                 <CircleQuestionMark className="mr-1 h-4 w-4" />
-                Help
+                {t("nav.help.label")}
               </DropdownMenuSubTrigger>
 
               <DropdownMenuSubContent className="w-40">
@@ -233,7 +235,7 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
                         d="M16 0C7.177 0 0 7.177 0 16s7.177 16 16 16s16-7.177 16-16S24.823 0 16 0m0 1.527c7.995 0 14.473 6.479 14.473 14.473S23.994 30.473 16 30.473S1.527 23.994 1.527 16S8.006 1.527 16 1.527m-4.839 6.296c-.188-.005-.375 0-.568.005c-1.307.079-2.093.693-2.312 1.964c-.151.891-.125 1.796-.188 2.692a9 9 0 0 1-.156 1.38c-.177.813-.525 1.068-1.353 1.109q-.167.018-.324.057v1.948c1.5.073 1.704.605 1.823 2.172c.048.573-.015 1.147.021 1.719q.042.816.208 1.6c.344 1.432 1.745 1.911 3.433 1.624V22.38c-.272 0-.511.005-.74 0c-.579-.016-.792-.161-.844-.713c-.079-.713-.057-1.437-.099-2.156c-.089-1.339-.235-2.651-1.541-3.5c.672-.495 1.161-1.084 1.312-1.865c.109-.547.177-1.099.219-1.651s-.025-1.12.021-1.667c.077-.885.135-1.249 1.197-1.213c.161 0 .317-.021.495-.036V7.834c-.213 0-.411-.005-.604-.011m10.126.016a5.4 5.4 0 0 0-1.089.079v1.697c.329 0 .584 0 .833.005c.439.005.772.177.813.661c.041.443.041.891.083 1.339c.089.896.136 1.796.292 2.677c.136.724.636 1.265 1.255 1.713c-1.088.729-1.411 1.776-1.463 2.953c-.032.801-.052 1.615-.093 2.427c-.037.74-.297.979-1.043.995c-.208.011-.411.027-.64.041v1.74c.432 0 .833.027 1.235 0c1.239-.073 1.995-.677 2.239-1.885a15 15 0 0 0 .183-2.005c.041-.615.036-1.235.099-1.844c.093-.953.532-1.349 1.484-1.411q.133-.018.267-.057v-1.953c-.161-.021-.271-.037-.391-.041c-.713-.032-1.068-.272-1.251-.948a6.6 6.6 0 0 1-.197-1.324c-.052-.823-.047-1.656-.099-2.479c-.109-1.588-1.063-2.339-2.516-2.38zm-9.188 7.036c-1.432 0-1.536 2.109-.115 2.245h.079a1.103 1.103 0 0 0 1.167-1.037v-.061a1.13 1.13 0 0 0-1.104-1.147zm3.88 0a1.083 1.083 0 0 0-1.115 1.043c0 .036 0 .067.005.104c0 .672.459 1.099 1.147 1.099c.677 0 1.104-.443 1.104-1.136c-.005-.672-.459-1.115-1.141-1.109zm3.948 0a1.15 1.15 0 0 0-1.167 1.115c0 .625.505 1.131 1.136 1.131h.011c.567.099 1.135-.448 1.172-1.104c.031-.609-.521-1.141-1.152-1.141z"
                       />
                     </svg>
-                    Swagger
+                    {t("nav.help.swagger")}
                   </a>
                 </DropdownMenuItem>
 
@@ -249,7 +251,7 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
                         d="M12 2v4q0 1.25.875 2.125T15 9h4v11q0 .825-.587 1.413T17 22H7q-.825 0-1.412-.587T5 20V4q0-.825.588-1.412T7 2zm2 0l5 5h-4q-.425 0-.712-.288T14 6zm-4 17h2q.425 0 .713-.288T13 18t-.288-.712T12 17h-2q-.425 0-.712.288T9 18t.288.713T10 19m0-4h4q.425 0 .713-.288T15 14t-.288-.712T14 13h-4q-.425 0-.712.288T9 14t.288.713T10 15"
                       />
                     </svg>
-                    Docs
+                    {t("nav.help.docs")}
                   </a>
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
@@ -265,7 +267,7 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
               }}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Sign out
+              {t("nav.user.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

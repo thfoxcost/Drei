@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TriangleAlert } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { NoRepo } from "#/components/repo/norepo";
 import Repo from "#/components/repo/repo";
@@ -12,10 +13,13 @@ export const Route = createFileRoute("/$username/$repo/")({
 });
 
 function RouteComponent() {
+	const { t } = useTranslation();
 	const { username, repo }: { username: string; repo: string } =
 		Route.useParams();
-	const { data, isLoading, isError, isFetching, refetch, error } =
-		useRepoData(username, repo);
+	const { data, isLoading, isError, isFetching, refetch, error } = useRepoData(
+		username,
+		repo,
+	);
 
 	if (isLoading) {
 		return (
@@ -32,12 +36,12 @@ function RouteComponent() {
 			<div className="flex h-[60vh] w-full flex-col items-center justify-center gap-2 text-center">
 				<TriangleAlert className="size-7 text-destructive" />
 
-				<p className="text-sm font-medium">Failed to load repository</p>
+				<p className="text-sm font-medium">{t("repo.empty.loadFailed")}</p>
 
 				<p className="text-sm text-muted-foreground">
 					{error instanceof Error && error.message
 						? error.message
-						: "Something went wrong while fetching this repository."}
+						: t("repo.empty.loadFailedBody")}
 				</p>
 
 				<Button
@@ -46,7 +50,7 @@ function RouteComponent() {
 					onClick={() => refetch()}
 					disabled={isFetching}
 				>
-					{isFetching ? "Retrying..." : "Try again"}
+					{isFetching ? t("repo.empty.retrying") : t("repo.empty.tryAgain")}
 				</Button>
 			</div>
 		);
@@ -56,16 +60,16 @@ function RouteComponent() {
 		return <Repo owner={username} repo={repo} />;
 	}
 
-  return (
-    <NoRepo
-      showRemoteReset
-      title="Push your first commit"
-      contentClassName="max-w-2xl"
-      description={
-        <span className="whitespace-nowrap">
-          Empty repository — push your first commit with the commands below.
-        </span>
-      }
-    />
-  );
+	return (
+		<NoRepo
+			showRemoteReset
+			title={t("repo.empty.guided.title")}
+			contentClassName="max-w-2xl"
+			description={
+				<span className="whitespace-nowrap">
+					{t("repo.empty.guided.description")}
+				</span>
+			}
+		/>
+	);
 }

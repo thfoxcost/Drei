@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 import type {
-  CreateOrganizationRepoRequest,
-  OrganizationCreateRequest,
-  OrganizationDetail,
-  OrganizationLanguage,
-  OrganizationListItem,
-  OrganizationMember,
-  OrganizationRepo,
-  OrganizationUpdateRequest,
+	CreateOrganizationRepoRequest,
+	OrganizationCreateRequest,
+	OrganizationDetail,
+	OrganizationLanguage,
+	OrganizationListItem,
+	OrganizationMember,
+	OrganizationRepo,
+	OrganizationUpdateRequest,
 } from "#/types/organization";
 
 export function useUserOrganizations() {
@@ -17,7 +18,12 @@ export function useUserOrganizations() {
 			const res = await fetch("http://localhost:3200/api/orgs", {
 				credentials: "include",
 			});
-			if (!res.ok) throw new Error("Failed to fetch organizations");
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, {
+						fallbackKey: "errors.client.fetchOrganizations",
+					}),
+				);
 			const data = await res.json();
 			return data.organizations ?? [];
 		},
@@ -33,7 +39,12 @@ export function useOrganization(slug: string) {
 				`http://localhost:3200/api/orgs/${encodeURIComponent(slug)}`,
 				{ credentials: "include" },
 			);
-			if (!res.ok) throw new Error("Failed to fetch organization");
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, {
+						fallbackKey: "errors.client.fetchOrganization",
+					}),
+				);
 			return res.json();
 		},
 		enabled: !!slug,
@@ -42,178 +53,206 @@ export function useOrganization(slug: string) {
 }
 
 export function useOrganizationMembers(slug: string) {
-  return useQuery({
-    queryKey: ["organization-members", slug],
-    queryFn: async (): Promise<OrganizationMember[]> => {
-      const res = await fetch(
-        `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/members`,
-        { credentials: "include" },
-      );
-      if (!res.ok) throw new Error("Failed to fetch organization members");
-      const data = await res.json();
-      return data.members ?? [];
-    },
-    enabled: !!slug,
-    staleTime: 30_000,
-  });
+	return useQuery({
+		queryKey: ["organization-members", slug],
+		queryFn: async (): Promise<OrganizationMember[]> => {
+			const res = await fetch(
+				`http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/members`,
+				{ credentials: "include" },
+			);
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, {
+						fallbackKey: "errors.client.fetchOrganizationMembers",
+					}),
+				);
+			const data = await res.json();
+			return data.members ?? [];
+		},
+		enabled: !!slug,
+		staleTime: 30_000,
+	});
 }
 
-async function postOrganizationMembership(slug: string, action: "join" | "leave") {
-  const res = await fetch(
-    `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/${action}`,
-    {
-      method: "POST",
-      credentials: "include",
-    },
-  );
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    throw new Error(
-      body?.error ??
-        (action === "join"
-          ? "Failed to join organization"
-          : "Failed to leave organization"),
-    );
-  }
+async function postOrganizationMembership(
+	slug: string,
+	action: "join" | "leave",
+) {
+	const res = await fetch(
+		`http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/${action}`,
+		{
+			method: "POST",
+			credentials: "include",
+		},
+	);
+	if (!res.ok) {
+		const body = await res.json().catch(() => null);
+		throw new Error(
+			body?.error ??
+				(action === "join"
+					? apiErrorMessage(null, {
+							fallbackKey: "errors.client.joinOrganization",
+						})
+					: apiErrorMessage(null, {
+							fallbackKey: "errors.client.leaveOrganization",
+						})),
+		);
+	}
 }
 
 export function useJoinOrganization(slug: string) {
-  const queryClient = useQueryClient();
+	const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: () => postOrganizationMembership(slug, "join"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organization", slug] });
-      queryClient.invalidateQueries({
-        queryKey: ["organization-members", slug],
-      });
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-    },
-  });
+	return useMutation({
+		mutationFn: () => postOrganizationMembership(slug, "join"),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["organization", slug] });
+			queryClient.invalidateQueries({
+				queryKey: ["organization-members", slug],
+			});
+			queryClient.invalidateQueries({ queryKey: ["organizations"] });
+		},
+	});
 }
 
 export function useLeaveOrganization(slug: string) {
-  const queryClient = useQueryClient();
+	const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: () => postOrganizationMembership(slug, "leave"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organization", slug] });
-      queryClient.invalidateQueries({
-        queryKey: ["organization-members", slug],
-      });
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-    },
-  });
+	return useMutation({
+		mutationFn: () => postOrganizationMembership(slug, "leave"),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["organization", slug] });
+			queryClient.invalidateQueries({
+				queryKey: ["organization-members", slug],
+			});
+			queryClient.invalidateQueries({ queryKey: ["organizations"] });
+		},
+	});
 }
 
 export function useOrganizationRepositories(slug: string) {
-  return useQuery({
-    queryKey: ["organization-repos", slug],
-    queryFn: async (): Promise<{ repositories: OrganizationRepo[]; total: number }> => {
-      const res = await fetch(
-        `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/repos`,
-        { credentials: "include" },
-      );
-      if (!res.ok) throw new Error("Failed to fetch organization repositories");
-      const data = await res.json();
-      return {
-        repositories: data.repositories ?? [],
-        total: data.total ?? 0,
-      };
-    },
-    enabled: !!slug,
-    staleTime: 30_000,
-  });
+	return useQuery({
+		queryKey: ["organization-repos", slug],
+		queryFn: async (): Promise<{
+			repositories: OrganizationRepo[];
+			total: number;
+		}> => {
+			const res = await fetch(
+				`http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/repos`,
+				{ credentials: "include" },
+			);
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, {
+						fallbackKey: "errors.client.fetchOrganizationRepos",
+					}),
+				);
+			const data = await res.json();
+			return {
+				repositories: data.repositories ?? [],
+				total: data.total ?? 0,
+			};
+		},
+		enabled: !!slug,
+		staleTime: 30_000,
+	});
 }
 
 export function useOrganizationLanguages(slug: string) {
-  return useQuery({
-    queryKey: ["organization-languages", slug],
-    queryFn: async (): Promise<OrganizationLanguage[]> => {
-      const res = await fetch(
-        `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/languages`,
-        { credentials: "include" },
-      );
-      if (!res.ok) throw new Error("Failed to fetch organization languages");
-      const data = await res.json();
-      return data.languages ?? [];
-    },
-    enabled: !!slug,
-    staleTime: 60_000,
-  });
+	return useQuery({
+		queryKey: ["organization-languages", slug],
+		queryFn: async (): Promise<OrganizationLanguage[]> => {
+			const res = await fetch(
+				`http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/languages`,
+				{ credentials: "include" },
+			);
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, {
+						fallbackKey: "errors.client.fetchOrganizationLanguages",
+					}),
+				);
+			const data = await res.json();
+			return data.languages ?? [];
+		},
+		enabled: !!slug,
+		staleTime: 60_000,
+	});
 }
 
 export function useCreateOrganizationRepository(slug: string) {
-  const queryClient = useQueryClient();
+	const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (
-      params: CreateOrganizationRepoRequest,
-    ): Promise<{ owner: string; name: string }> => {
-      const res = await fetch(
-        `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/repos`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(params),
-        },
-      );
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(
-          body?.error ?? body?.message ?? "Failed to create repository",
-        );
-      }
-      const data = await res.json();
-      return data.repository;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["organization-repos", slug],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["organization-languages", slug],
-      });
-    },
-  });
+	return useMutation({
+		mutationFn: async (
+			params: CreateOrganizationRepoRequest,
+		): Promise<{ owner: string; name: string }> => {
+			const res = await fetch(
+				`http://localhost:3200/api/orgs/${encodeURIComponent(slug)}/repos`,
+				{
+					method: "POST",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(params),
+				},
+			);
+			if (!res.ok) {
+				const body = await res.json().catch(() => null);
+				throw new Error(
+					apiErrorMessage(body) ??
+						apiErrorMessage(null, {
+							fallbackKey: "errors.client.createRepository",
+						}),
+				);
+			}
+			const data = await res.json();
+			return data.repository;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["organization-repos", slug],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["organization-languages", slug],
+			});
+		},
+	});
 }
 
 export function useUpdateOrganization(slug: string) {
-  const queryClient = useQueryClient();
+	const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (
-      params: OrganizationUpdateRequest,
-    ): Promise<OrganizationDetail> => {
-      const res = await fetch(
-        `http://localhost:3200/api/orgs/${encodeURIComponent(slug)}`,
-        {
-          method: "PATCH",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(params),
-        },
-      );
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? "Failed to update organization");
-      }
-      const data = await res.json();
-      return data.organization;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organization", slug] });
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-    },
-  });
+	return useMutation({
+		mutationFn: async (
+			params: OrganizationUpdateRequest,
+		): Promise<OrganizationDetail> => {
+			const res = await fetch(
+				`http://localhost:3200/api/orgs/${encodeURIComponent(slug)}`,
+				{
+					method: "PATCH",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(params),
+				},
+			);
+			if (!res.ok) {
+				const body = await res.json().catch(() => null);
+				throw new Error(apiErrorMessage(body));
+			}
+			const data = await res.json();
+			return data.organization;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["organization", slug] });
+			queryClient.invalidateQueries({ queryKey: ["organizations"] });
+		},
+	});
 }
 
 export function useCreateOrganization() {
-  const queryClient = useQueryClient();
+	const queryClient = useQueryClient();
 
-  return useMutation({
+	return useMutation({
 		mutationFn: async (
 			params: OrganizationCreateRequest,
 		): Promise<OrganizationDetail> => {
@@ -225,7 +264,7 @@ export function useCreateOrganization() {
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
-				throw new Error(body?.error ?? "Failed to create organization");
+				throw new Error(apiErrorMessage(body));
 			}
 			const data = await res.json();
 			return data.organization;
@@ -243,7 +282,10 @@ export function useCheckSlug(slug: string) {
 			const res = await fetch(
 				`http://localhost:3200/api/orgs?slug=${encodeURIComponent(slug)}`,
 			);
-			if (!res.ok) throw new Error("Failed to check slug");
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, { fallbackKey: "errors.client.checkSlug" }),
+				);
 			return res.json();
 		},
 		enabled: slug.length >= 2,
@@ -265,7 +307,7 @@ export function useDeleteOrganization(slug: string) {
 			);
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
-				throw new Error(body?.error ?? "Failed to delete organization");
+				throw new Error(apiErrorMessage(body));
 			}
 		},
 		onSuccess: () => {

@@ -22,6 +22,7 @@ import {
 	Users,
 } from "lucide-react";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { useDuplicatePR } from "#/hooks/PRs/use-duplicate-pr";
 import { usePRCommits } from "#/hooks/PRs/use-pr-commits";
 import {
@@ -30,6 +31,7 @@ import {
 } from "#/hooks/PRs/use-pull-compare";
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard";
 import { useRepoData } from "#/hooks/useRepoData";
+import { dateFnsLocale } from "#/i18n/lib/format";
 import type { Commit } from "#/types/repo";
 import CodeCommitBlock from "@/components/repo/commits/code-commit";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -152,6 +154,7 @@ function CommitDialogRow({
 	owner: string;
 	repo: string;
 }) {
+	const { t } = useTranslation();
 	const { isCopied, copyToClipboard } = useCopyToClipboard();
 	const shortHash = commit.hash.slice(0, 7);
 	const title = commit.message.split("\n")[0];
@@ -178,9 +181,12 @@ function CommitDialogRow({
 					</Avatar>
 
 					<span className="truncate">
-						{commit.author} committed{" "}
-						{formatDistanceToNowStrict(new Date(commit.date), {
-							addSuffix: true,
+						{t("pulls.commits.committed", {
+							author: commit.author,
+							time: formatDistanceToNowStrict(new Date(commit.date), {
+								addSuffix: true,
+								locale: dateFnsLocale(),
+							}),
 						})}
 					</span>
 				</div>
@@ -197,7 +203,9 @@ function CommitDialogRow({
 				<button
 					type="button"
 					onClick={() => copyToClipboard(commit.hash)}
-					aria-label={isCopied ? "Copied" : "Copy commit hash"}
+					aria-label={
+						isCopied ? t("common.actions.copied") : t("pulls.commits.copyHash")
+					}
 					className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 				>
 					{isCopied ? (
@@ -209,7 +217,7 @@ function CommitDialogRow({
 
 				<Link
 					to={`/${owner}/${repo}/commits/${commit.hash}`}
-					aria-label="View commit"
+					aria-label={t("pulls.commits.viewCommit")}
 					className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 				>
 					<Code2 className="size-4" />
@@ -234,7 +242,9 @@ function CommitsDialog({
 	base: string;
 	source: string;
 }) {
+	const { t } = useTranslation();
 	const { data: commits, isLoading } = usePRCommits(owner, repo, base, source);
+	const commitCount = commits?.length ?? 0;
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -242,8 +252,8 @@ function CommitsDialog({
 				<DialogHeader>
 					<DialogTitle>
 						{isLoading
-							? "Commits"
-							: `${commits?.length ?? 0} commit${(commits?.length ?? 0) !== 1 ? "s" : ""}`}
+							? t("compare.commits")
+							: t("compare.commitsCount", { count: commitCount })}
 					</DialogTitle>
 				</DialogHeader>
 
@@ -251,11 +261,11 @@ function CommitsDialog({
 					{isLoading ? (
 						<div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
 							<Loader2 className="size-4 animate-spin" />
-							<span>Loading commits...</span>
+							<span>{t("compare.loadingCommits")}</span>
 						</div>
 					) : !commits || commits.length === 0 ? (
 						<div className="py-8 text-center text-sm text-muted-foreground">
-							No commits found.
+							{t("compare.noCommits")}
 						</div>
 					) : (
 						<div>
@@ -318,6 +328,7 @@ function BranchCombobox({
 }
 
 export function CompareComponent() {
+	const { t } = useTranslation();
 	const { username: owner, repo } = Route.useParams();
 	const navigate = useNavigate();
 	const pathname = useRouterState().location.pathname;
@@ -383,11 +394,13 @@ export function CompareComponent() {
 
 	const [commitsOpen, setCommitsOpen] = useState(false);
 
-	const title = hasComparison ? "Open a pull request" : "Compare changes";
+	const title = t(
+		hasComparison ? "compare.headingCreate" : "compare.headingReview",
+	);
 
-	const description = hasComparison
-		? "Review the changes between these two branches and open a pull request."
-		: "Choose two branches to see what's changed or to start a new pull request.";
+	const description = t(
+		hasComparison ? "compare.subtitleCreate" : "compare.subtitleReview",
+	);
 
 	const stats = compare
 		? {
@@ -450,7 +463,7 @@ export function CompareComponent() {
 						<div className="flex items-center gap-2">
 							<div className="flex flex-col">
 								<BranchCombobox
-									placeholder="Choose base branch"
+									placeholder={t("compare.baseBranchPlaceholder")}
 									branches={branches}
 									value={base}
 									onValueChange={handleBaseChange}
@@ -462,7 +475,7 @@ export function CompareComponent() {
 
 							<div className="flex flex-col">
 								<BranchCombobox
-									placeholder="Choose compare branch"
+									placeholder={t("compare.compareBranchPlaceholder")}
 									branches={branches}
 									value={source}
 									onValueChange={handleSourceChange}
@@ -491,16 +504,14 @@ export function CompareComponent() {
 						</svg>
 
 						<span className="text-xs leading-5 text-muted-foreground">
-							Changes from the compare branch will be merged into the base
-							branch. The base branch is the target, while the compare branch
-							contains the changes you want to review and merge.
+							{t("compare.helper")}
 						</span>
 					</span>
 
 					{hasComparison && compareLoading && (
 						<div className="my-2 flex items-center justify-center gap-2 rounded-md border bg-accent/20 py-4 text-sm text-muted-foreground">
 							<Loader2 className="size-4 animate-spin" />
-							<span>Comparing branches...</span>
+							<span>{t("compare.comparing")}</span>
 						</div>
 					)}
 
@@ -509,8 +520,11 @@ export function CompareComponent() {
 							<AlertTriangle className="size-4 shrink-0" />
 							<span>
 								{compare?.mergeable === false
-									? "These branches cannot be merged cleanly."
-									: `Failed to compare branches: ${compareErrorObj?.message ?? "Unknown error"}`}
+									? t("compare.cannotMergeCleanly")
+									: t("compare.compareFailed", {
+											message:
+												compareErrorObj?.message ?? t("compare.unknownError"),
+										})}
 							</span>
 						</div>
 					)}
@@ -528,7 +542,7 @@ export function CompareComponent() {
 									{stats.commits}
 								</span>
 
-								<span>commits</span>
+								<span>{t("compare.stats.commits")}</span>
 							</button>
 
 							<span className="flex items-center gap-1.5 text-muted-foreground">
@@ -538,7 +552,7 @@ export function CompareComponent() {
 									{stats.filesChanged}
 								</span>
 
-								<span>files changed</span>
+								<span>{t("compare.stats.filesChanged")}</span>
 							</span>
 
 							<span className="flex items-center gap-1.5 text-muted-foreground">
@@ -548,7 +562,7 @@ export function CompareComponent() {
 									{stats.contributors}
 								</span>
 
-								<span>contributors</span>
+								<span>{t("compare.stats.contributors")}</span>
 							</span>
 						</div>
 					)}
@@ -562,20 +576,39 @@ export function CompareComponent() {
 							<FileDiff className="size-4 text-muted-foreground" />
 
 							<span>
-								Showing{" "}
-								<span className="font-semibold">
-									{compare.files.length} changed files
-								</span>{" "}
-								with{" "}
-								<span className="font-semibold text-green-600 dark:text-green-500">
-									+{compare.diffs.reduce((s, d) => s + d.additions, 0)}{" "}
-									additions
-								</span>{" "}
-								and{" "}
-								<span className="font-semibold text-red-600 dark:text-red-500">
-									-{compare.diffs.reduce((s, d) => s + d.deletions, 0)}{" "}
-									deletions
-								</span>
+								{/*
+									`<Trans>` keeps this sentence translatable while
+									restoring the original `<strong>` emphasis and the
+									green/red colouring on the addition and deletion
+									counts. The catalog string owns the word order and
+									the named tags are the styling hooks.
+								*/}
+								<Trans
+									i18nKey="compare.summaryTrans"
+									values={{
+										count: compare.files.length,
+										filesChanged: t("compare.stats.filesChanged"),
+										additionsCount: compare.diffs.reduce(
+											(s, d) => s + d.additions,
+											0,
+										),
+										additionsLabel: t("compare.additions"),
+										deletionsCount: compare.diffs.reduce(
+											(s, d) => s + d.deletions,
+											0,
+										),
+										deletionsLabel: t("compare.deletions"),
+									}}
+									components={{
+										files: <span className="font-semibold" />,
+										additions: (
+											<span className="font-semibold text-green-600 dark:text-green-500" />
+										),
+										deletions: (
+											<span className="font-semibold text-red-600 dark:text-red-500" />
+										),
+									}}
+								/>
 							</span>
 						</div>
 

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { useNavigate } from "@tanstack/react-router"
 import { Plus } from "lucide-react"
 import type { OrganizationListItem } from "#/types/organization"
@@ -11,7 +12,8 @@ interface OrganizationMenuProps {
 }
 
 export function OrganizationMenu({ organizations = [] }: OrganizationMenuProps) {
-	const navigate = useNavigate()
+	  const { t } = useTranslation()
+const navigate = useNavigate()
 
 	return (
 		<>
@@ -21,20 +23,21 @@ export function OrganizationMenu({ organizations = [] }: OrganizationMenuProps) 
 			<DropdownMenuSeparator />
 			<DropdownMenuItem onClick={() => navigate({ to: "/orgs/new" })}>
 				<Plus className="mr-2 h-4 w-4" />
-				Add new organization
+				{t("nav.user.addOrganization")}
 			</DropdownMenuItem>
 		</>
 	)
 }
 
 function OrganizationMenuItem({ organization }: { organization: OrganizationListItem }) {
+	const { t } = useTranslation()
 	const navigate = useNavigate()
 
 	return (
 		<DropdownMenuItem onClick={() => navigate({ to: "/orgs/$org", params: { org: organization.slug } })}>
 			<img
 				src={organization.avatar ?? undefined}
-				alt={`${organization.name} avatar`}
+				alt={t("nav.user.avatarAlt", { name: organization.name })}
 				className="mr-2 h-5 w-5 shrink-0 rounded-md object-cover"
 			/>
 			<span className="truncate">{organization.name}</span>

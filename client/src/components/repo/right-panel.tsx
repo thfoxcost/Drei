@@ -1,9 +1,12 @@
-"use client";
+import { useTranslation } from "react-i18next";
+
+("use client");
 
 import { useNavigate } from "@tanstack/react-router";
 import * as linguistLanguages from "linguist-languages";
 import { GitFork } from "lucide-react";
 import { usePullRequests } from "#/hooks/PRs/use-pull-requests";
+import { formatBytes, formatNumber, formatShortDate } from "#/i18n/lib/format";
 import type { RepoFile, TagInfo } from "#/types/repo";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "../ui/badge";
@@ -30,17 +33,6 @@ function fallbackColor(name: string) {
 function getLanguageColor(name: string): string {
 	const entry = (linguistLanguages as Record<string, { color?: string }>)[name];
 	return entry?.color ?? fallbackColor(name);
-}
-
-function formatBytes(bytes: number): string {
-	if (bytes === 0) return "0 B";
-	const units = ["B", "KB", "MB", "GB"];
-	const i = Math.min(
-		Math.floor(Math.log(bytes) / Math.log(1024)),
-		units.length - 1,
-	);
-	const value = bytes / 1024 ** i;
-	return `${value.toFixed(value >= 100 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
 interface Lang {
@@ -94,6 +86,7 @@ export default function RightPanel({
 	repo,
 	branch,
 }: RightPanelProps) {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const sortedLangs = [...(data.langs ?? [])].sort(
 		(a, b) => b.percent - a.percent,
@@ -113,7 +106,7 @@ export default function RightPanel({
 			{/* About */}
 			<div className="space-y-2">
 				<div className="flex items-center justify-between">
-					<p className="font-semibold">About</p>
+					<p className="font-semibold">{t("repo.sidebar.about")}</p>
 					<RepoVisibilitySettings
 						visibility={visibility}
 						onToggle={setItemVisible}
@@ -127,12 +120,12 @@ export default function RightPanel({
 							: "italic text-muted-foreground"
 					}`}
 				>
-					{data.description || "No description"}
+					{data.description || t("repo.sidebar.noDescription")}
 				</p>
 				{data.isFork && data.forkedFromOwner && data.forkedFromName && (
 					<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
 						<GitFork className="h-3 w-3" />
-						Forked from{" "}
+						{t("repo.sidebar.forkedFrom")}{" "}
 						<button
 							type="button"
 							className="cursor-pointer bg-transparent border-none p-0 hover:underline text-xs text-muted-foreground"
@@ -185,7 +178,7 @@ export default function RightPanel({
 							<div className="flex items-center justify-between text-sm text-muted-foreground transition-colors hover:text-white">
 								<div className="flex items-center gap-2">
 									<Icon size={16} />
-									<span>{item.name}</span>
+									<span>{t(item.nameKey)}</span>
 								</div>
 
 								{value && <span className="text-foreground">{value}</span>}
@@ -213,7 +206,7 @@ export default function RightPanel({
 							>
 								<div className="flex items-center gap-2">
 									<Icon size={16} />
-									<span>{item.name}</span>
+									<span>{t(item.nameKey)}</span>
 								</div>
 
 								{value && <span className="text-foreground">{value}</span>}
@@ -226,8 +219,12 @@ export default function RightPanel({
 			<Separator />
 			<Tabs defaultValue="activity" className="w-[400px] h-[208px]">
 				<TabsList>
-					<TabsTrigger value="activity">Activity</TabsTrigger>
-					<TabsTrigger value="contribution">Contribution</TabsTrigger>
+					<TabsTrigger value="activity">
+						{t("repo.sidebar.activity")}
+					</TabsTrigger>
+					<TabsTrigger value="contribution">
+						{t("repo.sidebar.contribution")}
+					</TabsTrigger>
 				</TabsList>
 				<TabsContent value="activity">
 					<ContributionChart data={data.commitActivity} />
@@ -247,7 +244,7 @@ export default function RightPanel({
 					<Separator />
 					<div className="space-y-2">
 						<p className="text-sm font-semibold">
-							Contributors
+							{t("repo.sidebar.contributors")}
 							<Badge variant="secondary" className="mx-1">
 								{contributors.length}
 							</Badge>
@@ -261,7 +258,9 @@ export default function RightPanel({
 				<>
 					<Separator />
 					<div className="space-y-2">
-						<p className="text-sm font-semibold">Languages</p>
+						<p className="text-sm font-semibold">
+							{t("repo.sidebar.languages")}
+						</p>
 						<div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
 							{sortedLangs.map((lang) => (
 								<div
@@ -284,7 +283,7 @@ export default function RightPanel({
 										/>
 										{lang.name}
 										<span className="font-medium text-foreground">
-											{lang.percent.toFixed(1)}%
+											{formatNumber(Number(lang.percent.toFixed(1)))}%
 										</span>
 									</span>
 								))}
@@ -297,9 +296,11 @@ export default function RightPanel({
 			<Separator />
 			<div className=" text-sm">
 				<p className="text">
-					<span className="font-medium text-white">Created at : </span>
+					<span className="font-medium text-white">
+						{t("repo.sidebar.createdAt")}{" "}
+					</span>
 
-					{new Date(data.created).toLocaleString("en-GB", {
+					{formatShortDate(new Date(data.created), {
 						year: "numeric",
 						month: "short",
 						day: "2-digit",

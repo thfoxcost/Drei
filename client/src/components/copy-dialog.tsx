@@ -1,5 +1,6 @@
 import { format } from "date-fns"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   Bell,
   BellOff,
@@ -50,7 +51,7 @@ import { Input } from "@/components/ui/input"
 import { Kbd } from "@/components/ui/kbd"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  TODO_STATUS_LABEL,
+  TODO_STATUS_LABEL_KEY,
   TodoStatusIcon,
   type TodoStatus,
 } from "@/components/todo-status-icon"
@@ -59,6 +60,7 @@ import useUserRepos from "#/hooks/useUserRepos"
 import { PersonPreviewCard } from "@/components/people/person-preview-card"
 import { useTodo } from "@/components/todo-provider"
 import { reminderSummary, type TodoItem } from "@/components/todo-types"
+import { dateFnsLocale } from "#/i18n/lib/format"
 
 type TodoTab = "undone" | "done"
 
@@ -97,6 +99,7 @@ const ROW_CLASS: Record<TodoStatus, string> = {
 }
 
 export function CopyDialog() {
+  const { t } = useTranslation()
   const {
     open,
     setOpen: onOpenChange,
@@ -333,8 +336,10 @@ export function CopyDialog() {
         <button
           type="button"
           onClick={() => cycleStatus(item.id)}
-          title={`Mark as ${TODO_STATUS_LABEL[nextStatus].toLowerCase()}`}
-          aria-label={`Status: ${TODO_STATUS_LABEL[item.status]}`}
+          title={t("todos.markAsStatus", {
+            status: t(TODO_STATUS_LABEL_KEY[nextStatus]),
+          })}
+          aria-label={t("todos.statusLabel", { status: t(TODO_STATUS_LABEL_KEY[item.status]) })}
           className="rounded-full p-0.5 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
           <TodoStatusIcon status={item.status} />
@@ -347,14 +352,14 @@ export function CopyDialog() {
             onChange={(e) => setEditDraft(e.target.value)}
             onBlur={saveEditing}
             onKeyDown={handleEditKeyDown}
-            aria-label="Edit to-do"
+            aria-label={t("nav.todos.edit")}
             className="h-6 min-w-0 flex-1 text-sm"
           />
         ) : (
           <button
             type="button"
             onClick={() => startEditing(item)}
-            title="Edit"
+            title={t("todos.edit")}
             className={`min-w-0 flex-1 truncate text-left text-sm ${
               ROW_CLASS[item.status]
             }`}
@@ -366,19 +371,21 @@ export function CopyDialog() {
         {item.reminder && (
           <Bell
             className="size-3 shrink-0 text-warning"
-            aria-label={reminderSummary(item.reminder) ?? "Reminder set"}
+            aria-label={reminderSummary(item.reminder, t) ?? t("nav.todos.reminderSet")}
           />
         )}
 
         <div className="relative flex shrink-0 items-center">
           <time
             dateTime={item.createdAt}
-            title={`Created ${format(new Date(item.createdAt), "PPpp")}`}
+            title={t("todos.reminder.created", {
+              date: format(new Date(item.createdAt), "PPpp", { locale: dateFnsLocale() }),
+            })}
             className={`text-xs text-muted-foreground tabular-nums transition-opacity group-hover:opacity-0 ${
               editingId === item.id ? "invisible" : ""
             }`}
           >
-            {format(new Date(item.createdAt), "MMM d")}
+            {format(new Date(item.createdAt), "MMM d", { locale: dateFnsLocale() })}
           </time>
 
           <DropdownMenu>
@@ -386,7 +393,7 @@ export function CopyDialog() {
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label={`Actions for ${item.title}`}
+                aria-label={t("nav.todos.actionsFor", { title: item.title })}
                 className="absolute right-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
               >
                 <Ellipsis />
@@ -396,7 +403,7 @@ export function CopyDialog() {
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem onSelect={() => startEditing(item)}>
                 <Pencil className="mr-1.5 size-4" />
-                Edit
+                {t("todos.edit")}
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -407,13 +414,13 @@ export function CopyDialog() {
                 ) : (
                   <Pin className="mr-1.5 size-4" />
                 )}
-                {item.pinned ? "Unpin" : "Pin"}
+                {item.pinned ? t("todos.unpin") : t("todos.pin")}
               </DropdownMenuItem>
 
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <TodoStatusIcon status={item.status} className="mr-1.5" />
-                  Mark as
+                  {t("todos.markAs")}
                 </DropdownMenuSubTrigger>
 
                 <DropdownMenuSubContent>
@@ -423,7 +430,7 @@ export function CopyDialog() {
                       onSelect={() => patch(item.id, { status })}
                     >
                       <TodoStatusIcon status={status} className="mr-1.5" />
-                      {TODO_STATUS_LABEL[status]}
+                      {t(TODO_STATUS_LABEL_KEY[status])}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuSubContent>
@@ -436,26 +443,26 @@ export function CopyDialog() {
                   ) : (
                     <BellOff className="mr-1.5 size-4" />
                   )}
-                  Remind me
+                  {t("todos.reminder.remindMe")}
                 </DropdownMenuSubTrigger>
 
                 <DropdownMenuSubContent>
                   <DropdownMenuItem
                     onSelect={() => setReminder(item.id, { kind: "next-open" })}
                   >
-                    Next time I open the app
+                    {t("todos.reminder.nextOpen")}
                   </DropdownMenuItem>
 
                   <DropdownMenuItem onSelect={() => openRepoPicker(item)}>
                     {item.reminder?.kind === "repo-page"
-                      ? "Change repo page..."
-                      : "When I open a repo page..."}
+                      ? t("todos.reminder.changeRepoPage")
+                      : t("todos.reminder.onRepoPage")}
                   </DropdownMenuItem>
 
                   <DropdownMenuItem onSelect={() => openTimePicker(item)}>
                     {item.reminder?.kind === "time"
-                      ? "Change time..."
-                      : "At a time..."}
+                      ? t("todos.reminder.changeTime")
+                      : t("todos.reminder.atTime")}
                   </DropdownMenuItem>
 
                   {item.reminder && (
@@ -466,9 +473,9 @@ export function CopyDialog() {
                         className="text-muted-foreground"
                         onSelect={() => setReminder(item.id, null)}
                       >
-                        Clear reminder
+                        {t("todos.reminder.clear")}
                         <span className="ml-auto text-xs">
-                          {reminderSummary(item.reminder)}
+                          {reminderSummary(item.reminder, t)}
                         </span>
                       </DropdownMenuItem>
                     </>
@@ -477,7 +484,7 @@ export function CopyDialog() {
               </DropdownMenuSub>
 
               <DropdownMenuItem onSelect={() => duplicateItem(item)}>
-                Duplicate
+                {t("nav.todos.duplicate")}
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
@@ -486,7 +493,7 @@ export function CopyDialog() {
                 className="text-destructive focus:text-destructive"
                 onSelect={() => removeItem(item.id)}
               >
-                Delete
+                {t("common.actions.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -560,7 +567,7 @@ export function CopyDialog() {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-0 p-1.5 sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle className="sr-only">To-do</DialogTitle>
+          <DialogTitle className="sr-only">{t("nav.todos.viewTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-row items-center justify-between gap-2">
@@ -574,12 +581,12 @@ export function CopyDialog() {
             <TabsList>
               <TabsTrigger value="undone">
                 <CircleDot />
-                Undone ({counts.undone})
+                {t("nav.todos.undone", { count: counts.undone })}
               </TabsTrigger>
 
               <TabsTrigger value="done">
                 <CircleCheck />
-                Done ({counts.done})
+                {t("nav.todos.done", { count: counts.done })}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -587,7 +594,7 @@ export function CopyDialog() {
           <Field className="w-full">
             <InputGroup className="h-7">
               <InputGroupInput
-                placeholder="Type to search"
+                placeholder={t("common.states.typeToSearch")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -598,12 +605,12 @@ export function CopyDialog() {
         <ul className="mt-0.5 flex max-h-56 flex-col overflow-y-auto">
           {visible.length === 0 ? (
             <li className="px-1 py-2 text-sm text-muted-foreground">
-              {query ? "No matching to-dos" : "Nothing here yet"}
+              {query ? t("nav.todos.noMatches") : t("nav.todos.empty")}
             </li>
           ) : (
             <>
-              {renderSection("Pinned", pinned)}
-              {renderSection(rest.length ? "To-do" : "", rest, true)}
+              {renderSection(t("nav.todos.sectionPinned"), pinned)}
+              {renderSection(rest.length ? t("nav.todos.sectionRest") : "", rest, true)}
             </>
           )}
         </ul>
@@ -681,7 +688,7 @@ export function CopyDialog() {
                         </span>
 
                         {repo.archived && (
-                          <Badge variant="secondary">Archived</Badge>
+                          <Badge variant="secondary">{t("repo.visibility.archived")}</Badge>
                         )}
 
                         {repo.language && (
@@ -701,7 +708,7 @@ export function CopyDialog() {
 
               <InputGroupInput
                 ref={setDraftInput}
-                placeholder="Add a to-do — @ mention, # repo"
+                placeholder={t("nav.todos.placeholder")}
                 value={draft}
                 onChange={(e) => {
                   setDraft(e.target.value)
@@ -726,7 +733,7 @@ export function CopyDialog() {
       >
         <DialogContent className="gap-2 p-3 sm:max-w-xs">
           <DialogHeader>
-            <DialogTitle>Remind me</DialogTitle>
+            <DialogTitle>{t("todos.reminder.remindMe")}</DialogTitle>
           </DialogHeader>
 
           <Field>
@@ -743,11 +750,11 @@ export function CopyDialog() {
               size="sm"
               onClick={() => setReminderFor(null)}
             >
-              Cancel
+              {t("common.actions.cancel")}
             </Button>
 
             <Button size="sm" onClick={saveTimeReminder}>
-              Set reminder
+              {t("todos.reminder.set")}
             </Button>
           </div>
         </DialogContent>
@@ -761,14 +768,14 @@ export function CopyDialog() {
       >
         <DialogContent className="gap-2 p-3 sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Remind me on a repo page</DialogTitle>
+            <DialogTitle>{t("todos.reminder.repoPageTitle")}</DialogTitle>
           </DialogHeader>
 
           <Field>
             <InputGroup className="h-7">
               <InputGroupInput
                 autoFocus
-                placeholder="Type to search"
+                placeholder={t("common.states.typeToSearch")}
                 value={repoQuery}
                 onChange={(e) => setRepoQuery(e.target.value)}
               />
@@ -778,7 +785,7 @@ export function CopyDialog() {
           <ul className="max-h-56 overflow-y-auto">
             {repoPickerList.length === 0 ? (
               <li className="px-1 py-2 text-sm text-muted-foreground">
-                No repos found
+                {t("nav.todos.noRepos")}
               </li>
             ) : (
               repoPickerList.map((repo) => (

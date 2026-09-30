@@ -1,4 +1,8 @@
+import { useTranslation } from "react-i18next";
+
 function Security() {
+	const { t } = useTranslation();
+
 	return (
 		<div className="flex min-h-[60vh] items-center justify-center px-6">
 			<div className="flex max-w-md flex-col items-center text-center">
@@ -20,15 +24,16 @@ function Security() {
 					</svg>
 				</div>
 
-				<h1 className="text-lg font-semibold">Security</h1>
+				<h1 className="text-lg font-semibold">
+					{t("repo.empty.security.title")}
+				</h1>
 
 				<p className="mt-2 text-sm leading-6 text-muted-foreground">
-					Security feature haven't been implemented yet.
-					They'll be available in a future update.
+					{t("repo.empty.security.description")}
 				</p>
 			</div>
 		</div>
-	)
+	);
 }
 
-export default Security
+export default Security;

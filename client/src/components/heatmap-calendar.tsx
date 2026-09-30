@@ -1,4 +1,13 @@
-"use client";
+import { useTranslation } from "react-i18next";
+
+import { i18n } from "#/i18n/i18n";
+import {
+	formatMonthLabel,
+	formatShortDate,
+	formatWeekdayLabel,
+} from "#/i18n/lib/format";
+
+("use client");
 
 // Vendored from fishdev20/shadcn-heatmap (MIT © Minh (Marcus) Nguyen),
 // adapted to Drei import aliases (`#/*` → `src/*`).
@@ -234,14 +243,26 @@ function formatMonth(d: Date, fmt: "short" | "long" | "numeric") {
 		const yy = String(d.getFullYear()).slice(-2);
 		return `${d.getMonth() + 1}/${yy}`;
 	}
-	return d.toLocaleDateString(undefined, { month: fmt });
+	return formatMonthLabel(d, fmt as "short" | "long");
 }
 
 function weekdayLabelForIndex(index: number, weekStartsOn: 0 | 1) {
 	// index is 0..6 in grid row order (top->bottom).
 	const actualDay = (weekStartsOn + index) % 7;
 	const base = new Date(Date.UTC(2024, 0, 7 + actualDay));
-	return base.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
+	return formatWeekdayLabel(base).toUpperCase();
+}
+
+/**
+ * Copy lookup for the module-level helpers and the legend defaults, which run
+ * outside React and therefore cannot use `useTranslation()`. The instance is
+ * the same one the components render from, so the language always matches.
+ */
+function translate(key: string, options?: Record<string, unknown>): string {
+	return i18n.t(
+		key as Parameters<typeof i18n.t>[0],
+		options,
+	) as unknown as string;
 }
 
 /* ---------------- component ---------------- */
@@ -276,6 +297,11 @@ export function HeatmapCalendar({
 		"bg-primary/85",
 		"bg-primary",
 	];
+
+	// Subscribing here makes the grid, tooltips and aria-labels re-render when
+	// the language changes; the copy itself is read through `translate()`.
+	const { t } = useTranslation();
+	void t;
 
 	const levelCount = palette?.length ? palette.length : levels.length;
 
@@ -367,11 +393,7 @@ export function HeatmapCalendar({
 					disabled: !inRange,
 					future: inRange && isFuture,
 					meta,
-					label: date.toLocaleDateString(undefined, {
-						year: "numeric",
-						month: "short",
-						day: "numeric",
-					}),
+					label: formatShortDate(date),
 				});
 			}
 		}
@@ -454,8 +476,8 @@ export function HeatmapCalendar({
 	const direction = legendCfg.direction ?? "row";
 	const showText = legendCfg.showText ?? true;
 	const showArrow = legendCfg.showArrow ?? true;
-	const lessText = legendCfg.lessText ?? "Less";
-	const moreText = legendCfg.moreText ?? "More";
+	const lessText = legendCfg.lessText ?? translate("heatmap.less");
+	const moreText = legendCfg.moreText ?? translate("heatmap.more");
 	const swatchSize = legendCfg.swatchSize ?? s;
 	const swatchGap = legendCfg.swatchGap ?? cellGap;
 
@@ -506,13 +528,12 @@ export function HeatmapCalendar({
 
 	const tooltipNode = (cell: HeatmapCell) => {
 		if (renderTooltip) return renderTooltip(cell);
-		if (cell.disabled) return "Outside range";
-		if (cell.future) return "Upcoming";
-		const unit = cell.value === 1 ? "event" : "events";
+		if (cell.disabled) return translate("heatmap.outsideRange");
+		if (cell.future) return translate("heatmap.upcoming");
 		return (
 			<div className="text-sm">
 				<div className="font-medium">
-					{cell.value} {unit}
+					{translate("heatmap.events", { count: cell.value })}
 				</div>
 				<div className="text-muted-foreground">{cell.label}</div>
 			</div>
@@ -590,7 +611,7 @@ export function HeatmapCalendar({
 								className="flex"
 								style={{ gap: `${cellGap}px` }}
 								role="grid"
-								aria-label="Heatmap calendar"
+								aria-label={translate("heatmap.label")}
 							>
 								{columns.map((col, i) => (
 									<div
@@ -623,10 +644,15 @@ export function HeatmapCalendar({
 															}}
 															aria-label={
 																cell.disabled
-																	? "Outside range"
+																	? translate("heatmap.outsideRange")
 																	: cell.future
-																		? `${cell.label}: Upcoming`
-																		: `${cell.label}: ${cell.value}`
+																		? translate("heatmap.labelUpcoming", {
+																				label: cell.label,
+																			})
+																		: translate("heatmap.labelValue", {
+																				label: cell.label,
+																				value: cell.value,
+																			})
 															}
 															role="gridcell"
 														/>

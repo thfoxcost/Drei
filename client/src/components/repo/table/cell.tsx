@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { getIconUrlForFilePath } from "vscode-material-icons";
 import { getFolderIcon } from "#/lib/folder-icons";
 import { absoluteDate, timeAgo } from "#/lib/time-ago";
@@ -38,8 +39,9 @@ function Cell({
 	repo,
 	isLast,
 }: CellProps) {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
-	const message = commitmessage.trim() || "No commit message";
+	const message = commitmessage.trim() || t("repo.table.noCommitMessage");
 
 	const handleClick = () => {
 		if (!path || !branch || !owner || !repo) return;

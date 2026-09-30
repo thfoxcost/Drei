@@ -1,5 +1,6 @@
 import { ImagePlus } from "lucide-react";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Markdown } from "#/components/repo/issues/markdown";
 import { Button } from "#/components/ui/button";
@@ -33,6 +34,7 @@ function MarkdownEditor({
 	disabled,
 	uploadUrl,
 }: MarkdownEditorProps) {
+	const { t } = useTranslation();
 	const [tab, setTab] = useState<"write" | "preview">("write");
 	const [uploading, setUploading] = useState(false);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -65,14 +67,12 @@ function MarkdownEditor({
 		if (!file) return;
 
 		if (!acceptedTypes.includes(file.type)) {
-			toast.error(
-				"Unsupported file type. Please use a PNG, JPG, WebP, or GIF image.",
-			);
+			toast.error(t("issues.editor.unsupportedType"));
 			return;
 		}
 
 		if (file.size > maxImageSize) {
-			toast.error("Image is too large. Maximum size is 5 MB.");
+			toast.error(t("issues.editor.tooLarge"));
 			return;
 		}
 
@@ -92,14 +92,18 @@ function MarkdownEditor({
 
 			if (!res.ok) {
 				throw new Error(
-					result.error || result.message || "Failed to upload image",
+					result.error || result.message || t("issues.editor.uploadFailed"),
 				);
 			}
 
 			insertImage(file.name, result.url);
-			toast.success("Image uploaded");
+			toast.success(t("issues.editor.imageUploaded"));
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error
+					? err.message
+					: t("common.errors.somethingWentWrong"),
+			);
 		} finally {
 			setUploading(false);
 			if (fileInputRef.current) fileInputRef.current.value = "";
@@ -115,10 +119,10 @@ function MarkdownEditor({
 				<div className="flex items-center justify-between gap-2 border-b bg-muted/10 pr-1.5">
 					<TabsList className="m-1 h-7 bg-transparent">
 						<TabsTrigger value="write" className="px-2.5 text-xs">
-							Write
+							{t("issues.editor.write")}
 						</TabsTrigger>
 						<TabsTrigger value="preview" className="px-2.5 text-xs">
-							Preview
+							{t("issues.editor.preview")}
 						</TabsTrigger>
 					</TabsList>
 
@@ -131,7 +135,11 @@ function MarkdownEditor({
 						disabled={disabled || uploading}
 					>
 						{uploading ? <Spinner /> : <ImagePlus className="size-4" />}
-						<span>{uploading ? "Uploading..." : "Attach image"}</span>
+						<span>
+							{uploading
+								? t("common.actions.uploading")
+								: t("issues.editor.attachImage")}
+						</span>
 					</Button>
 				</div>
 
@@ -162,7 +170,7 @@ function MarkdownEditor({
 							<Markdown content={value} />
 						) : (
 							<p className="text-sm italic text-muted-foreground">
-								Nothing to preview.
+								{t("issues.editor.nothingToPreview")}
 							</p>
 						)}
 					</div>

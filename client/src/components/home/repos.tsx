@@ -1,4 +1,6 @@
-"use client";
+import { useTranslation } from "react-i18next";
+
+("use client");
 
 import { Link, useNavigate } from "@tanstack/react-router";
 import * as linguistLanguages from "linguist-languages";
@@ -57,6 +59,7 @@ interface RepoCardProps {
 }
 
 function RepoCard({ repo }: RepoCardProps) {
+	const { t } = useTranslation();
 	return (
 		<Link
 			to="/$username/$repo"
@@ -76,13 +79,15 @@ function RepoCard({ repo }: RepoCardProps) {
 					</span>
 
 					<Badge variant="outline">
-						{repo.visibility ? "Public" : "Private"}
+						{repo.visibility
+							? t("repositories.visibility.public")
+							: t("repositories.visibility.private")}
 					</Badge>
 				</div>
 
 				{repo.forked && repo.forkedFromOwner && repo.forkedFromName && (
 					<p className="text-xs text-muted-foreground">
-						Forked from{" "}
+						{t("repositories.filters.forkedFrom")}{" "}
 						<Link
 							to="/$username/$repo"
 							params={{
@@ -98,7 +103,7 @@ function RepoCard({ repo }: RepoCardProps) {
 				)}
 
 				<p className="text-sm text-muted-foreground">
-					{repo.description || "No description"}
+					{repo.description || t("repo.sidebar.noDescription")}
 				</p>
 
 				<div className="flex flex-wrap gap-1.5">
@@ -129,13 +134,16 @@ function RepoCard({ repo }: RepoCardProps) {
 }
 
 function EmptyState({ query }: { query: string }) {
+	const { t } = useTranslation();
 	return (
 		<div className="col-span-full flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border py-12 text-center">
 			<FolderSearch className="text-muted-foreground" size={28} />
 
-			<p className="text-sm font-medium">No repositories found</p>
+			<p className="text-sm font-medium">{t("repositories.empty")}</p>
 
-			<p className="text-sm text-muted-foreground">Nothing matches "{query}"</p>
+			<p className="text-sm text-muted-foreground">
+				{t("repositories.nothingMatches", { query })}
+			</p>
 		</div>
 	);
 }
@@ -151,27 +159,27 @@ type TypeOption =
 	| "mirrored"
 	| "archived";
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-	{ value: "last-updated", label: "Last updated" },
-	{ value: "name", label: "Name" },
+const SORT_OPTIONS: { value: SortOption; key: string }[] = [
+	{ value: "last-updated", key: "repositories.sort.lastUpdated" },
+	{ value: "name", key: "repositories.sort.name" },
 ];
 
-const TYPE_OPTIONS: { value: TypeOption; label: string; disabled?: boolean }[] =
-	[
-		{ value: "all", label: "All" },
-		{ value: "source", label: "Source" },
-		{ value: "forked", label: "Forked" },
-		{ value: "public", label: "Public" },
-		{ value: "private", label: "Private" },
-		{ value: "mirrored", label: "Mirrored" },
-		{ value: "archived", label: "Archived" },
-	];
+const TYPE_OPTIONS: { value: TypeOption; key: string; disabled?: boolean }[] = [
+	{ value: "all", key: "repositories.types.all" },
+	{ value: "source", key: "repositories.types.source" },
+	{ value: "forked", key: "repositories.types.forked" },
+	{ value: "public", key: "repositories.visibility.public" },
+	{ value: "private", key: "repositories.visibility.private" },
+	{ value: "mirrored", key: "repositories.types.mirrored" },
+	{ value: "archived", key: "repositories.types.archived" },
+];
 
 interface ReposProps {
 	repos: Repo[];
 }
 
 function Repos({ repos }: ReposProps) {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 
 	const [query, setQuery] = useState("");
@@ -242,25 +250,35 @@ function Repos({ repos }: ReposProps) {
 
 	const sortLabel =
 		sort == null
-			? "Sort"
-			: (SORT_OPTIONS.find((option) => option.value === sort)?.label ?? sort);
+			? t("repositories.sort.label")
+			: t(
+					SORT_OPTIONS.find((option) => option.value === sort)?.key ??
+						"repositories.sort.label",
+				);
 
 	const typeLabel =
 		type == null
-			? "Type"
-			: (TYPE_OPTIONS.find((option) => option.value === type)?.label ?? type);
+			? t("repositories.filters.type")
+			: t(
+					TYPE_OPTIONS.find((option) => option.value === type)?.key ??
+						"repositories.filters.type",
+				);
 
 	const languageLabel =
-		language == null ? "Languages" : language === "all" ? "All" : language;
+		language == null
+			? t("repositories.filters.language")
+			: language === "all"
+				? t("repositories.types.all")
+				: language;
 
 	return (
 		<div className="space-y-3 p-2">
-			<h1 className="text-2xl">Repositories</h1>
+			<h1 className="text-2xl">{t("repositories.heading")}</h1>
 			<Separator className="my-2 mb-4" />
 			<div className="flex flex-wrap items-center gap-2 mb-5">
 				<InputGroup className="min-w-52 flex-1">
 					<InputGroupInput
-						placeholder="Search repositories..."
+						placeholder={t("repositories.searchPlaceholder")}
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 					/>
@@ -270,8 +288,9 @@ function Repos({ repos }: ReposProps) {
 					</InputGroupAddon>
 
 					<InputGroupAddon align="inline-end">
-						{filtered.length} result
-						{filtered.length === 1 ? "" : "s"}
+						{t("common.counts.results", {
+							count: filtered.length,
+						})}
 					</InputGroupAddon>
 				</InputGroup>
 
@@ -280,7 +299,7 @@ function Repos({ repos }: ReposProps) {
 						<Button
 							variant="outline"
 							className="gap-1.5"
-							aria-label="Select Sort"
+							aria-label={t("common.actions.selectSort")}
 						>
 							{sortLabel}
 							<ChevronDown className="size-4 opacity-60" />
@@ -294,7 +313,7 @@ function Repos({ repos }: ReposProps) {
 						>
 							{SORT_OPTIONS.map((option) => (
 								<DropdownMenuRadioItem key={option.value} value={option.value}>
-									{option.label}
+									{t(option.key)}
 								</DropdownMenuRadioItem>
 							))}
 						</DropdownMenuRadioGroup>
@@ -306,7 +325,7 @@ function Repos({ repos }: ReposProps) {
 						<Button
 							variant="outline"
 							className="gap-1.5"
-							aria-label="Select Type"
+							aria-label={t("common.actions.selectType")}
 						>
 							{typeLabel}
 							<ChevronDown className="size-4 opacity-60" />
@@ -324,7 +343,7 @@ function Repos({ repos }: ReposProps) {
 									value={option.value}
 									disabled={option.disabled}
 								>
-									{option.label}
+									{t(option.key)}
 								</DropdownMenuRadioItem>
 							))}
 						</DropdownMenuRadioGroup>
@@ -336,7 +355,7 @@ function Repos({ repos }: ReposProps) {
 						<Button
 							variant="outline"
 							className="gap-1.5"
-							aria-label="Select Languages"
+							aria-label={t("common.actions.selectLanguages")}
 						>
 							{languageLabel}
 							<ChevronDown className="size-4 opacity-60" />
@@ -348,7 +367,9 @@ function Repos({ repos }: ReposProps) {
 							value={language ?? "all"}
 							onValueChange={setLanguage}
 						>
-							<DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="all">
+								{t("repositories.types.all")}
+							</DropdownMenuRadioItem>
 
 							{languages.map((lang) => (
 								<DropdownMenuRadioItem key={lang} value={lang}>
@@ -361,7 +382,7 @@ function Repos({ repos }: ReposProps) {
 
 				<Button onClick={() => navigate({ to: "/new" })} className="shrink-0">
 					<BookMarked />
-					New
+					{t("repositories.new")}
 				</Button>
 			</div>
 

@@ -2,6 +2,7 @@ import type { EmojiClickData } from "emoji-picker-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { useEffect, useRef, useState } from "react";
 import ReactCountryFlag from "react-country-flag";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
@@ -19,6 +20,8 @@ import { Separator } from "#/components/ui/separator";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch } from "#/components/ui/switch";
 import { Textarea } from "#/components/ui/textarea";
+import { i18n } from "#/i18n/i18n";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 import { authClient } from "#/lib/auth-client";
 
 import { uploadAvatar, validateAvatarFile } from "@/lib/avatar-upload";
@@ -39,6 +42,8 @@ interface ProfileData {
 }
 
 function ContentProfile() {
+	const { t } = useTranslation();
+
 	const { data: session, refetch } = authClient.useSession();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -73,7 +78,11 @@ function ContentProfile() {
 				});
 
 				if (!res.ok) {
-					throw new Error("Failed to load profile");
+					throw new Error(
+						apiErrorMessage(null, {
+							fallbackKey: "errors.client.fetchProfile",
+						}),
+					);
 				}
 
 				const data: ProfileData = await res.json();
@@ -91,7 +100,7 @@ function ContentProfile() {
 				setQuoteVerified(data.quoteVerified);
 				setOriginal(data);
 			} catch {
-				toast.error("Failed to load profile data");
+				toast.error(i18n.t("settings.profile.loadFailed"));
 			} finally {
 				setLoadingProfile(false);
 			}
@@ -142,10 +151,12 @@ function ContentProfile() {
 			setUploadingAvatar(true);
 			await uploadAvatar(file);
 			await refetch();
-			toast.success("Avatar updated");
+			toast.success(t("settings.profile.avatarUpdated"));
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Failed to update avatar",
+				err instanceof Error
+					? err.message
+					: t("settings.profile.avatarUpdateFailed"),
 			);
 			setAvatarPreview(null);
 		} finally {
@@ -188,7 +199,7 @@ function ContentProfile() {
 			const result = await res.json();
 
 			if (!res.ok) {
-				throw new Error(result.error || "Failed to update profile");
+				throw new Error(apiErrorMessage(result));
 			}
 
 			setOriginal({
@@ -205,12 +216,12 @@ function ContentProfile() {
 				quoteVerified,
 			});
 
-			toast.success("Profile updated");
+			toast.success(t("settings.profile.updated"));
 		} catch (err) {
 			if (err instanceof Error) {
 				toast.error(err.message);
 			} else {
-				toast.error("Something went wrong");
+				toast.error(t("common.errors.somethingWentWrong"));
 			}
 		} finally {
 			setUpdating(false);
@@ -221,12 +232,12 @@ function ContentProfile() {
 		return (
 			<div className="mx-auto w-full max-w-5xl space-y-4 mb-10">
 				<div>
-					<h1 className="text-2xl">Profile</h1>
+					<h1 className="text-2xl">{t("settings.profile.title")}</h1>
 					<Separator className="my-2" />
 				</div>
 				<div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
 					<Spinner />
-					<span>Loading profile...</span>
+					<span>{t("settings.profile.loading")}</span>
 				</div>
 			</div>
 		);
@@ -235,31 +246,35 @@ function ContentProfile() {
 	return (
 		<div className="mx-auto w-full max-w-5xl space-y-4 mb-10">
 			<div>
-				<h1 className="text-2xl">Profile</h1>
+				<h1 className="text-2xl">{t("settings.profile.title")}</h1>
 				<Separator className="my-2" />
 			</div>
 
 			<div className="flex flex-col lg:flex-row gap-8">
 				<div className="flex-1 space-y-4">
 					<Field className="w-full">
-						<FieldLabel htmlFor="input-field-username">Username</FieldLabel>
+						<FieldLabel htmlFor="input-field-username">
+							{t("settings.profile.username")}
+						</FieldLabel>
 
 						<Input
 							id="input-field-username"
 							type="text"
-							placeholder="Enter your username"
+							placeholder={t("settings.profile.usernamePlaceholder")}
 							value={username}
 							onChange={(event) => setUsername(event.target.value)}
 							disabled={updating}
 						/>
 
 						<FieldDescription>
-							Your name may appear around the app.
+							{t("settings.profile.usernameHelp")}
 						</FieldDescription>
 					</Field>
 
 					<Field className="w-full">
-						<FieldLabel htmlFor="fieldgroup-email">Email</FieldLabel>
+						<FieldLabel htmlFor="fieldgroup-email">
+							{t("settings.profile.email")}
+						</FieldLabel>
 
 						<Input
 							id="fieldgroup-email"
@@ -271,29 +286,33 @@ function ContentProfile() {
 						/>
 
 						<FieldDescription>
-							We&apos;ll send updates to this address.
+							{t("settings.profile.emailHelp")}
 						</FieldDescription>
 					</Field>
 
 					<Field className="w-full">
-						<FieldLabel htmlFor="input-field-profession">Profession</FieldLabel>
+						<FieldLabel htmlFor="input-field-profession">
+							{t("settings.profile.profession")}
+						</FieldLabel>
 
 						<Input
 							id="input-field-profession"
 							type="text"
-							placeholder="e.g. Frontend Engineer"
+							placeholder={t("settings.profile.professionPlaceholder")}
 							value={profession}
 							onChange={(event) => setProfession(event.target.value)}
 							disabled={updating}
 						/>
 
 						<FieldDescription>
-							What you do — shown in the People directory.
+							{t("settings.profile.professionHelp")}
 						</FieldDescription>
 					</Field>
 
 					<Field className="w-full">
-						<FieldLabel htmlFor="bio">Biography</FieldLabel>
+						<FieldLabel htmlFor="bio">
+							{t("settings.profile.biography")}
+						</FieldLabel>
 
 						<div className="relative">
 							<div className="flex items-center gap-2">
@@ -303,7 +322,7 @@ function ContentProfile() {
 									size="icon"
 									className="shrink-0"
 									onClick={() => setShowEmojiPicker((prev) => !prev)}
-									aria-label="Select emoji"
+									aria-label={t("common.actions.selectEmoji")}
 									disabled={updating}
 								>
 									😊
@@ -314,7 +333,7 @@ function ContentProfile() {
 									type="text"
 									value={bio}
 									onChange={(event) => setBio(event.target.value)}
-									placeholder="Tell us a little about yourself..."
+									placeholder={t("settings.profile.biographyPlaceholder")}
 									disabled={updating}
 								/>
 							</div>
@@ -332,16 +351,18 @@ function ContentProfile() {
 						</div>
 
 						<FieldDescription>
-							Tell people a little about yourself.
+							{t("settings.profile.biographyHelp")}
 						</FieldDescription>
 					</Field>
 
 					<Field className="w-full">
-						<FieldLabel htmlFor="textarea-description">Description</FieldLabel>
+						<FieldLabel htmlFor="textarea-description">
+							{t("settings.profile.description")}
+						</FieldLabel>
 
 						<Textarea
 							id="textarea-description"
-							placeholder="Tell us more about yourself."
+							placeholder={t("settings.profile.descriptionPlaceholder")}
 							value={description}
 							onChange={(event) => setDescription(event.target.value)}
 							disabled={updating}
@@ -349,7 +370,7 @@ function ContentProfile() {
 					</Field>
 
 					<Field className="w-full">
-						<FieldLabel>Country</FieldLabel>
+						<FieldLabel>{t("settings.profile.country")}</FieldLabel>
 
 						<Combobox
 							items={countries}
@@ -357,12 +378,14 @@ function ContentProfile() {
 							onValueChange={(v) => setCountry(v ?? "")}
 						>
 							<ComboboxInput
-								placeholder="Select your country"
+								placeholder={t("settings.profile.countryPlaceholder")}
 								disabled={updating}
 							/>
 
 							<ComboboxContent>
-								<ComboboxEmpty>No country found.</ComboboxEmpty>
+								<ComboboxEmpty>
+									{t("settings.profile.countryEmpty")}
+								</ComboboxEmpty>
 
 								<ComboboxList>
 									{(c) => (
@@ -387,59 +410,69 @@ function ContentProfile() {
 					</Field>
 
 					<div className="pt-4">
-						<h1 className="text-xl">Quote</h1>
+						<h1 className="text-xl">{t("settings.profile.quoteHeading")}</h1>
 						<Separator className="my-2" />
 					</div>
 
 					<Field className="w-full">
-						<FieldLabel htmlFor="quote-title">Person Name</FieldLabel>
+						<FieldLabel htmlFor="quote-title">
+							{t("settings.profile.personName")}
+						</FieldLabel>
 
 						<Input
 							id="quote-title"
 							value={quoteTitle}
 							onChange={(event) => setQuoteTitle(event.target.value)}
-							placeholder="Richard Feynman"
+							placeholder={t("settings.profile.personNamePlaceholder")}
 							disabled={updating}
 						/>
 
-						<FieldDescription>The person who said the quote.</FieldDescription>
+						<FieldDescription>
+							{t("settings.profile.personNameHelp")}
+						</FieldDescription>
 					</Field>
 
 					<Field className="w-full">
-						<FieldLabel htmlFor="quote-description">Quote</FieldLabel>
+						<FieldLabel htmlFor="quote-description">
+							{t("settings.profile.quoteLabel")}
+						</FieldLabel>
 
 						<Textarea
 							id="quote-description"
 							value={quoteDescription}
 							onChange={(event) => setQuoteDescription(event.target.value)}
-							placeholder="Study hard what interests you the most in the most undisciplined, irreverent and original manner possible."
+							placeholder={t("settings.profile.quotePlaceholder")}
 							disabled={updating}
 						/>
 
 						<FieldDescription>
-							The quote that you want to display on your profile.
+							{t("settings.profile.quoteHelp")}
 						</FieldDescription>
 					</Field>
 
 					<Field className="w-full">
-						<FieldLabel htmlFor="quote-person-title">Person Title</FieldLabel>
+						<FieldLabel htmlFor="quote-person-title">
+							{t("settings.profile.personTitle")}
+						</FieldLabel>
 
 						<Input
 							id="quote-person-title"
 							type="text"
 							value={quotePersonTitle}
 							onChange={(event) => setQuotePersonTitle(event.target.value)}
-							placeholder="Physicist & Mathematician"
+							placeholder={t("settings.profile.personTitlePlaceholder")}
 							disabled={updating}
 						/>
 
 						<FieldDescription>
-							What the person does or is known for.
+							{t("settings.profile.personTitleHelp")}
 						</FieldDescription>
 					</Field>
 
 					<Field className="w-full">
-						<FieldLabel htmlFor="quote-image">Person Image</FieldLabel>
+						<FieldLabel htmlFor="quote-image">
+							{t("settings.profile.personImage")}
+						</FieldLabel>
 
 						<Input
 							id="quote-image"
@@ -451,14 +484,16 @@ function ContentProfile() {
 						/>
 
 						<FieldDescription>
-							Enter a direct link to the person&apos;s image.
+							{t("settings.profile.personImageHelp")}
 						</FieldDescription>
 					</Field>
 
 					<Field className="w-full">
 						<div className="flex items-center justify-between">
 							<div>
-								<FieldLabel htmlFor="quote-verified">Verified</FieldLabel>
+								<FieldLabel htmlFor="quote-verified">
+									{t("settings.profile.verified")}
+								</FieldLabel>
 
 								<FieldDescription>
 									Show a verified badge next to the person&apos;s name.
@@ -489,10 +524,10 @@ function ContentProfile() {
 						{uploadingAvatar ? (
 							<span className="flex items-center gap-1">
 								<Spinner className="size-3" />
-								Uploading...
+								{t("common.actions.uploading")}
 							</span>
 						) : (
-							"Edit"
+							t("common.actions.edit")
 						)}
 					</button>
 					<input
@@ -508,16 +543,16 @@ function ContentProfile() {
 
 			<div className="flex justify-end gap-2">
 				<a href="/">
-					<Button variant="outline">Back</Button>
+					<Button variant="outline">{t("common.actions.back")}</Button>
 				</a>
 				<Button onClick={handleUpdate} disabled={!canSave}>
 					{updating ? (
 						<>
 							<Spinner />
-							<span className="ml-2">Updating...</span>
+							<span className="ml-2">{t("settings.profile.updating")}</span>
 						</>
 					) : (
-						"Update Info"
+						t("settings.profile.updateInfo")
 					)}
 				</Button>
 			</div>

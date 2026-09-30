@@ -7,6 +7,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { TagInfo } from "#/types/repo";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -51,6 +52,7 @@ export function RefSwitcher({
 	onSelectTag,
 	onDeleteBranch,
 }: RefSwitcherProps) {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const [filter, setFilter] = useState("");
 
@@ -83,14 +85,14 @@ export function RefSwitcher({
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-64">
-				<DropdownMenuLabel>Switch branch or tag</DropdownMenuLabel>
+				<DropdownMenuLabel>{t("repo.refSwitcher.label")}</DropdownMenuLabel>
 				<div className="px-2 pb-2">
 					<InputGroup>
 						<InputGroupAddon>
 							<SearchIcon className="h-3.5 w-3.5" />
 						</InputGroupAddon>
 						<InputGroupInput
-							placeholder="Find a branch or tag..."
+							placeholder={t("repo.refSwitcher.placeholder")}
 							value={filter}
 							onChange={(e) => setFilter(e.target.value)}
 							className="text-xs"
@@ -99,11 +101,11 @@ export function RefSwitcher({
 				</div>
 				<DropdownMenuSeparator />
 				<DropdownMenuLabel className="text-xs text-muted-foreground">
-					Branches
+					{t("repo.refSwitcher.branches")}
 				</DropdownMenuLabel>
 				{filteredBranches.length === 0 ? (
 					<p className="text-xs text-muted-foreground p-2">
-						No branches found
+						{t("repo.refSwitcher.noBranches")}
 					</p>
 				) : (
 					filteredBranches.map((branch) => (
@@ -118,11 +120,8 @@ export function RefSwitcher({
 							</span>
 							<span className="flex items-center gap-1.5">
 								{branch === defaultBranch ? (
-									<Badge
-										variant="outline"
-										className="h-4 px-1.5 text-[10px]"
-									>
-										Default
+									<Badge variant="outline" className="h-4 px-1.5 text-[10px]">
+										{t("repo.refSwitcher.default")}
 									</Badge>
 								) : branch === currentRef && currentKind === "branch" ? (
 									<Check className="h-3.5 w-3.5 text-green-600" />
@@ -130,8 +129,8 @@ export function RefSwitcher({
 								{onDeleteBranch && branch !== defaultBranch && (
 									<button
 										type="button"
-										aria-label={`Delete branch ${branch}`}
-										title={`Delete branch ${branch}`}
+										aria-label={t("repo.refSwitcher.deleteBranch", { branch })}
+										title={t("repo.refSwitcher.deleteBranch", { branch })}
 										onClick={(e) => {
 											e.stopPropagation();
 											e.preventDefault();
@@ -149,10 +148,12 @@ export function RefSwitcher({
 				)}
 				<DropdownMenuSeparator />
 				<DropdownMenuLabel className="text-xs text-muted-foreground">
-					Tags
+					{t("repo.refSwitcher.tags")}
 				</DropdownMenuLabel>
 				{filteredTags.length === 0 ? (
-					<p className="text-xs text-muted-foreground p-2">No tags found</p>
+					<p className="text-xs text-muted-foreground p-2">
+						{t("repo.refSwitcher.noTags")}
+					</p>
 				) : (
 					filteredTags.map((tag) => (
 						<DropdownMenuItem

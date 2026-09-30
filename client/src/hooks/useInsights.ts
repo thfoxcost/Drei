@@ -1,12 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { i18n } from "#/i18n/i18n";
+
 const API = "http://localhost:3200";
 
 async function fetchJSON<T>(url: string): Promise<T> {
 	const res = await fetch(url, { credentials: "include" });
 	if (!res.ok) {
 		const text = await res.text().catch(() => "");
-		throw new Error(text || `Failed to fetch ${url}`);
+		throw new Error(
+			text || `${i18n.t("errors.client.fetchInsights") as string}: ${url}`,
+		);
 	}
 	return res.json();
 }

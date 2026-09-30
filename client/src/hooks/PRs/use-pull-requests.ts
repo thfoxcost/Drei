@@ -1,4 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 import type { PRFilters, PullRequestsList } from "#/types/prs";
 
 export type { PRFilters };
@@ -33,7 +34,12 @@ export function usePullRequests(
 			const res = await fetch(
 				`http://localhost:3200/api/repos/${owner}/${repo}/pulls${qs}`,
 			);
-			if (!res.ok) throw new Error("Failed to fetch pull requests");
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, {
+						fallbackKey: "errors.client.fetchPullRequests",
+					}),
+				);
 			return res.json();
 		},
 		staleTime: 30_000,

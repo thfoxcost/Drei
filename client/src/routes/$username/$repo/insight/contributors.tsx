@@ -1,6 +1,7 @@
 "use client";
 
 import { createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
@@ -11,26 +12,22 @@ import {
 	ChartTooltipContent,
 } from "#/components/ui/chart";
 import { type InsightDaily, useInsightContributors } from "#/hooks/useInsights";
+import { formatShortDate } from "#/i18n/lib/format";
 
 export const Route = createFileRoute("/$username/$repo/insight/contributors")({
 	component: RouteComponent,
 });
 
-const chartConfig = {
-	commits: {
-		label: "Commits",
-		color: "var(--chart-1)",
-	},
-} satisfies ChartConfig;
-
-const contributorChartConfig = {
-	commits: {
-		label: "Commits",
-		color: "var(--chart-2)",
-	},
-} satisfies ChartConfig;
-
 function ContributorChart({ data }: { data: InsightDaily[] }) {
+	const { t } = useTranslation();
+
+	const contributorChartConfig = {
+		commits: {
+			label: t("insights.contributors.commits"),
+			color: "var(--chart-2)",
+		},
+	} satisfies ChartConfig;
+
 	return (
 		<ChartContainer config={contributorChartConfig} className="h-[90px] w-full">
 			<AreaChart
@@ -66,11 +63,19 @@ function ContributorChart({ data }: { data: InsightDaily[] }) {
 }
 
 function RouteComponent() {
+	const { t } = useTranslation();
 	const { username, repo } = Route.useParams();
 	const { data, isPending, isError } = useInsightContributors(username, repo);
 
+	const chartConfig = {
+		commits: {
+			label: t("insights.contributors.commits"),
+			color: "var(--chart-1)",
+		},
+	} satisfies ChartConfig;
+
 	const chartData = (data?.daily ?? []).map((d) => ({
-		date: new Date(`${d.date}T00:00:00Z`).toLocaleDateString("en-US", {
+		date: formatShortDate(new Date(`${d.date}T00:00:00Z`), {
 			month: "short",
 			day: "numeric",
 		}),
@@ -81,22 +86,22 @@ function RouteComponent() {
 	return (
 		<div className="flex w-full flex-col gap-4">
 			<span className="text-2xl font-medium">
-				Contributors to {username}/{repo}
+				{t("insights.contributors.heading", { owner: username, repo })}
 			</span>
 
 			<div className="overflow-hidden rounded-md border">
 				<div className="border-b bg-accent/40 px-4 py-2 font-medium">
-					Commits per day
+					{t("insights.contributors.subheading")}
 				</div>
 
 				<div className="py-6">
 					{isPending ? (
 						<div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
-							Loading contributors…
+							{t("insights.contributors.loading")}
 						</div>
 					) : isError ? (
 						<div className="flex h-[250px] items-center justify-center text-sm text-destructive">
-							Failed to load contributors.
+							{t("insights.contributors.loadFailed")}
 						</div>
 					) : (
 						<ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -138,7 +143,7 @@ function RouteComponent() {
 
 			{!isPending && !isError && contributors.length === 0 ? (
 				<div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
-					No contributors yet in this repository.
+					{t("insights.contributors.empty")}
 				</div>
 			) : (
 				<div className="grid w-full gap-2 md:grid-cols-2 lg:grid-cols-3">
@@ -163,7 +168,9 @@ function RouteComponent() {
 
 									<span className="text-xs">
 										<span className="text-muted-foreground">
-											{contributor.commits} commits
+											{t("insights.contributors.commitCount", {
+												count: contributor.commits,
+											})}
 										</span>{" "}
 										<span className="text-green-500">
 											{contributor.additions}++

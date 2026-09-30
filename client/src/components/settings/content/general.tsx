@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { useEffect, useState } from "react"
 import { ListChecks } from "lucide-react"
 import { toast } from "sonner"
@@ -18,6 +19,8 @@ import {
 } from "#/hooks/useAppearanceSettings"
 
 function ContentGeneral() {
+  const { t } = useTranslation()
+
   const { data, isLoading } = useAppearanceSettings()
   const updateAppearance = useUpdateAppearance()
 
@@ -38,11 +41,17 @@ function ContentGeneral() {
 
     try {
       await updateAppearance.mutateAsync({ todosEnabled: enabled })
-      toast.success(enabled ? "To-do list enabled" : "To-do list disabled")
+      toast.success(
+        enabled
+          ? t("settings.general.todoEnabled")
+          : t("settings.general.todoDisabled"),
+      )
     } catch (err) {
       setTodosEnabled(previous)
       toast.error(
-        err instanceof Error ? err.message : "Failed to save setting",
+        err instanceof Error
+          ? err.message
+          : t("settings.general.saveFailed"),
       )
     }
   }
@@ -51,14 +60,14 @@ function ContentGeneral() {
     return (
       <div className="mx-auto mb-10 w-full max-w-5xl space-y-4">
         <div>
-          <h1 className="text-2xl">General</h1>
+          <h1 className="text-2xl">{t("settings.general.title")}</h1>
 
           <Separator className="my-2" />
         </div>
 
         <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
           <Spinner />
-          <span>Loading settings...</span>
+          <span>{t("settings.general.loading")}</span>
         </div>
       </div>
     )
@@ -67,7 +76,7 @@ function ContentGeneral() {
   return (
     <div className="mx-auto mb-10 w-full max-w-5xl space-y-6">
       <div>
-        <h1 className="text-2xl">General</h1>
+        <h1 className="text-2xl">{t("settings.general.title")}</h1>
 
         <Separator className="my-2" />
       </div>
@@ -79,14 +88,15 @@ function ContentGeneral() {
               <FieldLabel htmlFor="todos-enabled">
                 <span className="inline-flex items-center gap-1.5">
                   <ListChecks className="size-4" />
-                  To-do list
+                  {t("settings.general.todoLabel")}
                 </span>
               </FieldLabel>
 
               <FieldDescription>
-                Show the built-in to-do list in the header. Disabling it also
-                turns off the <Kbd className="px-1">Shift</Kbd>+
-                <Kbd className="px-1">R</Kbd> shortcut and every reminder.
+                {t("settings.general.todoDescriptionBefore")}{" "}
+                <Kbd className="px-1">Shift</Kbd>+
+                <Kbd className="px-1">R</Kbd>
+                {t("settings.general.todoDescriptionAfter")}
               </FieldDescription>
             </div>
 
@@ -101,7 +111,7 @@ function ContentGeneral() {
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline">
-            <a href="/">Back</a>
+            <a href="/">{t("common.actions.back")}</a>
           </Button>
         </div>
       </div>

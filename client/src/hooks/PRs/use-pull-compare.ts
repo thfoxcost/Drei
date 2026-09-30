@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { FileDiff } from "#/components/repo/commits/code-commit";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 
 export interface FileChange {
 	path: string;
@@ -32,7 +33,7 @@ export function usePullCompare(
 			);
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
-				throw new Error(body?.error ?? "Failed to compare branches");
+				throw new Error(apiErrorMessage(body));
 			}
 			return res.json();
 		},

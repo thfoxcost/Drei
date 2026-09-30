@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 import type { PullRequestReview } from "#/types/prs";
 
 interface PullRequestReviewsResponse {
@@ -16,7 +17,12 @@ export function usePullRequestReviews(
 			const res = await fetch(
 				`http://localhost:3200/api/repos/${owner}/${repo}/pulls/${number}/reviews`,
 			);
-			if (!res.ok) throw new Error("Failed to fetch pull request reviews");
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, {
+						fallbackKey: "errors.client.fetchPullRequestReviews",
+					}),
+				);
 			return res.json();
 		},
 		staleTime: 10_000,

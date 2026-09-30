@@ -17,10 +17,13 @@ var validThemes = map[string]bool{
 }
 
 // validLanguages is the set of language codes accepted by the API.
-// Add new languages here as they become available.
+// These must stay in sync with `SUPPORTED_LOCALES` in the client's
+// `src/i18n/config.ts`; the client ships the translations, the server only
+// validates the code. Add new languages here as they become available.
 var validLanguages = map[string]bool{
 	"en": true,
-	// Future: "ar", "fr", "de"
+	"de": true,
+	// Future: "ar", "fr"
 }
 
 // AppearanceResponse is the JSON shape returned by GET /api/user/appearance.
@@ -48,7 +51,7 @@ type AppearanceResponse struct {
 //	@Tags			Settings
 //	@Accept			json
 //	@Produce		json
-//	@Param			appearance	body		object	true	"Theme (light|dark|system) and language (en)"
+//	@Param			appearance	body		object	true	"Theme (light|dark|system) and language (en|de)"
 //	@Success		200		{object}	map[string]interface{}
 //	@Failure		400		{object}	map[string]interface{}
 //	@Failure		401		{object}	map[string]interface{}
@@ -65,7 +68,7 @@ func AppearanceHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -75,7 +78,7 @@ func AppearanceHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPut:
 		handlePutAppearance(w, r, user)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -89,7 +92,7 @@ func handleGetAppearance(w http.ResponseWriter, user *AuthUser) {
 		user.ID,
 	).Scan(&theme, &language, &heatmapProfileColor, &todosEnabled)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to load appearance")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_load_appearance", "failed to load appearance")
 		return
 	}
 
@@ -120,17 +123,17 @@ func handlePutAppearance(w http.ResponseWriter, r *http.Request, user *AuthUser)
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
 	if req.Theme != nil && !validThemes[*req.Theme] {
-		writeError(w, http.StatusBadRequest, "invalid theme")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_theme", "invalid theme")
 		return
 	}
 
 	if req.Language != nil && !validLanguages[*req.Language] {
-		writeError(w, http.StatusBadRequest, "invalid language")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_language", "invalid language")
 		return
 	}
 
@@ -159,7 +162,7 @@ func handlePutAppearance(w http.ResponseWriter, r *http.Request, user *AuthUser)
 	}
 
 	if len(sets) == 0 {
-		writeError(w, http.StatusBadRequest, "no settings provided")
+		writeErrorCoded(w, http.StatusBadRequest, "no_settings_provided", "no settings provided")
 		return
 	}
 
@@ -170,13 +173,13 @@ func handlePutAppearance(w http.ResponseWriter, r *http.Request, user *AuthUser)
 
 	tag, err := database.DB.Exec(context.Background(), query, args...)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to save appearance")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_save_appearance", "failed to save appearance")
 		return
 	}
 
 	rows := tag.RowsAffected()
 	if rows == 0 {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeErrorCoded(w, http.StatusNotFound, "user_not_found", "user not found")
 		return
 	}
 

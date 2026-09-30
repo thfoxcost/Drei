@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error"
 
 export function useDeleteSourceBranch(
 	owner: string,
@@ -19,7 +20,7 @@ export function useDeleteSourceBranch(
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
 				throw new Error(
-					body?.error ?? "Failed to delete source branch",
+					apiErrorMessage(body),
 				);
 			}
 			return res.json();

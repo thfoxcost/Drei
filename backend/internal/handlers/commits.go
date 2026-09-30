@@ -29,7 +29,7 @@ func CommitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -38,20 +38,20 @@ func CommitHandler(w http.ResponseWriter, r *http.Request) {
 	hash := r.PathValue("hash")
 
 	if owner == "" || repo == "" || hash == "" {
-		writeError(w, http.StatusBadRequest, "missing required path parameters")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_required_path_parameters", "missing required path parameters")
 		return
 	}
 
 	commit, err := gitrepo.GetCommitDetail(owner, repo, hash)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "commit not found")
+		writeErrorCoded(w, http.StatusNotFound, "commit_not_found", "commit not found")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(commit); err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to encode response")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_encode_response", "failed to encode response")
 		return
 	}
 }

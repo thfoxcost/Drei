@@ -55,7 +55,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -65,7 +65,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPatch:
 		handleUpdateProfile(w, r, user)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -98,17 +98,17 @@ func handleUpdateProfile(w http.ResponseWriter, r *http.Request, user *AuthUser)
 	var req ProfileData
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
 	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "username is required")
+		writeErrorCoded(w, http.StatusBadRequest, "username_required", "username is required")
 		return
 	}
 
 	if req.Email == "" {
-		writeError(w, http.StatusBadRequest, "email is required")
+		writeErrorCoded(w, http.StatusBadRequest, "email_required", "email is required")
 		return
 	}
 

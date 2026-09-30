@@ -1,4 +1,8 @@
-"use client";
+import { useTranslation } from "react-i18next";
+
+import { dateFnsLocale } from "#/i18n/lib/format";
+
+("use client");
 
 import { Link } from "@tanstack/react-router";
 import { format, formatDistanceToNowStrict } from "date-fns";
@@ -137,6 +141,7 @@ function PlainHeader({ label }: { label: string }) {
 }
 
 export function PeopleTable() {
+	const { t } = useTranslation();
 	const { data: people = [], isLoading, isError, refetch } = usePeople();
 	const { data: session } = authClient.useSession();
 	const selfId = session?.user?.id;
@@ -228,7 +233,7 @@ export function PeopleTable() {
 			<Card className="p-0">
 				<div className="flex items-center justify-center gap-2 p-10 text-muted-foreground">
 					<Spinner />
-					<span>Loading people...</span>
+					<span>{t("people.peopleTable.loading")}</span>
 				</div>
 			</Card>
 		);
@@ -239,10 +244,10 @@ export function PeopleTable() {
 			<Card className="p-0">
 				<div className="flex flex-col items-center gap-2 p-10">
 					<p className="text-sm text-muted-foreground">
-						Failed to load people.
+						{t("people.peopleTable.loadFailed")}
 					</p>
 					<Button variant="outline" size="sm" onClick={() => refetch()}>
-						Retry
+						{t("common.actions.retry")}
 					</Button>
 				</div>
 			</Card>
@@ -253,7 +258,7 @@ export function PeopleTable() {
 		return (
 			<Card className="p-0">
 				<p className="p-10 text-center text-sm text-muted-foreground">
-					No people found.
+					{t("people.peopleTable.empty")}
 				</p>
 			</Card>
 		);
@@ -263,19 +268,24 @@ export function PeopleTable() {
 	const rangeEnd = Math.min(safePageIndex * pageSize + pageSize, sorted.length);
 
 	const statusLabel =
-		status === "all" ? "Status" : status === "online" ? "Online" : "Offline";
-	const countryLabel = country ?? "Country";
+		status === "all"
+			? t("people.peopleTable.status.status")
+			: status === "online"
+				? t("people.peopleTable.status.online")
+				: t("people.peopleTable.status.offline");
+	const countryLabel = country ?? t("people.peopleTable.filterCountryLabel");
 	const orgLabel =
 		org === null
-			? "Organization"
-			: (availableOrgs.find((o) => o.slug === org)?.name ?? "Organization");
+			? t("people.peopleTable.filterOrganizationLabel")
+			: (availableOrgs.find((o) => o.slug === org)?.name ??
+				t("people.peopleTable.filterOrganizationLabel"));
 
 	return (
 		<div className="w-full space-y-2.5">
 			<div className="flex flex-wrap items-center gap-2">
 				<InputGroup className="min-w-52 flex-1">
 					<InputGroupInput
-						placeholder="Search by name or email..."
+						placeholder={t("people.peopleTable.searchPlaceholder")}
 						value={query}
 						onChange={(e) => {
 							setQuery(e.target.value);
@@ -286,7 +296,7 @@ export function PeopleTable() {
 						<Search size={16} />
 					</InputGroupAddon>
 					<InputGroupAddon align="inline-end">
-						{sorted.length} result{sorted.length === 1 ? "" : "s"}
+						{t("common.counts.results", { count: sorted.length })}
 					</InputGroupAddon>
 				</InputGroup>
 
@@ -295,7 +305,7 @@ export function PeopleTable() {
 						<Button
 							variant="outline"
 							className="gap-1.5"
-							aria-label="Filter by status"
+							aria-label={t("people.peopleTable.filterStatus")}
 						>
 							{statusLabel}
 							<ChevronDown className="size-4 opacity-60" />
@@ -309,12 +319,14 @@ export function PeopleTable() {
 								resetPage();
 							}}
 						>
-							<DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="all">
+								{t("people.peopleTable.status.all")}
+							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value="online">
-								Online
+								{t("people.peopleTable.status.online")}
 							</DropdownMenuRadioItem>
 							<DropdownMenuRadioItem value="offline">
-								Offline
+								{t("people.peopleTable.status.offline")}
 							</DropdownMenuRadioItem>
 						</DropdownMenuRadioGroup>
 					</DropdownMenuContent>
@@ -325,7 +337,7 @@ export function PeopleTable() {
 						<Button
 							variant="outline"
 							className="gap-1.5"
-							aria-label="Filter by country"
+							aria-label={t("people.peopleTable.filterCountry")}
 						>
 							{countryLabel}
 							<ChevronDown className="size-4 opacity-60" />
@@ -339,7 +351,9 @@ export function PeopleTable() {
 								resetPage();
 							}}
 						>
-							<DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="all">
+								{t("repositories.types.all")}
+							</DropdownMenuRadioItem>
 							{availableCountries.map((name) => (
 								<DropdownMenuRadioItem key={name} value={name}>
 									{name}
@@ -354,7 +368,7 @@ export function PeopleTable() {
 						<Button
 							variant="outline"
 							className="gap-1.5"
-							aria-label="Filter by organization"
+							aria-label={t("people.peopleTable.filterOrganization")}
 						>
 							{orgLabel}
 							<ChevronDown className="size-4 opacity-60" />
@@ -368,7 +382,9 @@ export function PeopleTable() {
 								resetPage();
 							}}
 						>
-							<DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value="all">
+								{t("repositories.types.all")}
+							</DropdownMenuRadioItem>
 							{availableOrgs.map((item) => (
 								<DropdownMenuRadioItem key={item.slug} value={item.slug}>
 									{item.name}
@@ -385,7 +401,7 @@ export function PeopleTable() {
 							<tr className="border-b text-left font-medium text-muted-foreground">
 								<th className="px-3 py-2 whitespace-nowrap">
 									<SortHeader
-										label="Username"
+										label={t("people.peopleTable.columns.username")}
 										sortKey="username"
 										activeKey={sortKey}
 										dir={sortDir}
@@ -393,11 +409,13 @@ export function PeopleTable() {
 									/>
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
-									<PlainHeader label="Profession" />
+									<PlainHeader
+										label={t("people.peopleTable.columns.profession")}
+									/>
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
 									<SortHeader
-										label="Email"
+										label={t("people.peopleTable.columns.email")}
 										sortKey="email"
 										activeKey={sortKey}
 										dir={sortDir}
@@ -405,20 +423,26 @@ export function PeopleTable() {
 									/>
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
-									<PlainHeader label="Organizations" />
+									<PlainHeader
+										label={t("people.peopleTable.columns.organizations")}
+									/>
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
-									<PlainHeader label="Top repository" />
+									<PlainHeader
+										label={t("people.peopleTable.columns.topRepository")}
+									/>
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
-									<PlainHeader label="Country" />
+									<PlainHeader
+										label={t("people.peopleTable.columns.country")}
+									/>
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
-									<PlainHeader label="Status" />
+									<PlainHeader label={t("people.peopleTable.columns.status")} />
 								</th>
 								<th className="px-3 py-2 whitespace-nowrap">
 									<SortHeader
-										label="Joined"
+										label={t("people.peopleTable.columns.joined")}
 										sortKey="joinedAt"
 										activeKey={sortKey}
 										dir={sortDir}
@@ -561,11 +585,16 @@ export function PeopleTable() {
 												variant={person.online ? "success-light" : "secondary"}
 												title={
 													person.lastActive
-														? `Last active ${formatDistanceToNowStrict(
-																new Date(person.lastActive),
-																{ addSuffix: true },
-															)}`
-														: "Never active"
+														? t("people.peopleTable.lastActive", {
+																time: formatDistanceToNowStrict(
+																	new Date(person.lastActive),
+																	{
+																		addSuffix: true,
+																		locale: dateFnsLocale(),
+																	},
+																),
+															})
+														: t("people.peopleTable.neverActive")
 												}
 											>
 												<span
@@ -576,12 +605,16 @@ export function PeopleTable() {
 															: "bg-muted-foreground",
 													)}
 												/>
-												{person.online ? "Online" : "Offline"}
+												{person.online
+													? t("people.peopleTable.status.online")
+													: t("people.peopleTable.status.offline")}
 											</Badge>
 										</td>
 										<td className="px-3 py-1.5 whitespace-nowrap">
 											<div className="text-muted-foreground">
-												{format(new Date(person.joinedAt), "MMM, yyyy")}
+												{format(new Date(person.joinedAt), "MMM, yyyy", {
+													locale: dateFnsLocale(),
+												})}
 											</div>
 										</td>
 									</tr>
@@ -593,7 +626,7 @@ export function PeopleTable() {
 										colSpan={7}
 										className="px-3 py-10 text-center text-sm text-muted-foreground"
 									>
-										No people match the current search and filters.
+										{t("people.peopleTable.noMatch")}
 									</td>
 								</tr>
 							)}
@@ -603,12 +636,16 @@ export function PeopleTable() {
 			</Card>
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<p className="text-sm text-muted-foreground">
-					Showing {rangeStart}–{rangeEnd} of {sorted.length}{" "}
-					{sorted.length === 1 ? "person" : "people"}
+					{t("common.counts.showingOf", {
+						from: rangeStart,
+						to: rangeEnd,
+						total: sorted.length,
+					})}{" "}
+					{t("orgs.people.memberCount", { count: sorted.length })}
 				</p>
 				<div className="flex items-center gap-2">
 					<select
-						aria-label="Rows per page"
+						aria-label={t("common.actions.rowsPerPage")}
 						value={pageSize}
 						onChange={(e) => {
 							setPageSize(Number(e.target.value));
@@ -618,7 +655,7 @@ export function PeopleTable() {
 					>
 						{PAGE_SIZE_OPTIONS.map((size) => (
 							<option key={size} value={size}>
-								{size} / page
+								{t("common.counts.perPage", { size })}
 							</option>
 						))}
 					</select>
@@ -627,19 +664,22 @@ export function PeopleTable() {
 						size="icon-sm"
 						disabled={safePageIndex === 0}
 						onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
-						aria-label="Previous page"
+						aria-label={t("common.actions.previousPage")}
 					>
 						<ChevronLeft />
 					</Button>
 					<span className="text-sm text-muted-foreground">
-						{safePageIndex + 1} / {pageCount}
+						{t("common.counts.pageIndicator", {
+							page: safePageIndex + 1,
+							total: pageCount,
+						})}
 					</span>
 					<Button
 						variant="outline"
 						size="icon-sm"
 						disabled={safePageIndex >= pageCount - 1}
 						onClick={() => setPageIndex((i) => Math.min(pageCount - 1, i + 1))}
-						aria-label="Next page"
+						aria-label={t("common.actions.nextPage")}
 					>
 						<ChevronRight />
 					</Button>

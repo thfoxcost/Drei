@@ -1,3 +1,5 @@
+import { i18n } from "#/i18n/i18n"
+import { useTranslation } from "react-i18next"
 import { useEffect, useState } from "react"
 import ReactCountryFlag from "react-country-flag"
 import { authClient } from "#/lib/auth-client"
@@ -41,7 +43,8 @@ function getCountryCode(countryName: string | null): string | null {
   return match?.code ?? null;
 }
 
-function Profile() {
+function Profile() {  const { t } = useTranslation();
+
   const { data: session } = authClient.useSession()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -55,13 +58,15 @@ function Profile() {
         })
 
         if (!res.ok) {
-          throw new Error("Failed to load profile")
+          throw new Error(i18n.t("dashboard.profile.loadFailed"))
         }
 
         const data: ProfileData = await res.json()
         setProfile(data)
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load profile")
+        setError(
+            err instanceof Error ? err.message : i18n.t("dashboard.profile.loadFailed"),
+          )
       } finally {
         setLoading(false)
       }
@@ -75,7 +80,7 @@ function Profile() {
       <div className="flex flex-col items-center gap-2 sm:items-start px-4 sm:px-0 py-10">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Spinner />
-          <span>Loading profile...</span>
+          <span>{t("dashboard.profile.loading")}</span>
         </div>
       </div>
     )
@@ -162,7 +167,7 @@ function Profile() {
       )}
 
       <a href="/settings" className="w-full mb-1 hover:cursor-pointer">
-        <Button variant="secondary" className="w-full mt-1">Edit Profile</Button>
+        <Button variant="secondary" className="w-full mt-1">{t("dashboard.profile.edit")}</Button>
       </a>
 
       {hasQuote && (

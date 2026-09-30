@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { useEffect, useState } from "react"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
@@ -41,19 +42,20 @@ import { useTodo } from "@/components/todo-provider"
 import { useTodosEnabled } from "#/hooks/useAppearanceSettings"
 
 const NAV_ITEMS: {
-  label: string
+  key: "repositories" | "issues" | "pulls" | "organizations" | "people"
   icon: LucideIcon | ComponentType<{ className?: string }>
   to: "/repos" | "/issues" | "/orgs" | "/pulls" | "/people"
   disabled?: boolean
 }[] = [
-    { label: "Repositories", icon: BookMarked, to: "/repos" },
-    { label: "Issues", icon: Bug, to: "/issues" },
-    { label: "Pulls", icon: GitPullRequest, to: "/pulls" },
-    { label: "Organizations", icon: Building2, to: "/orgs" },
-    { label: "People", icon: PeopleIcon, to: "/people" },
+    { key: "repositories", icon: BookMarked, to: "/repos" },
+    { key: "issues", icon: Bug, to: "/issues" },
+    { key: "pulls", icon: GitPullRequest, to: "/pulls" },
+    { key: "organizations", icon: Building2, to: "/orgs" },
+    { key: "people", icon: PeopleIcon, to: "/people" },
   ]
 
 export default function Header() {
+  const { t } = useTranslation()
   const { data: session } = authClient.useSession()
   const navigate = useNavigate()
   const { toggle } = useTodo()
@@ -84,28 +86,28 @@ export default function Header() {
   return (
     <header className="flex items-center justify-between gap-2 border-b bg-muted/10 px-3 py-2 sm:px-2 sm:py-1">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <Link to="/" aria-label="Home">
+        <Link to="/" aria-label={t("nav.items.home")}>
           <img
             draggable={false}
             src="/logo-light.svg"
-            alt="Logo"
+            alt={t("nav.items.logo")}
             className="block h-6 w-6 shrink-0 dark:hidden sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
           />
 
           <img
             draggable={false}
             src="/logo-dark.svg"
-            alt="Logo"
+            alt={t("nav.items.logo")}
             className="hidden h-6 w-6 shrink-0 dark:block sm:h-9 sm:w-9 md:h-[50px] md:w-[50px]"
           />
         </Link>
 
         <nav className="hidden items-center gap-1 pb-1 md:flex">
-          {NAV_ITEMS.map(({ label, icon: Icon, to }) => (
-            <Button key={label} variant="ghost" asChild>
+          {NAV_ITEMS.map(({ key, icon: Icon, to }) => (
+            <Button key={key} variant="ghost" asChild>
               <Link to={to}>
                 <Icon />
-                {label}
+                {t(`nav.items.${key}`)}
               </Link>
             </Button>
           ))}
@@ -116,18 +118,18 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">{t("nav.items.openMenu")}</span>
               </Button>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="start">
-              {NAV_ITEMS.map(({ label, icon: Icon, to }) => (
+              {NAV_ITEMS.map(({ key, icon: Icon, to }) => (
                 <DropdownMenuItem
-                  key={label}
+                  key={key}
                   onClick={() => to && navigate({ to })}
                 >
                   <Icon className="mr-2 h-4 w-4" />
-                  {label}
+                  {t(`nav.items.${key}`)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -143,7 +145,7 @@ export default function Header() {
         <a href="/new">
           <Button size="default">
             <BookPlus className="h-4 w-4 sm:mr-1" />
-            <span className="hidden sm:inline">Create</span>
+            <span className="hidden sm:inline">{t("nav.create.label")}</span>
           </Button>
         </a>
 
@@ -151,7 +153,7 @@ export default function Header() {
           <Button
             variant="outline"
             size="icon"
-            aria-label="Search"
+            aria-label={t("nav.items.search")}
             onClick={toggle}
           >
             <CopyIcon />
@@ -184,7 +186,7 @@ export default function Header() {
 
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate font-semibold text-sm text-foreground">
-                    {session?.user.name ?? "Unknown User"}
+                    {session?.user.name ?? t("common.states.unknownUser")}
                   </span>
 
                   <span className="truncate text-xs text-muted-foreground">
@@ -207,7 +209,7 @@ export default function Header() {
 
             <DropdownMenuItem asChild>
               <a href="/settings" className="truncate">
-                {biography || "No biography yet"}
+                {biography || t("nav.user.noBiography")}
               </a>
             </DropdownMenuItem>
 
@@ -216,21 +218,21 @@ export default function Header() {
             <DropdownMenuItem asChild>
               <a href="/">
                 <User className="mr-1 h-4 w-4" />
-                Profile
+                {t("nav.user.profile")}
               </a>
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
               <a href="/repos">
                 <BookMarked className="mr-1 h-4 w-4" />
-                Repositories
+                {t("nav.user.repositories")}
               </a>
             </DropdownMenuItem>
 
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Building2 className="mr-1 h-4 w-4" />
-                Organizations
+                {t("nav.user.organizations")}
               </DropdownMenuSubTrigger>
 
               <DropdownMenuSubContent className="w-56">
@@ -259,7 +261,7 @@ export default function Header() {
                   }
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Add new organization
+                  {t("nav.user.addOrganization")}
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
@@ -269,14 +271,14 @@ export default function Header() {
             <DropdownMenuItem asChild>
               <a href="/settings">
                 <Settings className="mr-1 h-4 w-4" />
-                Settings
+                {t("nav.user.settings")}
               </a>
             </DropdownMenuItem>
 
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <CircleQuestionMark className="mr-1 h-4 w-4" />
-                Help
+                {t("nav.help.label")}
               </DropdownMenuSubTrigger>
 
               <DropdownMenuSubContent className="w-40">
@@ -316,7 +318,7 @@ export default function Header() {
                         d="M12 2v4q0 1.25.875 2.125T15 9h4v11q0 .825-.587 1.413T17 22H7q-.825 0-1.412-.587T5 20V4q0-.825.588-1.412T7 2zm2 0l5 5h-4q-.425 0-.712-.288T14 6zm-4 17h2q.425 0 .713-.288T13 18t-.288-.712T12 17h-2q-.425 0-.712.288T9 18t.288.713T10 19m0-4h4q.425 0 .713-.288T15 14t-.288-.712T14 13h-4q-.425 0-.712.288T9 14t.288.713T10 15"
                       />
                     </svg>
-                    Docs
+                    {t("nav.help.docs")}
                   </a>
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
@@ -332,7 +334,7 @@ export default function Header() {
               }}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Sign out
+              {t("nav.user.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

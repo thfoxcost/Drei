@@ -34,7 +34,7 @@ func TagsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -42,7 +42,7 @@ func TagsHandler(w http.ResponseWriter, r *http.Request) {
 	repo := r.PathValue("repo")
 
 	if owner == "" || repo == "" {
-		writeError(w, http.StatusBadRequest, "missing required path parameters")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_required_path_parameters", "missing required path parameters")
 		return
 	}
 
@@ -52,13 +52,13 @@ func TagsHandler(w http.ResponseWriter, r *http.Request) {
 
 	tags, err := gitrepo.GetTagInfos(owner, repo)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(tags); err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to encode response")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_encode_response", "failed to encode response")
 		return
 	}
 }
@@ -78,7 +78,7 @@ func TagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -87,7 +87,7 @@ func TagHandler(w http.ResponseWriter, r *http.Request) {
 	tag := r.PathValue("tag")
 
 	if owner == "" || repo == "" || tag == "" {
-		writeError(w, http.StatusBadRequest, "missing required path parameters")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_required_path_parameters", "missing required path parameters")
 		return
 	}
 
@@ -97,13 +97,13 @@ func TagHandler(w http.ResponseWriter, r *http.Request) {
 
 	info, err := gitrepo.GetTag(owner, repo, tag)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "tag not found")
+		writeErrorCoded(w, http.StatusNotFound, "tag_not_found", "tag not found")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(info); err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to encode response")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_encode_response", "failed to encode response")
 		return
 	}
 }

@@ -1,41 +1,47 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { backendUrl } from "#/lib/backend-url"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
+import { backendUrl } from "#/lib/backend-url";
 
 export interface AppearanceSettings {
-  theme: "light" | "dark" | "system"
-  language: string
-  heatmapProfileColor: boolean
-  todosEnabled: boolean
+	theme: "light" | "dark" | "system";
+	language: string;
+	heatmapProfileColor: boolean;
+	todosEnabled: boolean;
 }
 
 async function parseError(res: Response, fallback: string): Promise<Error> {
-  const text = await res.text().catch(() => "")
+	const text = await res.text().catch(() => "");
 
-  try {
-    const body = JSON.parse(text)
+	try {
+		const body = JSON.parse(text);
 
-    return new Error(body?.error ?? fallback)
-  } catch {
-    return new Error(text || fallback)
-  }
+		return new Error(apiErrorMessage(body) ?? fallback);
+	} catch {
+		return new Error(text || fallback);
+	}
 }
 
 export function useAppearanceSettings() {
-  return useQuery({
-    queryKey: ["appearance"],
-    queryFn: async (): Promise<AppearanceSettings> => {
-      const res = await fetch(`${backendUrl()}/api/user/appearance`, {
-        credentials: "include",
-      })
+	return useQuery({
+		queryKey: ["appearance"],
+		queryFn: async (): Promise<AppearanceSettings> => {
+			const res = await fetch(`${backendUrl()}/api/user/appearance`, {
+				credentials: "include",
+			});
 
-      if (!res.ok) {
-        throw await parseError(res, "Failed to load settings")
-      }
+			if (!res.ok) {
+				throw await parseError(
+					res,
+					apiErrorMessage(null, {
+						fallbackKey: "errors.client.fetchAppearance",
+					}),
+				);
+			}
 
-      return res.json()
-    },
-    staleTime: 60_000,
-  })
+			return res.json();
+		},
+		staleTime: 60_000,
+	});
 }
 
 /**
@@ -43,30 +49,35 @@ export function useAppearanceSettings() {
  * button appears before (or without) a successful settings fetch.
  */
 export function useTodosEnabled(): boolean {
-  const { data } = useAppearanceSettings()
+	const { data } = useAppearanceSettings();
 
-  return data?.todosEnabled !== false
+	return data?.todosEnabled !== false;
 }
 
 export function useUpdateAppearance() {
-  const queryClient = useQueryClient()
+	const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (changes: Partial<AppearanceSettings>) => {
-      const res = await fetch(`${backendUrl()}/api/user/appearance`, {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(changes),
-      })
+	return useMutation({
+		mutationFn: async (changes: Partial<AppearanceSettings>) => {
+			const res = await fetch(`${backendUrl()}/api/user/appearance`, {
+				method: "PUT",
+				credentials: "include",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(changes),
+			});
 
-      if (!res.ok) {
-        throw await parseError(res, "Failed to save settings")
-      }
+			if (!res.ok) {
+				throw await parseError(
+					res,
+					apiErrorMessage(null, {
+						fallbackKey: "errors.client.saveAppearance",
+					}),
+				);
+			}
 
-      return res.json()
-    },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["appearance"] }),
-  })
+			return res.json();
+		},
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: ["appearance"] }),
+	});
 }

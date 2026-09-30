@@ -1,4 +1,5 @@
 import type { HeatmapDatum } from "#/components/heatmap-calendar.tsx";
+import { i18n } from "#/i18n/i18n";
 
 export type ContributionBreakdown = {
 	commits: number;
@@ -36,14 +37,16 @@ export async function getContributions(
 	}
 
 	if (!res.ok) {
-		throw new Error(`Failed to load contributions (${res.status})`);
+		throw new Error(
+			`${i18n.t("errors.client.fetchContributions") as string} (${res.status})`,
+		);
 	}
 
 	const contentType = res.headers.get("content-type") ?? "";
 	if (!contentType.includes("application/json")) {
 		const text = await res.text();
 		throw new Error(
-			`Failed to load contributions: expected JSON but got ${contentType || "unknown content-type"} (body: ${text.slice(0, 120) || "<empty>"})`,
+			`${i18n.t("errors.client.fetchContributions") as string}: expected JSON but got ${contentType || "unknown content-type"} (body: ${text.slice(0, 120) || "<empty>"})`,
 		);
 	}
 
