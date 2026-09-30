@@ -798,6 +798,16 @@ func Migrate() error {
 		return err
 	}
 
+	// To-do list visibility. Users can hide the built-in to-do list (header
+	// button, Shift+R shortcut and its reminders) from settings.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS todos_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+	`)
+	if err != nil {
+		return err
+	}
+
 	// Heatmap tinting: when enabled, the contribution heatmap uses shades of
 	// the user's profile picture instead of the default palette.
 	_, err = DB.Exec(context.Background(), `

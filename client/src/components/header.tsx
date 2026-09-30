@@ -38,6 +38,7 @@ import { UserAvatar } from "@/components/UserAvatar"
 import { PeopleIcon } from "@/components/people-icon"
 import { CopyIcon } from "@/components/copy-icon"
 import { useTodo } from "@/components/todo-provider"
+import { useTodosEnabled } from "#/hooks/useAppearanceSettings"
 
 const NAV_ITEMS: {
   label: string
@@ -56,6 +57,7 @@ export default function Header() {
   const { data: session } = authClient.useSession()
   const navigate = useNavigate()
   const { toggle } = useTodo()
+  const todosEnabled = useTodosEnabled()
   const [biography, setBiography] = useState<string | null>(null)
   const { data: orgs, isError: orgsError } = useUserOrganizations()
   const organizationList = orgsError ? ORGANIZATIONS : (orgs ?? [])
@@ -145,14 +147,16 @@ export default function Header() {
           </Button>
         </a>
 
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Search"
-          onClick={toggle}
-        >
-          <CopyIcon />
-        </Button>
+        {todosEnabled && (
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Search"
+            onClick={toggle}
+          >
+            <CopyIcon />
+          </Button>
+        )}
 
         <Separator
           orientation="vertical"
