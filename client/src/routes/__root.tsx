@@ -9,6 +9,7 @@ import appCss from '../styles.css?url'
 import { ThemeProvider } from '#/components/theme-provider'
 import { TooltipProvider } from "#/components/ui/tooltip"
 import { PresenceHeartbeat } from '#/components/presence-heartbeat'
+import { TodoProvider } from '#/components/todo-provider'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -81,8 +82,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <ThemeProvider defaultTheme="system" storageKey="theme">
           <TooltipProvider>
             <QueryClientProvider client={queryClient}>
-              {children}
-              <PresenceHeartbeat />
+              <TodoProvider>
+                {children}
+                <PresenceHeartbeat />
+              </TodoProvider>
             </QueryClientProvider>
             <Toaster />
             <TanStackDevtools

@@ -22,6 +22,8 @@ import { Cmd } from "../cmd"
 import { useUserOrganizations } from "@/hooks/useOrganizations"
 import { ORGANIZATIONS } from "@/data/organizations"
 import { OrganizationMenu } from "@/components/organization/organization-menu"
+import { CopyIcon } from "@/components/copy-icon"
+import { useTodo } from "@/components/todo-provider"
 import {
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -32,6 +34,7 @@ import {
 export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
   const { data: session } = authClient.useSession()
   const [biography, setBiography] = useState<string | null>(null)
+  const { toggle } = useTodo()
   const { data: orgs, isError: orgsError } = useUserOrganizations()
   const organizationList = orgsError ? ORGANIZATIONS : (orgs ?? [])
 
@@ -105,6 +108,15 @@ export default function OrgMainHeader({ OrgName }: { OrgName: string }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Search"
+          onClick={toggle}
+        >
+          <CopyIcon />
+        </Button>
 
         <Separator
           orientation="vertical"

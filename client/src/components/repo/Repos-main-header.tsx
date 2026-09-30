@@ -23,6 +23,8 @@ import { ORGANIZATIONS } from "@/data/organizations"
 import { UserAvatar } from "@/components/UserAvatar"
 import { Cmd } from "../cmd"
 import { OrganizationMenu } from "@/components/organization/organization-menu"
+import { CopyIcon } from "@/components/copy-icon"
+import { useTodo } from "@/components/todo-provider"
 
 import {
   	DropdownMenuSub,
@@ -41,6 +43,7 @@ export default function ReposMainHeader({
 }: ReposMainHeaderProps) {
   	const { data: session } = authClient.useSession()
   	const [biography, setBiography] = useState<string | null>(null)
+  	const { toggle } = useTodo()
   	const { data: orgs, isError: orgsError } = useUserOrganizations()
   	const organizationList = orgsError ? ORGANIZATIONS : (orgs ?? [])
 
@@ -112,10 +115,19 @@ export default function ReposMainHeader({
                 				New issue
               				</a>
             			</DropdownMenuItem>
-          			</DropdownMenuContent>
-        		</DropdownMenu>
+          		</DropdownMenuContent>
+        			</DropdownMenu>
 
-        		<Separator
+        			<Button
+        				variant="outline"
+        				size="icon"
+        				aria-label="Search"
+        				onClick={toggle}
+        			>
+        				<CopyIcon />
+        			</Button>
+
+        			<Separator
           			orientation="vertical"
           			className="mt-1 hidden h-6 self-center sm:block"
         		/>
