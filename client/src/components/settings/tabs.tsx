@@ -3,6 +3,7 @@ import {
   Bell,
   CirclePlay,
   CircleUserRound,
+  ListChecks,
   Palette,
   Settings,
 } from "lucide-react"
@@ -12,6 +13,7 @@ import ContentProfile from "./content/profile"
 import ContentAccount from "./content/account"
 import ContentNotifications from "./content/notifications"
 import ContentAppearance from "./content/appearance"
+import ContentGeneral from "./content/general"
 
 const tabClass =
   "w-full justify-start gap-2 text-left data-active:bg-primary/20! data-active:text-primary! data-active:shadow-none! dark:data-active:border-transparent"
@@ -41,6 +43,11 @@ function VerticalTabsSettings({ header }: VerticalTabsSettingsProps) {
             Account
           </TabsTrigger>
 
+          <TabsTrigger value="general" className={tabClass}>
+            <ListChecks className="size-4" />
+            General
+          </TabsTrigger>
+
           <TabsTrigger value="actions" className={tabClass} disabled>
             <CirclePlay className="size-4" />
             Actions
@@ -65,6 +72,10 @@ function VerticalTabsSettings({ header }: VerticalTabsSettingsProps) {
 
         <TabsContent value="account">
           <ContentAccount />
+        </TabsContent>
+
+        <TabsContent value="general">
+          <ContentGeneral />
         </TabsContent>
 
         <TabsContent value="actions">

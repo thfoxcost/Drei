@@ -25,6 +25,7 @@ import { Cmd } from "../cmd"
 import { OrganizationMenu } from "@/components/organization/organization-menu"
 import { CopyIcon } from "@/components/copy-icon"
 import { useTodo } from "@/components/todo-provider"
+import { useTodosEnabled } from "#/hooks/useAppearanceSettings"
 
 import {
   	DropdownMenuSub,
@@ -44,6 +45,7 @@ export default function ReposMainHeader({
   	const { data: session } = authClient.useSession()
   	const [biography, setBiography] = useState<string | null>(null)
   	const { toggle } = useTodo()
+  	const todosEnabled = useTodosEnabled()
   	const { data: orgs, isError: orgsError } = useUserOrganizations()
   	const organizationList = orgsError ? ORGANIZATIONS : (orgs ?? [])
 
@@ -118,14 +120,16 @@ export default function ReposMainHeader({
           		</DropdownMenuContent>
         			</DropdownMenu>
 
-        			<Button
-        				variant="outline"
-        				size="icon"
-        				aria-label="Search"
-        				onClick={toggle}
-        			>
-        				<CopyIcon />
-        			</Button>
+        			{todosEnabled && (
+        				<Button
+        					variant="outline"
+        					size="icon"
+        					aria-label="Search"
+        					onClick={toggle}
+        				>
+        					<CopyIcon />
+        				</Button>
+        			)}
 
         			<Separator
           			orientation="vertical"

@@ -4,8 +4,9 @@ import (
 	"backend/internal/database"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"strconv"
+	"strings"
 )
 
 // validThemes is the set of theme values accepted by the API.
@@ -27,6 +28,7 @@ type AppearanceResponse struct {
 	Theme               string `json:"theme"`
 	Language            string `json:"language"`
 	HeatmapProfileColor bool   `json:"heatmapProfileColor"`
+	TodosEnabled        bool   `json:"todosEnabled"`
 }
 
 // AppearanceHandler serves GET and PUT /api/user/appearance.
@@ -79,13 +81,13 @@ func AppearanceHandler(w http.ResponseWriter, r *http.Request) {
 
 func handleGetAppearance(w http.ResponseWriter, user *AuthUser) {
 	var theme, language string
-	var heatmapProfileColor bool
+	var heatmapProfileColor, todosEnabled bool
 
 	err := database.DB.QueryRow(
 		context.Background(),
-		`SELECT appearance_theme, appearance_language, appearance_heatmap_profile_color FROM "user" WHERE id = $1`,
+		`SELECT appearance_theme, appearance_language, appearance_heatmap_profile_color, todos_enabled FROM "user" WHERE id = $1`,
 		user.ID,
-	).Scan(&theme, &language, &heatmapProfileColor)
+	).Scan(&theme, &language, &heatmapProfileColor, &todosEnabled)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to load appearance")
 		return
@@ -103,14 +105,18 @@ func handleGetAppearance(w http.ResponseWriter, user *AuthUser) {
 		Theme:               theme,
 		Language:            language,
 		HeatmapProfileColor: heatmapProfileColor,
+		TodosEnabled:        todosEnabled,
 	})
 }
 
 func handlePutAppearance(w http.ResponseWriter, r *http.Request, user *AuthUser) {
+	// Every field is optional: each settings tab sends only the preference it
+	// owns, so a missing field means "leave the stored value untouched".
 	var req struct {
-		Theme               string `json:"theme"`
-		Language            string `json:"language"`
-		HeatmapProfileColor *bool  `json:"heatmapProfileColor"`
+		Theme               *string `json:"theme"`
+		Language            *string `json:"language"`
+		HeatmapProfileColor *bool   `json:"heatmapProfileColor"`
+		TodosEnabled        *bool   `json:"todosEnabled"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -118,28 +124,49 @@ func handlePutAppearance(w http.ResponseWriter, r *http.Request, user *AuthUser)
 		return
 	}
 
-	if !validThemes[req.Theme] {
+	if req.Theme != nil && !validThemes[*req.Theme] {
 		writeError(w, http.StatusBadRequest, "invalid theme")
 		return
 	}
 
-	if !validLanguages[req.Language] {
+	if req.Language != nil && !validLanguages[*req.Language] {
 		writeError(w, http.StatusBadRequest, "invalid language")
 		return
 	}
 
-	// The profile-color toggle is optional so older clients that don't send
-	// it leave the stored value untouched.
-	query := `UPDATE "user" SET appearance_theme = $1, appearance_language = $2`
-	args := []any{req.Theme, req.Language}
+	sets := []string{}
+	args := []any{}
 
-	if req.HeatmapProfileColor != nil {
-		query += `, appearance_heatmap_profile_color = $3`
-		args = append(args, *req.HeatmapProfileColor)
+	set := func(column string, value any) {
+		args = append(args, value)
+		sets = append(sets, fmt.Sprintf("%s = $%d", column, len(args)))
 	}
 
-	query += ` WHERE id = $` + strconv.Itoa(len(args)+1)
+	if req.Theme != nil {
+		set("appearance_theme", *req.Theme)
+	}
+
+	if req.Language != nil {
+		set("appearance_language", *req.Language)
+	}
+
+	if req.HeatmapProfileColor != nil {
+		set("appearance_heatmap_profile_color", *req.HeatmapProfileColor)
+	}
+
+	if req.TodosEnabled != nil {
+		set("todos_enabled", *req.TodosEnabled)
+	}
+
+	if len(sets) == 0 {
+		writeError(w, http.StatusBadRequest, "no settings provided")
+		return
+	}
+
 	args = append(args, user.ID)
+
+	query := `UPDATE "user" SET ` + strings.Join(sets, ", ") +
+		fmt.Sprintf(" WHERE id = $%d", len(args))
 
 	tag, err := database.DB.Exec(context.Background(), query, args...)
 	if err != nil {
@@ -153,13 +180,22 @@ func handlePutAppearance(w http.ResponseWriter, r *http.Request, user *AuthUser)
 		return
 	}
 
-	resp := map[string]any{
-		"success":  true,
-		"theme":    req.Theme,
-		"language": req.Language,
+	resp := map[string]any{"success": true}
+
+	if req.Theme != nil {
+		resp["theme"] = *req.Theme
 	}
+
+	if req.Language != nil {
+		resp["language"] = *req.Language
+	}
+
 	if req.HeatmapProfileColor != nil {
 		resp["heatmapProfileColor"] = *req.HeatmapProfileColor
+	}
+
+	if req.TodosEnabled != nil {
+		resp["todosEnabled"] = *req.TodosEnabled
 	}
 
 	writeSuccess(w, resp)

@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useLocation } from "@tanstack/react-router"
 import { toast } from "sonner"
 import { authClient } from "#/lib/auth-client"
+import { useTodosEnabled } from "#/hooks/useAppearanceSettings"
 import { CopyDialog } from "@/components/copy-dialog"
 import { matchesRepo, TODO_FIRED_KEY, TODO_OPENED_KEY, type Reminder, type TodoItem } from "@/components/todo-types"
 import {
@@ -76,12 +77,13 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   )
   const pathname = useLocation({ select: (state) => state.pathname })
   const { data: session } = authClient.useSession()
+  const enabled = useTodosEnabled()
   const userId = session?.user?.id
   const knownUser = useRef<string | undefined>(undefined)
   const nextOpenChecked = useRef(false)
 
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (typeof window === "undefined" || !enabled) return
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.repeat) return
@@ -96,7 +98,11 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("keydown", onKeyDown)
 
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [])
+  }, [enabled])
+
+  useEffect(() => {
+    if (!enabled) setOpen(false)
+  }, [enabled])
 
   // To-dos are per user, so a sign-in as somebody else must not reuse the
   // previous account's cache or "already reminded" bookkeeping.
@@ -222,6 +228,8 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
 
   const fire = useCallback(
     (item: TodoItem) => {
+      if (!enabled) return
+
       setFired((prev) => {
         if (prev[item.id]) return prev
 
@@ -241,7 +249,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
         },
       })
     },
-    [snooze],
+    [enabled, snooze],
   )
 
   // "Next time I open the app" — fires once per fresh browser session, so a
@@ -311,7 +319,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-      <CopyDialog />
+      {enabled && <CopyDialog />}
     </TodoContext.Provider>
   )
 }
