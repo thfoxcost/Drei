@@ -23,6 +23,9 @@ import { ORGANIZATIONS } from "@/data/organizations"
 import { UserAvatar } from "@/components/UserAvatar"
 import { Cmd } from "../cmd"
 import { OrganizationMenu } from "@/components/organization/organization-menu"
+import { CopyIcon } from "@/components/copy-icon"
+import { useTodo } from "@/components/todo-provider"
+import { useTodosEnabled } from "#/hooks/useAppearanceSettings"
 
 import {
   	DropdownMenuSub,
@@ -41,6 +44,8 @@ export default function ReposMainHeader({
 }: ReposMainHeaderProps) {
   	const { data: session } = authClient.useSession()
   	const [biography, setBiography] = useState<string | null>(null)
+  	const { toggle } = useTodo()
+  	const todosEnabled = useTodosEnabled()
   	const { data: orgs, isError: orgsError } = useUserOrganizations()
   	const organizationList = orgsError ? ORGANIZATIONS : (orgs ?? [])
 
@@ -112,10 +117,21 @@ export default function ReposMainHeader({
                 				New issue
               				</a>
             			</DropdownMenuItem>
-          			</DropdownMenuContent>
-        		</DropdownMenu>
+          		</DropdownMenuContent>
+        			</DropdownMenu>
 
-        		<Separator
+        			{todosEnabled && (
+        				<Button
+        					variant="outline"
+        					size="icon"
+        					aria-label="Search"
+        					onClick={toggle}
+        				>
+        					<CopyIcon />
+        				</Button>
+        			)}
+
+        			<Separator
           			orientation="vertical"
           			className="mt-1 hidden h-6 self-center sm:block"
         		/>
@@ -238,15 +254,11 @@ export default function ReposMainHeader({
               			className="text-destructive focus:text-destructive"
               			onClick={async () => {
                 			await authClient.signOut()
+                			window.location.href = "/"
               			}}
             		>
-              			<a
-                			href="/"
-                			className="flex items-center gap-1 text-destructive"
-              			>
-                				<LogOut className="mr-2 h-4 w-4" />
-                			Sign out
-              			</a>
+              			<LogOut className="mr-2 h-4 w-4" />
+            			Sign out
             		</DropdownMenuItem>
           		</DropdownMenuContent>
         		</DropdownMenu>

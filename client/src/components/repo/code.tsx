@@ -7,14 +7,15 @@ import { cn } from "@/lib/utils"
 
 type CodeBlockProps = {
   className?: string
+  commands?: string[]
 }
 
-export function CodeBlock({ className }: CodeBlockProps) {
+export function CodeBlock({ className, commands }: CodeBlockProps) {
   const location = useLocation()
   // e.g. "/thfoxcost/curly-potato" -> ["thfoxcost", "curly-potato"]
   const [username, repo] = location.pathname.split("/").filter(Boolean)
 
-  const commands = [
+  const lines = commands ?? [
     `echo "# ${repo}" >> README.md`,
     "git init",
     "git add README.md",
@@ -27,7 +28,7 @@ export function CodeBlock({ className }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(commands.join("\n"))
+    await navigator.clipboard.writeText(lines.join("\n"))
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -55,7 +56,7 @@ export function CodeBlock({ className }: CodeBlockProps) {
 
       <pre className="overflow-x-auto p-4 pr-12 text-left">
         <code className="grid text-left font-mono text-sm text-zinc-100">
-          {commands.map((line, i) => (
+          {lines.map((line, i) => (
             <span key={i} className={cn("whitespace-pre")}>
               <span className="mr-2 select-none text-zinc-500">$</span>
               {line}

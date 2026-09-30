@@ -1,3 +1,5 @@
+import { useLocation } from "@tanstack/react-router"
+import type { ReactNode } from "react"
 import {
   Empty,
   EmptyContent,
@@ -106,7 +108,25 @@ function BoardIllustration() {
   )
 }
 
-export function NoRepo() {
+export function NoRepo({
+  showRemoteReset = false,
+  title = "No Repository yet",
+  description = "You haven't created any repositories yet. Create your first repository to start hosting your projects.",
+  contentClassName,
+}: {
+  showRemoteReset?: boolean
+  title?: string
+  description?: ReactNode
+  contentClassName?: string
+}) {
+  const location = useLocation()
+  // e.g. "/thfoxcost/curly-potato" -> ["thfoxcost", "curly-potato"]
+  const [username, repo] = location.pathname.split("/").filter(Boolean)
+
+  const remoteCommands = [
+    `git remote set-url origin http://localhost:3200/git/${username}/${repo}.git`,
+  ]
+
   return (
     <div className="flex items-center justify-center p-4">
       <Empty className="py-12">
@@ -115,16 +135,19 @@ export function NoRepo() {
             <BoardIllustration />
           </EmptyMedia>
 
-          <EmptyTitle>No Repository yet</EmptyTitle>
+          <EmptyTitle>{title}</EmptyTitle>
 
-          <EmptyDescription>
-            You haven&apos;t created any repositories yet. Create your first
-            repository to start hosting your projects.
-          </EmptyDescription>
+          <EmptyDescription>{description}</EmptyDescription>
         </EmptyHeader>
 
-        <EmptyContent>
-          <CodeBlock />
+        <EmptyContent className={contentClassName}>
+          <div className="flex w-fit flex-col gap-2.5">
+            <CodeBlock className="w-full" />
+
+            {showRemoteReset && (
+              <CodeBlock commands={remoteCommands} className="w-full" />
+            )}
+          </div>
         </EmptyContent>
       </Empty>
     </div>

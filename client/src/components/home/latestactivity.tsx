@@ -5,6 +5,7 @@ import {
   CircleCheck,
   CircleDot,
   GitCommit,
+  GitFork,
   GitMerge,
 } from "lucide-react";
 import { useRef, useState } from "react";
@@ -307,6 +308,29 @@ function ActivityBody({ item }: { item: ActivityItem }) {
             </span>
           </div>
           <BookMarked className={iconClass} />
+        </div>
+      );
+    case "repo_forked":
+      return (
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 text-[15px]">
+            <ActorName username={item.actor.username} />{" "}
+            <span className="text-muted-foreground">
+              forked <RepoLink owner={owner} name={name} />
+              {item.forkedFrom && (
+                <>
+                  {" "}
+                  from{" "}
+                  <RepoLink
+                    owner={item.forkedFrom.owner}
+                    name={item.forkedFrom.name}
+                  />
+                </>
+              )}{" "}
+              <Timestamp createdAt={item.createdAt} />
+            </span>
+          </div>
+          <GitFork className={iconClass} />
         </div>
       );
     case "issue_opened":

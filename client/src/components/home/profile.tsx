@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import ReactCountryFlag from "react-country-flag"
 import { authClient } from "#/lib/auth-client"
 import { UserAvatar } from "@/components/UserAvatar"
-import { ProfessionIcon } from "@/components/profession-icon";
 import {
   Testimonial,
   TestimonialAuthor,
@@ -95,12 +94,32 @@ function Profile() {
 
   return (
     <div className="flex flex-col items-center sm:items-start px-4 sm:px-0 w-80">
-      <UserAvatar
-        src={session?.user.image}
-        name={session?.user.name}
-        uploadable
-        className="w-30 h-30 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 ring-2 ring-muted ring-offset-2 ring-offset-background sm:mb-5"
-      />
+      <div className="relative w-fit">
+        {/* Blurred, oversized copy of the avatar sitting behind it so the
+            picture casts a soft shadow instead of a hard edge. Masked to a
+            radial fade so the glow never shows a seam. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-4 -z-10 scale-125 rounded-full opacity-80 blur-3xl [mask-image:radial-gradient(closest-side,black,transparent)]"
+        >
+          {session?.user.image ? (
+            <img
+              src={session.user.image}
+              alt=""
+              className="size-full scale-125 rounded-full object-cover"
+            />
+          ) : (
+            <div className="size-full scale-125 rounded-full bg-muted" />
+          )}
+        </div>
+
+        <UserAvatar
+          src={session?.user.image}
+          name={session?.user.name}
+          uploadable
+          className="w-30 h-30 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 ring-2 ring-muted ring-offset-2 ring-offset-background sm:mb-5"
+        />
+      </div>
 
       <div className="flex flex-row items-center gap-1 flex-wrap justify-center">
         <h1 className="text-center text-[23px] font-bold leading-tight tracking-tight text-foreground sm:text-[25px]">
@@ -128,9 +147,8 @@ function Profile() {
       </div>
 
       {profile?.profession && (
-        <p className="mb-1 flex w-full items-center justify-center gap-1.5 truncate text-sm text-muted-foreground sm:justify-start">
-          <ProfessionIcon className="size-4 shrink-0" />
-          <span className="truncate">{profile.profession}</span>
+        <p className="mb-1 w-full truncate text-center text-sm text-muted-foreground sm:text-left">
+          {profile.profession}
         </p>
       )}
 

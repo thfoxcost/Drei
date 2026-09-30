@@ -798,11 +798,63 @@ func Migrate() error {
 		return err
 	}
 
+	// To-do list visibility. Users can hide the built-in to-do list (header
+	// button, Shift+R shortcut and its reminders) from settings.
+	_, err = DB.Exec(context.Background(), `
+		ALTER TABLE "user"
+		ADD COLUMN IF NOT EXISTS todos_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+	`)
+	if err != nil {
+		return err
+	}
+
 	// Heatmap tinting: when enabled, the contribution heatmap uses shades of
 	// the user's profile picture instead of the default palette.
 	_, err = DB.Exec(context.Background(), `
 		ALTER TABLE "user"
 		ADD COLUMN IF NOT EXISTS appearance_heatmap_profile_color BOOLEAN NOT NULL DEFAULT FALSE;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Personal to-do list. Ids are client-generated UUIDs so the UI can insert
+	// rows optimistically before the round trip completes. Reminders are
+	// per-user triggers: the next app open (no columns needed), a wall-clock
+	// time, or opening one specific repository page.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS todos (
+			id TEXT PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			title TEXT NOT NULL,
+			status TEXT NOT NULL DEFAULT 'undone'
+				CHECK (status IN ('undone', 'progress', 'done', 'discarded')),
+			pinned BOOLEAN NOT NULL DEFAULT FALSE,
+			reminder_kind TEXT
+				CHECK (reminder_kind IN ('next-open', 'time', 'repo-page')),
+			reminder_at TIMESTAMPTZ,
+			reminder_owner TEXT,
+			reminder_repo TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS todos_user_id_idx
+		ON todos (user_id);
+	`)
+	if err != nil {
+		return err
+	}
+
+	// The list is always read as "pinned first, then newest first".
+	_, err = DB.Exec(context.Background(), `
+		CREATE INDEX IF NOT EXISTS todos_user_pinned_idx
+		ON todos (user_id, pinned DESC, created_at DESC);
 	`)
 	if err != nil {
 		return err

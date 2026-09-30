@@ -36,6 +36,9 @@ import {
 import { Cmd } from "./cmd"
 import { UserAvatar } from "@/components/UserAvatar"
 import { PeopleIcon } from "@/components/people-icon"
+import { CopyIcon } from "@/components/copy-icon"
+import { useTodo } from "@/components/todo-provider"
+import { useTodosEnabled } from "#/hooks/useAppearanceSettings"
 
 const NAV_ITEMS: {
   label: string
@@ -53,6 +56,8 @@ const NAV_ITEMS: {
 export default function Header() {
   const { data: session } = authClient.useSession()
   const navigate = useNavigate()
+  const { toggle } = useTodo()
+  const todosEnabled = useTodosEnabled()
   const [biography, setBiography] = useState<string | null>(null)
   const { data: orgs, isError: orgsError } = useUserOrganizations()
   const organizationList = orgsError ? ORGANIZATIONS : (orgs ?? [])
@@ -141,6 +146,17 @@ export default function Header() {
             <span className="hidden sm:inline">Create</span>
           </Button>
         </a>
+
+        {todosEnabled && (
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Search"
+            onClick={toggle}
+          >
+            <CopyIcon />
+          </Button>
+        )}
 
         <Separator
           orientation="vertical"
@@ -312,15 +328,11 @@ export default function Header() {
               className="text-destructive focus:text-destructive"
               onClick={async () => {
                 await authClient.signOut()
+                window.location.href = "/"
               }}
             >
-              <a
-                href="/"
-                className="flex items-center gap-1 text-destructive"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign out
-              </a>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
