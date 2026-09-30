@@ -36,6 +36,8 @@ import {
 import { Cmd } from "./cmd"
 import { UserAvatar } from "@/components/UserAvatar"
 import { PeopleIcon } from "@/components/people-icon"
+import { CopyIcon } from "@/components/copy-icon"
+import { useTodo } from "@/components/todo-provider"
 
 const NAV_ITEMS: {
   label: string
@@ -53,6 +55,7 @@ const NAV_ITEMS: {
 export default function Header() {
   const { data: session } = authClient.useSession()
   const navigate = useNavigate()
+  const { toggle } = useTodo()
   const [biography, setBiography] = useState<string | null>(null)
   const { data: orgs, isError: orgsError } = useUserOrganizations()
   const organizationList = orgsError ? ORGANIZATIONS : (orgs ?? [])
@@ -141,6 +144,15 @@ export default function Header() {
             <span className="hidden sm:inline">Create</span>
           </Button>
         </a>
+
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Search"
+          onClick={toggle}
+        >
+          <CopyIcon />
+        </Button>
 
         <Separator
           orientation="vertical"

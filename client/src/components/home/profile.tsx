@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import ReactCountryFlag from "react-country-flag"
 import { authClient } from "#/lib/auth-client"
 import { UserAvatar } from "@/components/UserAvatar"
-import { ProfessionIcon } from "@/components/profession-icon";
 import {
   Testimonial,
   TestimonialAuthor,
@@ -128,9 +127,8 @@ function Profile() {
       </div>
 
       {profile?.profession && (
-        <p className="mb-1 flex w-full items-center justify-center gap-1.5 truncate text-sm text-muted-foreground sm:justify-start">
-          <ProfessionIcon className="size-4 shrink-0" />
-          <span className="truncate">{profile.profession}</span>
+        <p className="mb-1 w-full truncate text-center text-sm text-muted-foreground sm:text-left">
+          {profile.profession}
         </p>
       )}
 
