@@ -1,7 +1,10 @@
+import { useTranslation } from "react-i18next";
+
 import { authClient } from "#/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 function ProfileHeader() {
+  const { t } = useTranslation();
   const { data: session } = authClient.useSession();
   const user = session?.user;
 
@@ -25,7 +28,7 @@ function ProfileHeader() {
           <span className="text-muted-foreground">({user?.email ?? ""})</span>
         </span>
         <span className="text-muted-foreground text-xs">
-          Your personal account
+          {t("settings.headerSubtitle")}
         </span>
       </div>
     </div>

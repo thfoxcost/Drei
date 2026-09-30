@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { backendUrl } from "#/lib/backend-url";
 import type { TodoItem } from "#/components/todo-types";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
+import { backendUrl } from "#/lib/backend-url";
 
 export type { TodoItem };
 
@@ -21,7 +22,7 @@ async function parseError(res: Response, fallback: string): Promise<Error> {
 	const text = await res.text().catch(() => "");
 	try {
 		const body = JSON.parse(text);
-		return new Error(body?.error ?? body?.message ?? fallback);
+		return new Error(apiErrorMessage(body) ?? fallback);
 	} catch {
 		return new Error(text || fallback);
 	}
@@ -34,7 +35,11 @@ async function send(url: string, init: RequestInit): Promise<TodoItem> {
 		...init,
 	});
 
-	if (!res.ok) throw await parseError(res, "Request failed");
+	if (!res.ok)
+		throw await parseError(
+			res,
+			apiErrorMessage(null, { fallbackKey: "errors.client.requestFailed" }),
+		);
 
 	return res.json();
 }
@@ -47,7 +52,11 @@ export function useTodos() {
 				credentials: "include",
 			});
 
-			if (!res.ok) throw await parseError(res, "Failed to fetch to-dos");
+			if (!res.ok)
+				throw await parseError(
+					res,
+					apiErrorMessage(null, { fallbackKey: "errors.client.fetchToDos" }),
+				);
 
 			return res.json();
 		},

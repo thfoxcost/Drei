@@ -1,13 +1,5 @@
-import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { Badge } from "#/components/reui/badge"
-import { Button } from "#/components/ui/button"
-import { Input } from "#/components/ui/input"
-import {
-	Avatar,
-	AvatarFallback,
-	AvatarImage,
-} from "#/components/ui/avatar"
+import { useQuery } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
 	Diff,
 	Download,
@@ -22,31 +14,33 @@ import {
 	SquareDot,
 	SquareMinus,
 	SquarePlus,
-} from "lucide-react"
-import { useNavigate, useLocation } from "@tanstack/react-router"
-import { Separator } from "#/components/ui/separator"
+} from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Badge } from "#/components/reui/badge";
+import { type TreeDataItem, TreeView } from "#/components/tree-view";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
+import { Button } from "#/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "#/components/ui/dropdown-menu"
-import {
-	type TreeDataItem,
-	TreeView,
-} from "#/components/tree-view"
-import CodeCommitBlock, { type FileDiff } from "./code-commit"
+} from "#/components/ui/dropdown-menu";
+import { Input } from "#/components/ui/input";
+import { Separator } from "#/components/ui/separator";
+import CodeCommitBlock, { type FileDiff } from "./code-commit";
 
 function filePathToId(path: string): string {
-	return `diff-${path.replace(/[^a-zA-Z0-9]/g, "-")}`
+	return `diff-${path.replace(/[^a-zA-Z0-9]/g, "-")}`;
 }
 
-type ChangeStatus = "added" | "changed" | "removed"
+type ChangeStatus = "added" | "changed" | "removed";
 
 type CommitFile = {
-	path: string
-	status: ChangeStatus
-}
+	path: string;
+	status: ChangeStatus;
+};
 
 const extensionToIcon: Record<string, string> = {
 	go: "go.svg",
@@ -127,12 +121,12 @@ const extensionToIcon: Record<string, string> = {
 	docx: "document.svg",
 	xls: "document.svg",
 	pptx: "document.svg",
-}
+};
 
 const filenameToIcon: Record<string, string> = {
 	Makefile: "makefile.svg",
 	makefile: "makefile.svg",
-	"GNUmakefile": "makefile.svg",
+	GNUmakefile: "makefile.svg",
 	Dockerfile: "docker.svg",
 	".gitignore": "git.svg",
 	".gitmodules": "git.svg",
@@ -164,9 +158,9 @@ const filenameToIcon: Record<string, string> = {
 	"mix.exs": "elixir.svg",
 	"stack.yaml": "haskell.svg",
 	"cabal.project": "haskell.svg",
-	"Gemfile": "ruby.svg",
-	"Rakefile": "ruby.svg",
-	"Pipfile": "python.svg",
+	Gemfile: "ruby.svg",
+	Rakefile: "ruby.svg",
+	Pipfile: "python.svg",
 	"pyproject.toml": "python.svg",
 	"setup.py": "python.svg",
 	"requirements.txt": "python.svg",
@@ -179,45 +173,41 @@ const filenameToIcon: Record<string, string> = {
 	"docker-compose.yaml": "docker.svg",
 	".travis.yml": "travis.svg",
 	".github": "github.svg",
-	"LICENSE": "key.svg",
-	"LICENCE": "key.svg",
+	LICENSE: "key.svg",
+	LICENCE: "key.svg",
 	"README.md": "readme.svg",
 	"readme.md": "readme.svg",
 	"CHANGELOG.md": "changelog.svg",
 	"CONTRIBUTING.md": "contributing.svg",
-	"AUTHORS": "authors.svg",
-	"CODEOWNERS": "codeowners.svg",
-}
+	AUTHORS: "authors.svg",
+	CODEOWNERS: "codeowners.svg",
+};
 
 function getFileIconName(path: string): string {
-	const parts = path.split("/")
-	const fileName = parts[parts.length - 1]
+	const parts = path.split("/");
+	const fileName = parts[parts.length - 1];
 
 	if (filenameToIcon[fileName]) {
-		return filenameToIcon[fileName]
+		return filenameToIcon[fileName];
 	}
 
-	const dotIndex = fileName.lastIndexOf(".")
+	const dotIndex = fileName.lastIndexOf(".");
 	if (dotIndex === -1) {
-		return "file.svg"
+		return "file.svg";
 	}
 
-	const ext = fileName.slice(dotIndex + 1).toLowerCase()
-	return extensionToIcon[ext] ?? "file.svg"
+	const ext = fileName.slice(dotIndex + 1).toLowerCase();
+	return extensionToIcon[ext] ?? "file.svg";
 }
 
 function makeFileIconComponent(
 	svgName: string,
 ): React.ComponentType<{ className?: string }> {
-	const Component = ({
-		className,
-	}: {
-		className?: string
-	}) => {
+	const Component = ({ className }: { className?: string }) => {
 		const filtered = (className ?? "")
 			.replace(/\bh-\d+\b/g, "")
 			.replace(/\bw-\d+\b/g, "")
-			.trim()
+			.trim();
 		return (
 			<img
 				src={`/icons/${svgName}`}
@@ -225,70 +215,64 @@ function makeFileIconComponent(
 				className={`h-4.5 w-4.5 ${filtered}`}
 				style={{ filter: "grayscale(1)" }}
 			/>
-		)
-	}
-	Component.displayName = `FileIcon(${svgName})`
-	return Component
+		);
+	};
+	Component.displayName = `FileIcon(${svgName})`;
+	return Component;
 }
 
 function getStatusIcon(status: ChangeStatus) {
-	if (status === "added") return SquarePlus
-	if (status === "changed") return SquareDot
-	return SquareMinus
+	if (status === "added") return SquarePlus;
+	if (status === "changed") return SquareDot;
+	return SquareMinus;
 }
 
 function getStatusColor(status: ChangeStatus) {
 	if (status === "added") {
-		return "text-green-600 dark:text-green-500"
+		return "text-green-600 dark:text-green-500";
 	}
 
 	if (status === "changed") {
-		return "text-orange-500"
+		return "text-orange-500";
 	}
 
-	return "text-red-600 dark:text-red-500"
+	return "text-red-600 dark:text-red-500";
 }
 
 function FileRowLabel({
 	fileName,
 	status,
 }: {
-	fileName: string
-	status: ChangeStatus
+	fileName: string;
+	status: ChangeStatus;
 }) {
-	const StatusIcon = getStatusIcon(status)
+	const StatusIcon = getStatusIcon(status);
 
 	return (
 		<div className="flex w-full items-center justify-between gap-2">
 			<span className="truncate">{fileName}</span>
 
-			<StatusIcon
-				className={`h-4 w-4 shrink-0 ${getStatusColor(status)}`}
-			/>
+			<StatusIcon className={`h-4 w-4 shrink-0 ${getStatusColor(status)}`} />
 		</div>
-	)
+	);
 }
 
 function buildCommitFileTree(
 	files: CommitFile[],
 	onFileClick?: (path: string) => void,
 ): TreeDataItem[] {
-	const root: TreeDataItem[] = []
+	const root: TreeDataItem[] = [];
 
-	const sorted = [...files].sort((a, b) =>
-		a.path.localeCompare(b.path),
-	)
+	const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
 
 	for (const file of sorted) {
-		const parts = file.path.split("/")
-		let current = root
+		const parts = file.path.split("/");
+		let current = root;
 
 		for (let i = 0; i < parts.length - 1; i++) {
-			const dirName = parts[i]
+			const dirName = parts[i];
 
-			let existing = current.find(
-				(n) => n.name === dirName && !!n.children,
-			)
+			let existing = current.find((n) => n.name === dirName && !!n.children);
 
 			if (!existing) {
 				existing = {
@@ -296,176 +280,169 @@ function buildCommitFileTree(
 					name: dirName,
 					icon: Folder,
 					children: [],
-				}
+				};
 
-				current.push(existing)
+				current.push(existing);
 			}
 
-			current = existing.children!
+			current = existing.children!;
 		}
 
-		const fileName = parts[parts.length - 1]
+		const fileName = parts[parts.length - 1];
 
 		current.push({
 			id: file.path,
 			name: (
-				<FileRowLabel
-					fileName={fileName}
-					status={file.status}
-				/>
+				<FileRowLabel fileName={fileName} status={file.status} />
 			) as unknown as string,
 			icon: makeFileIconComponent(getFileIconName(file.path)),
 			onClick: onFileClick ? () => onFileClick(file.path) : undefined,
-		})
+		});
 	}
 
-	return root
+	return root;
 }
 
 interface CommitDetail {
-	fullHash: string
-	shortHash: string
-	message: string
-	body: string
-	branch: string
-	parentCount: number
-	parentHashes: string[]
-	date: string
-	authorName: string
-	authorAvatar: string
-	changedFiles: number
-	additions: number
-	deletions: number
-	files: { path: string; action: string }[]
-	diffs: FileDiff[]
+	fullHash: string;
+	shortHash: string;
+	message: string;
+	body: string;
+	branch: string;
+	parentCount: number;
+	parentHashes: string[];
+	date: string;
+	authorName: string;
+	authorAvatar: string;
+	changedFiles: number;
+	additions: number;
+	deletions: number;
+	files: { path: string; action: string }[];
+	diffs: FileDiff[];
 }
 
 interface CommitProps {
-	hash: string
-	owner: string
-	repo: string
+	hash: string;
+	owner: string;
+	repo: string;
 }
 
 function Commit({ hash, owner, repo }: CommitProps) {
+	const { t } = useTranslation();
+	const navigate = useNavigate();
+	const location = useLocation();
 
-	const navigate = useNavigate()
-	const location = useLocation()
+	const [search, setSearch] = useState("");
+	const [codeSearch, setCodeSearch] = useState("");
+	const [showFileTree, setShowFileTree] = useState(true);
+	const [allExpanded, setAllExpanded] = useState(true);
+	const [expandGeneration, setExpandGeneration] = useState(0);
 
-	const [search, setSearch] = useState("")
-	const [codeSearch, setCodeSearch] = useState("")
-	const [showFileTree, setShowFileTree] = useState(true)
-	const [allExpanded, setAllExpanded] = useState(true)
-	const [expandGeneration, setExpandGeneration] = useState(0)
-
-	const [, routeOwner, routeRepo] = location.pathname.split("/")
+	const [, routeOwner, routeRepo] = location.pathname.split("/");
 
 	const { data: commit, isLoading } = useQuery<CommitDetail>({
 		queryKey: ["commit", owner, repo, hash],
 		queryFn: async () => {
 			const res = await fetch(
 				`http://localhost:3200/api/repos/${owner}/${repo}/commits/${hash}`,
-			)
-			if (!res.ok) throw new Error("Failed to fetch commit")
-			return res.json()
+			);
+			if (!res.ok) throw new Error(t("errors.client.fetchCommitDetails"));
+			return res.json();
 		},
 		staleTime: 60_000,
-	})
+	});
 
-	const filteredFiles: CommitFile[] = (commit?.files ?? []).map((f) => ({
-		path: f.path,
-		status: f.action as ChangeStatus,
-	})).filter((file) =>
-		file.path.toLowerCase().includes(search.toLowerCase()),
-	)
+	const filteredFiles: CommitFile[] = (commit?.files ?? [])
+		.map((f) => ({
+			path: f.path,
+			status: f.action as ChangeStatus,
+		}))
+		.filter((file) => file.path.toLowerCase().includes(search.toLowerCase()));
 
-	const parentHashShort = commit?.parentHashes?.[0]?.slice(0, 7) ?? ""
+	const parentHashShort = commit?.parentHashes?.[0]?.slice(0, 7) ?? "";
 	const commitDate = commit?.date
 		? new Date(commit.date).toLocaleDateString("en-US", {
 				month: "short",
 				day: "numeric",
 				year: "numeric",
 			})
-		: ""
+		: "";
 
 	const codeMatchCount = (() => {
-		if (!codeSearch.trim() || !commit?.diffs) return 0
-		let count = 0
-		const term = codeSearch.toLowerCase()
+		if (!codeSearch.trim() || !commit?.diffs) return 0;
+		let count = 0;
+		const term = codeSearch.toLowerCase();
 		for (const d of commit.diffs) {
 			for (const h of d.hunks) {
 				for (const l of h.lines) {
 					if (l.content.toLowerCase().includes(term)) {
-						count++
+						count++;
 					}
 				}
 			}
 		}
-		return count
-	})()
+		return count;
+	})();
 
 	function scrollToDiff(path: string) {
-		const el = document.getElementById(filePathToId(path))
-		if (!el) return
+		const el = document.getElementById(filePathToId(path));
+		if (!el) return;
 
-		el.scrollIntoView({ behavior: "smooth", block: "start" })
+		el.scrollIntoView({ behavior: "smooth", block: "start" });
 
-		el.classList.add("bg-blue-500/10", "ring-1", "ring-blue-500/30")
+		el.classList.add("bg-blue-500/10", "ring-1", "ring-blue-500/30");
 
 		const timer = setTimeout(() => {
-			el.classList.remove("bg-blue-500/10", "ring-1", "ring-blue-500/30")
-		}, 1500)
+			el.classList.remove("bg-blue-500/10", "ring-1", "ring-blue-500/30");
+		}, 1500);
 
-		return () => clearTimeout(timer)
+		return () => clearTimeout(timer);
 	}
 
 	function downloadDiff() {
-		const diffs = commit?.diffs
-		if (!diffs || diffs.length === 0) return
+		const diffs = commit?.diffs;
+		if (!diffs || diffs.length === 0) return;
 
-		let content = ""
+		let content = "";
 
 		for (const d of diffs) {
-			content += `diff --git a/${d.path} b/${d.path}\n`
-			content += `--- a/${d.path}\n`
-			content += `+++ b/${d.path}\n`
+			content += `diff --git a/${d.path} b/${d.path}\n`;
+			content += `--- a/${d.path}\n`;
+			content += `+++ b/${d.path}\n`;
 
 			for (const hunk of d.hunks) {
-				content += `${hunk.header}\n`
+				content += `${hunk.header}\n`;
 
 				for (const line of hunk.lines) {
 					const prefix =
-						line.type === "added"
-							? "+"
-							: line.type === "removed"
-								? "-"
-								: " "
+						line.type === "added" ? "+" : line.type === "removed" ? "-" : " ";
 
-					content += `${prefix}${line.content}\n`
+					content += `${prefix}${line.content}\n`;
 				}
 			}
 
-			content += "\n"
+			content += "\n";
 		}
 
 		const blob = new Blob([content], {
 			type: "text/plain",
-		})
-		const url = URL.createObjectURL(blob)
-		const a = document.createElement("a")
+		});
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
 
-		a.href = url
-		a.download = `${commit?.shortHash ?? "commit"}.diff`
-		a.click()
-		URL.revokeObjectURL(url)
+		a.href = url;
+		a.download = `${commit?.shortHash ?? "commit"}.diff`;
+		a.click();
+		URL.revokeObjectURL(url);
 	}
 
 	return (
 		<div>
 			<div className="mx-4 flex items-center justify-between">
 				<span className="text-2xl font-medium">
-					Commit{" "}
+					{t("repo.commit.title")}{" "}
 					<Badge size="xl" variant="secondary">
-						{isLoading ? "..." : commit?.shortHash ?? hash.slice(0, 7)}
+						{isLoading ? "..." : (commit?.shortHash ?? hash.slice(0, 7))}
 					</Badge>
 				</span>
 
@@ -478,13 +455,13 @@ function Commit({ hash, owner, repo }: CommitProps) {
 					}
 				>
 					<FileCode />
-					Browse Files
+					{t("repo.code.browseFiles")}
 				</Button>
 			</div>
 
 			<div className="mx-4 mt-2 rounded-md border p-3">
 				<div className="font-mono text-sm">
-					{isLoading ? "Loading..." : commit?.message ?? ""}
+					{isLoading ? t("repo.commit.loading") : (commit?.message ?? "")}
 				</div>
 
 				{commit?.body && (
@@ -497,36 +474,30 @@ function Commit({ hash, owner, repo }: CommitProps) {
 
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2">
-						<GitBranch
-							size={18}
-							className="text-muted-foreground"
-						/>
+						<GitBranch size={18} className="text-muted-foreground" />
 
-						<Badge
-							size="lg"
-							variant="secondary"
-						>
-							{isLoading ? "..." : commit?.branch ?? ""}
+						<Badge size="lg" variant="secondary">
+							{isLoading ? "..." : (commit?.branch ?? "")}
 						</Badge>
 					</div>
 
 					<div className="flex items-center gap-1 text-sm">
 						<span className="text-muted-foreground">
-							{commit?.parentCount ?? 0} parent{(commit?.parentCount ?? 0) !== 1 ? "s" : ""}
+							{t("repo.commit.parents", {
+								count: commit?.parentCount ?? 0,
+							})}
 						</span>
 
 						{parentHashShort && (
-							<span className="font-mono underline">
-								{parentHashShort}
-							</span>
+							<span className="font-mono underline">{parentHashShort}</span>
 						)}
 
 						<span className="text-muted-foreground">
-							commit
+							{t("repo.commit.commit")}
 						</span>
 
 						<span className="font-mono underline">
-							{isLoading ? "..." : commit?.shortHash ?? ""}
+							{isLoading ? "..." : (commit?.shortHash ?? "")}
 						</span>
 					</div>
 				</div>
@@ -535,22 +506,21 @@ function Commit({ hash, owner, repo }: CommitProps) {
 
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2">
-						<Diff
-							size={18}
-							className="text-muted-foreground"
-						/>
+						<Diff size={18} className="text-muted-foreground" />
 
 						<span className="text-sm">
 							<span className="font-semibold text-orange-500">
-								{commit?.changedFiles ?? 0} changed files
+								{t("repo.commit.changedFiles", {
+									count: commit?.changedFiles ?? 0,
+								})}
 							</span>{" "}
-							with{" "}
+							{t("repo.commit.with")}{" "}
 							<span className="font-semibold text-green-600 dark:text-green-500">
-								{commit?.additions ?? 0} additions
+								{commit?.additions ?? 0} {t("repo.commit.additions")}
 							</span>{" "}
-							and{" "}
+							{t("repo.commit.and")}{" "}
 							<span className="font-semibold text-red-600 dark:text-red-500">
-								{commit?.deletions ?? 0} deletions
+								{commit?.deletions ?? 0} {t("repo.commit.deletions")}
 							</span>
 						</span>
 					</div>
@@ -564,10 +534,10 @@ function Commit({ hash, owner, repo }: CommitProps) {
 						</Avatar>
 
 						<span className="text-sm">
-							{isLoading ? "..." : commit?.authorName ?? ""}{" "}
-							<span className="text-muted-foreground">
-								committed {commitDate}
-							</span>
+							{t("repo.code.latestCommits.committed", {
+								author: isLoading ? "..." : (commit?.authorName ?? ""),
+								time: commitDate,
+							})}
 						</span>
 					</div>
 				</div>
@@ -580,25 +550,18 @@ function Commit({ hash, owner, repo }: CommitProps) {
 					<>
 						<div className="sticky top-0 ml-4 max-h-[calc(100vh-2rem)] w-[250px] shrink-0 self-start overflow-y-auto pr-2">
 							<div className="relative mt-4">
-								<Search
-									className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-								/>
+								<Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
 								<Input
 									value={search}
-									onChange={(e) =>
-										setSearch(e.target.value)
-									}
-									placeholder="Search files..."
+									onChange={(e) => setSearch(e.target.value)}
+									placeholder={t("repo.code.searchFiles")}
 									className="pl-8"
 								/>
 							</div>
 
 							<TreeView
-								data={buildCommitFileTree(
-									filteredFiles,
-									scrollToDiff,
-								)}
+								data={buildCommitFileTree(filteredFiles, scrollToDiff)}
 							/>
 						</div>
 
@@ -612,30 +575,26 @@ function Commit({ hash, owner, repo }: CommitProps) {
 							<div className="flex items-center gap-2">
 								<Button
 									variant="secondary"
-									onClick={() =>
-										setShowFileTree(
-											(value) => !value,
-										)
-									}
+									onClick={() => setShowFileTree((value) => !value)}
 								>
 									<PanelLeft />
 								</Button>
 
 								<Input
 									type="search"
-									placeholder="Search within code"
+									placeholder={t("repo.code.searchWithinCode")}
 									value={codeSearch}
-									onChange={(e) =>
-										setCodeSearch(e.target.value)
-									}
+									onChange={(e) => setCodeSearch(e.target.value)}
 									className="w-[300px]"
 								/>
 
 								{codeSearch.trim() && (
 									<span className="shrink-0 text-xs text-muted-foreground">
 										{codeMatchCount === 0
-											? "No matches"
-											: `${codeMatchCount} ${codeMatchCount === 1 ? "match" : "matches"}`}
+											? t("repo.code.noMatches")
+											: t("repo.code.matchCount", {
+												count: codeMatchCount,
+											})}
 									</span>
 								)}
 							</div>
@@ -650,26 +609,26 @@ function Commit({ hash, owner, repo }: CommitProps) {
 								<DropdownMenuContent align="end" className="w-44 p-1">
 									<DropdownMenuItem
 										onClick={() => {
-											setAllExpanded((v) => !v)
-											setExpandGeneration((g) => g + 1)
+											setAllExpanded((v) => !v);
+											setExpandGeneration((g) => g + 1);
 										}}
 									>
 										{allExpanded ? (
 											<>
 												<ListChevronsDownUp className="mr-2 h-4 w-4" />
-												Collapse all
+												{t("repo.code.collapseAllMenu")}
 											</>
 										) : (
 											<>
 												<ListChevronsUpDown className="mr-2 h-4 w-4" />
-												Expand all
+												{t("repo.code.expandAllMenu")}
 											</>
 										)}
 									</DropdownMenuItem>
 
 									<DropdownMenuItem onClick={downloadDiff}>
 										<Download className="mr-2 h-4 w-4" />
-										Download diff
+										{t("repo.code.downloadDiff")}
 									</DropdownMenuItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
@@ -689,7 +648,7 @@ function Commit({ hash, owner, repo }: CommitProps) {
 				</div>
 			</div>
 		</div>
-	)
+	);
 }
 
-export default Commit
+export default Commit;

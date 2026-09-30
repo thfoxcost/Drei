@@ -11,9 +11,10 @@ import {
 	Tag,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import type { RepoFile, TagInfo } from "#/types/repo";
 import { backendUrl } from "#/lib/backend-url";
+import type { RepoFile, TagInfo } from "#/types/repo";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -61,6 +62,7 @@ interface TableheaderProps {
 }
 
 function CloneUrlField({ url }: { url?: string }) {
+	const { t } = useTranslation();
 	const [copied, setCopied] = useState(false);
 
 	async function handleCopy() {
@@ -75,7 +77,7 @@ function CloneUrlField({ url }: { url?: string }) {
 			<InputGroup>
 				<InputGroupInput
 					readOnly
-					value={url ?? "Coming soon"}
+					value={url ?? t("repo.clone.comingSoon")}
 					className="font-mono text-xs"
 				/>
 				{url && (
@@ -85,7 +87,7 @@ function CloneUrlField({ url }: { url?: string }) {
 							variant="ghost"
 							size="icon-sm"
 							onClick={handleCopy}
-							aria-label="Copy clone URL"
+							aria-label={t("repo.clone.copyUrl")}
 						>
 							{copied ? (
 								<Check className="h-4 w-4 text-green-600" />
@@ -114,6 +116,7 @@ function Tableheader({
 	readme,
 	files = [],
 }: TableheaderProps) {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [branchToDelete, setBranchToDelete] = useState<string | null>(null);
@@ -156,11 +159,15 @@ function Tableheader({
 
 			if (!res.ok) {
 				throw new Error(
-					result?.error || result?.message || "Failed to delete branch",
+					result?.error ||
+						result?.message ||
+						t("repo.refSwitcher.deleteBranchFailed"),
 				);
 			}
 
-			toast.success(`Branch "${branchToDelete}" deleted`);
+			toast.success(
+				t("repo.refSwitcher.branchDeleted", { branch: branchToDelete }),
+			);
 			const deletedCurrent = branchToDelete === currentBranch;
 			setBranchToDelete(null);
 			await queryClient.invalidateQueries({
@@ -174,7 +181,11 @@ function Tableheader({
 				});
 			}
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error
+					? err.message
+					: t("common.errors.somethingWentWrong"),
+			);
 		} finally {
 			setIsDeleting(false);
 		}
@@ -187,7 +198,7 @@ function Tableheader({
 			const res = await fetch(url);
 
 			if (!res.ok) {
-				let message = "Failed to download archive";
+				let message = t("repo.download.failed");
 				try {
 					const data = (await res.json()) as { error?: string };
 					if (data.error) message = data.error;
@@ -207,13 +218,17 @@ function Tableheader({
 			link.remove();
 			URL.revokeObjectURL(objectUrl);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Something went wrong");
+			toast.error(
+				err instanceof Error
+					? err.message
+					: t("common.errors.somethingWentWrong"),
+			);
 		}
 	};
 
 	const handleDownloadReadme = () => {
 		if (!readme) {
-			toast.error("No README found in this repository");
+			toast.error(t("repo.download.noReadme"));
 			return;
 		}
 
@@ -249,9 +264,7 @@ function Tableheader({
 			window.removeEventListener("blur", onBlur);
 
 			if (!opened) {
-				toast.error(
-					"VS Code doesn't appear to be installed, or the vscode:// link could not be opened",
-				);
+				toast.error(t("repo.clone.vscodeMissing"));
 			}
 		}, 2000);
 	};
@@ -277,14 +290,20 @@ function Tableheader({
 						<Button variant="ghost" className="align-center justify-center">
 							<GitBranch className="h-4 w-4 text-muted-foreground" />
 							<span className="font-bold">{nBranches}</span>
-							<span className="text-muted-foreground">Branches</span>
+							<span className="text-muted-foreground">
+								{t("repo.refSwitcher.branches")}
+							</span>
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start" className="w-56">
-						<DropdownMenuLabel>Branches</DropdownMenuLabel>
+						<DropdownMenuLabel>
+							{t("repo.refSwitcher.branches")}
+						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						{branches.length === 0 ? (
-							<p className="text-xs text-muted-foreground p-2">No branches</p>
+							<p className="text-xs text-muted-foreground p-2">
+								{t("repo.settings.general.noBranches")}
+							</p>
 						) : (
 							branches.map((branch) => (
 								<DropdownMenuItem
@@ -296,7 +315,7 @@ function Tableheader({
 									{branch}
 									{branch === defaultBranch && (
 										<span className="ml-auto text-xs text-muted-foreground">
-											default
+											{t("repo.refSwitcher.default")}
 										</span>
 									)}
 								</DropdownMenuItem>
@@ -311,14 +330,18 @@ function Tableheader({
 						<Button variant="ghost" className="align-center justify-center">
 							<Tag className="h-4 w-4 text-muted-foreground" />
 							<span className="font-bold">{nTags}</span>
-							<span className="text-muted-foreground">Tags</span>
+							<span className="text-muted-foreground">
+								{t("repo.refSwitcher.tags")}
+							</span>
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start" className="w-56">
-						<DropdownMenuLabel>Tags</DropdownMenuLabel>
+						<DropdownMenuLabel>{t("repo.refSwitcher.tags")}</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						{!tags || tags.length === 0 ? (
-							<p className="text-xs text-muted-foreground p-2">No tags</p>
+							<p className="text-xs text-muted-foreground p-2">
+								{t("repo.tags.empty")}
+							</p>
 						) : (
 							tags.map((tag) => (
 								<DropdownMenuItem
@@ -349,13 +372,13 @@ function Tableheader({
 							variant="outline"
 							className="inline-flex items-center justify-center gap-1"
 						>
-							<span>Add file</span>
+							<span>{t("repo.code.addFile")}</span>
 							<ChevronDown className="h-4 w-4 text-muted-foreground" />
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent>
 						<p className="text-xs text-muted-foreground p-2">
-							Open coming soon
+							{t("repo.code.openComingSoon")}
 						</p>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -364,7 +387,7 @@ function Tableheader({
 					<DropdownMenuTrigger asChild>
 						<Button className="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700">
 							<Code className="h-4 w-4" />
-							<span>Clone</span>
+							<span>{t("repo.clone.label")}</span>
 							<ChevronDown className="h-4 w-4" />
 						</Button>
 					</DropdownMenuTrigger>
@@ -373,7 +396,9 @@ function Tableheader({
 						<DropdownMenuLabel className="flex items-bottom gap-1 px-0 pb-2">
 							<SquareTerminal className="h-4.5 w-4.5" />
 							<span className="text-sm font-medium text-muted-foreground">
-								<span className="muted-foreground text-sm">Clone</span>
+								<span className="muted-foreground text-sm">
+									{t("repo.clone.label")}
+								</span>
 							</span>
 						</DropdownMenuLabel>
 						<Tabs defaultValue="http" className="w-full">
@@ -388,34 +413,34 @@ function Tableheader({
 								<CloneUrlField url={cloneUrl} />
 							</TabsContent>
 							<TabsContent value="ssh" className="mt-1">
-								<CloneUrlField url="SSH Coming Soon" />
+								<CloneUrlField url={t("repo.clone.sshComingSoon")} />
 							</TabsContent>
 							<TabsContent value="cli" className="mt-1">
-								<CloneUrlField url="CLI Coming Soon" />
+								<CloneUrlField url={t("repo.clone.cliComingSoon")} />
 							</TabsContent>
 						</Tabs>
 						<DropdownMenuGroup className="mt-2">
 							<DropdownMenuItem onClick={handleOpenInVSCode}>
 								<img
 									src="/icons/vscode.svg"
-									alt="vscode icon"
+									alt=""
 									className="h-4 w-4 grayscale"
 								/>
 								<span className=" hover:underline text-sm text-foreground">
-									Open with VS Code
+									{t("repo.clone.openWithVSCode")}
 								</span>
 							</DropdownMenuItem>
 							<DropdownMenuItem disabled>
 								<img
 									src="/logo-dark.svg"
-									alt="drei icon"
+									alt=""
 									className="h-5 w-5 grayscale"
 								/>
 								<a
 									href="https://code.visualstudio.com/"
 									className=" hover:underline text-sm text-foreground"
 								>
-									Open with Drei Desktop
+									{t("repo.clone.openWithDrei")}
 								</a>
 							</DropdownMenuItem>
 
@@ -424,25 +449,25 @@ function Tableheader({
 							<DropdownMenuItem onClick={() => handleDownload("zip")}>
 								<FileArchive className="size-4" />
 								<span className=" hover:underline text-sm text-foreground">
-									Download ZIP
+									{t("repo.clone.downloadZip")}
 								</span>
 							</DropdownMenuItem>
 
 							<DropdownMenuItem onClick={() => handleDownload("tar.gz")}>
 								<FileArchive className="size-4" />
 								<span className=" hover:underline text-sm text-foreground">
-									Download TAR.GZ
+									{t("repo.clone.downloadTarGz")}
 								</span>
 							</DropdownMenuItem>
 
 							<DropdownMenuItem onClick={handleDownloadReadme}>
 								<img
 									src="/icons/readme.svg"
-									alt="drei icon"
+									alt=""
 									className="h-4.5 w-4.5 grayscale"
 								/>
 								<span className=" hover:underline text-sm text-foreground">
-									Download README
+									{t("repo.clone.downloadReadme")}
 								</span>
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
@@ -458,13 +483,11 @@ function Tableheader({
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Delete &quot;{branchToDelete}&quot;?</DialogTitle>
+						<DialogTitle>
+							{t("repo.refSwitcher.deleteTitle", { branch: branchToDelete })}
+						</DialogTitle>
 						<DialogDescription>
-							This action cannot be undone. This will permanently delete the{" "}
-							<span className="font-medium text-foreground">
-								{branchToDelete}
-							</span>{" "}
-							branch and it cannot be recovered.
+							{t("repo.refSwitcher.deleteBody", { branch: branchToDelete })}
 						</DialogDescription>
 					</DialogHeader>
 
@@ -474,14 +497,14 @@ function Tableheader({
 							onClick={() => setBranchToDelete(null)}
 							disabled={isDeleting}
 						>
-							Cancel
+							{t("common.actions.cancel")}
 						</Button>
 						<Button
 							variant="destructive"
 							onClick={handleDeleteBranch}
 							disabled={isDeleting}
 						>
-							{isDeleting ? <Spinner /> : "Delete branch"}
+							{isDeleting ? <Spinner /> : t("repo.table.deletedBranch")}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

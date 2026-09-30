@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next"
+
+import { dateFnsLocale } from "#/i18n/lib/format"
 import { format, formatDistanceToNowStrict } from "date-fns"
 import { BookMarked } from "lucide-react"
 import ReactCountryFlag from "react-country-flag"
@@ -24,6 +27,7 @@ function getCountryCode(name: string | null): string | null {
 }
 
 function PersonPreviewBody({ person }: { person: Person }) {
+  const { t } = useTranslation()
   const code = getCountryCode(person.country)
   const visibleOrgs = person.organizations.slice(0, MAX_VISIBLE_ORGS)
   const extraOrgs = person.organizations.length - visibleOrgs.length
@@ -49,11 +53,16 @@ function PersonPreviewBody({ person }: { person: Person }) {
           variant={person.online ? "success-light" : "secondary"}
           title={
             person.lastActive
-              ? `Last active ${formatDistanceToNowStrict(
-                  new Date(person.lastActive),
-                  { addSuffix: true },
-                )}`
-              : "Never active"
+              ? t("people.peopleTable.lastActive", {
+                  time: formatDistanceToNowStrict(
+                    new Date(person.lastActive),
+                    {
+                      addSuffix: true,
+                      locale: dateFnsLocale(),
+                    },
+                  ),
+                })
+              : t("people.peopleTable.neverActive")
           }
         >
           <span
@@ -62,7 +71,9 @@ function PersonPreviewBody({ person }: { person: Person }) {
               person.online ? "bg-success" : "bg-muted-foreground",
             )}
           />
-          {person.online ? "Online" : "Offline"}
+          {person.online
+						? t("people.peopleTable.status.online")
+						: t("people.peopleTable.status.offline")}
         </Badge>
       </div>
 
@@ -80,8 +91,12 @@ function PersonPreviewBody({ person }: { person: Person }) {
           </span>
         )}
 
-        <span title="Joined">
-          Joined {format(new Date(person.joinedAt), "MMM, yyyy")}
+        <span title={t("people.preview.joinedTitle")}>
+          {t("people.reposTable.joined", {
+            date: format(new Date(person.joinedAt), "MMM, yyyy", {
+              locale: dateFnsLocale(),
+            }),
+          })}
         </span>
       </div>
 
@@ -126,6 +141,7 @@ function PersonPreviewBody({ person }: { person: Person }) {
 }
 
 export function PersonPreviewCard({ username }: { username: string }) {
+  const { t } = useTranslation()
   const { data: people, isLoading } = usePeople()
   const person = people?.find((p) => p.username === username)
 
@@ -141,7 +157,9 @@ export function PersonPreviewCard({ username }: { username: string }) {
 
   if (!person) {
     return (
-      <p className="text-sm text-muted-foreground">No details for {username}</p>
+      <p className="text-sm text-muted-foreground">
+        {t("people.preview.noDetails", { username })}
+      </p>
     )
   }
 

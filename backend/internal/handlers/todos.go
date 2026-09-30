@@ -121,7 +121,7 @@ func TodosHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -139,7 +139,7 @@ func TodosHandler(w http.ResponseWriter, r *http.Request) {
 		var req todoRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
@@ -150,12 +150,12 @@ func TodosHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if input.ID == "" {
-			writeError(w, http.StatusBadRequest, "id is required")
+			writeErrorCoded(w, http.StatusBadRequest, "id_required", "id is required")
 			return
 		}
 
 		if input.Title != nil && strings.TrimSpace(*input.Title) == "" {
-			writeError(w, http.StatusBadRequest, "title is required")
+			writeErrorCoded(w, http.StatusBadRequest, "title_required", "title is required")
 			return
 		}
 
@@ -168,7 +168,7 @@ func TodosHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusCreated, todo)
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -213,13 +213,13 @@ func TodoHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
 	id := strings.TrimSpace(r.PathValue("id"))
 	if id == "" {
-		writeError(w, http.StatusBadRequest, "invalid to-do id")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_todo_id", "invalid to-do id")
 		return
 	}
 
@@ -228,7 +228,7 @@ func TodoHandler(w http.ResponseWriter, r *http.Request) {
 		var req todoRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
@@ -239,7 +239,7 @@ func TodoHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if input.Title != nil && strings.TrimSpace(*input.Title) == "" {
-			writeError(w, http.StatusBadRequest, "title cannot be empty")
+			writeErrorCoded(w, http.StatusBadRequest, "title_required", "title cannot be empty")
 			return
 		}
 
@@ -255,7 +255,7 @@ func TodoHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !found {
-			writeError(w, http.StatusNotFound, "to-do not found")
+			writeErrorCoded(w, http.StatusNotFound, "todo_not_found", "to-do not found")
 			return
 		}
 
@@ -269,13 +269,13 @@ func TodoHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !deleted {
-			writeError(w, http.StatusNotFound, "to-do not found")
+			writeErrorCoded(w, http.StatusNotFound, "todo_not_found", "to-do not found")
 			return
 		}
 
 		writeSuccess(w, map[string]any{"success": true})
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }

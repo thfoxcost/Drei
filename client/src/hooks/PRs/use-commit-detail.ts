@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { FileDiff } from "#/components/repo/commits/code-commit";
+import { apiErrorMessage } from "#/i18n/lib/api-error"
 
 export interface CommitDetail {
 	fullHash: string;
@@ -33,7 +34,7 @@ export function useCommitDetail(
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
 				throw new Error(
-					body?.error ?? "Failed to fetch commit details",
+					apiErrorMessage(body),
 				);
 			}
 			return res.json();

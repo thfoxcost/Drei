@@ -1,4 +1,6 @@
 import { useCallback, useRef, useState } from "react"
+import { i18n } from "#/i18n/i18n"
+import { apiErrorMessage } from "#/i18n/lib/api-error"
 
 export interface UseFileUploadOptions {
 	acceptedTypes?: string[]
@@ -31,13 +33,21 @@ export function useFileUpload({
 			if (!file) return
 
 			if (acceptedTypes && !acceptedTypes.includes(file.type)) {
-				setError(`Unsupported file type. Please use ${acceptedTypes.join(", ")}.`)
+				setError(
+					i18n.t("errors.client.fileUploadUnsupportedType", {
+						types: acceptedTypes.join(", "),
+					}) as string,
+				)
 				if (inputRef.current) inputRef.current.value = ""
 				return
 			}
 
 			if (file.size > maxSize) {
-				setError(`File is too large. Please choose a file under ${Math.round(maxSize / (1024 * 1024))} MB.`)
+				setError(
+					i18n.t("errors.client.fileUploadTooLarge", {
+						size: Math.round(maxSize / (1024 * 1024)),
+					}) as string,
+				)
 				if (inputRef.current) inputRef.current.value = ""
 				return
 			}
@@ -47,7 +57,7 @@ export function useFileUpload({
 
 			onFile(file)
 				.catch((err: unknown) => {
-					setError(err instanceof Error ? err.message : "Upload failed")
+					setError(err instanceof Error ? err.message : apiErrorMessage(null, { fallbackKey: "errors.client.uploadFailed" }))
 				})
 				.finally(() => {
 					setUploading(false)

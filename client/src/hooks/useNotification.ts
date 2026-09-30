@@ -1,5 +1,6 @@
 import { useCallback } from "react"
 import { toast } from "sonner"
+import { apiErrorMessage } from "#/i18n/lib/api-error"
 
 const API_BASE = "http://localhost:3200"
 
@@ -38,7 +39,7 @@ export function useNotification(): UseNotificationResult {
 
 				if (!res.ok) {
 					const result = await res.json()
-					throw new Error(result.error || "Failed to send notification")
+					throw new Error(apiErrorMessage(result))
 				}
 
 				const result = await res.json()
@@ -47,7 +48,7 @@ export function useNotification(): UseNotificationResult {
 				toast.error(
 					err instanceof Error
 						? err.message
-						: "Failed to send notification",
+						: apiErrorMessage(null, { fallbackKey: "errors.client.sendNotification" }),
 				)
 				return false
 			}
@@ -71,7 +72,7 @@ export function useNotification(): UseNotificationResult {
 
 				if (!res.ok) {
 					const result = await res.json()
-					throw new Error(result.error || "Test failed")
+					throw new Error(apiErrorMessage(result))
 				}
 
 				return true
@@ -79,7 +80,7 @@ export function useNotification(): UseNotificationResult {
 				toast.error(
 					err instanceof Error
 						? err.message
-						: "Test notification failed",
+						: apiErrorMessage(null, { fallbackKey: "errors.client.testNotificationShort" }),
 				)
 				return false
 			}

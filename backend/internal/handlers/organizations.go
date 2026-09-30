@@ -59,7 +59,7 @@ func OrganizationsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 }
 
 // generateSlug converts a display name into a URL-safe slug.
@@ -101,19 +101,19 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
 	var req CreateOrganizationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -123,12 +123,12 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	req.Purpose = strings.TrimSpace(req.Purpose)
 
 	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "organization name is required")
+		writeErrorCoded(w, http.StatusBadRequest, "organization_name_required", "organization name is required")
 		return
 	}
 
 	if len(req.Name) > 100 {
-		writeError(w, http.StatusBadRequest, "organization name must be 100 characters or less")
+		writeErrorCoded(w, http.StatusBadRequest, "organization_name_too_long", "organization name must be 100 characters or less")
 		return
 	}
 
@@ -137,12 +137,12 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Visibility != "public" && req.Visibility != "members" {
-		writeError(w, http.StatusBadRequest, "visibility must be 'public' or 'members'")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_organization_visibility", "visibility must be 'public' or 'members'")
 		return
 	}
 
 	if req.Email != "" && !strings.Contains(req.Email, "@") {
-		writeError(w, http.StatusBadRequest, "invalid email address")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_email", "invalid email address")
 		return
 	}
 
@@ -150,7 +150,7 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 
 	exists, err := database.SlugExists(slug)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to check slug availability")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_slug", "failed to check slug availability")
 		return
 	}
 
@@ -160,7 +160,7 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 			candidate := fmt.Sprintf("%s-%d", slug, i)
 			exists, err = database.SlugExists(candidate)
 			if err != nil {
-				writeError(w, http.StatusInternalServerError, "failed to check slug availability")
+				writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_slug", "failed to check slug availability")
 				return
 			}
 			if !exists {
@@ -170,14 +170,14 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if exists {
-			writeError(w, http.StatusConflict, "organization name is already taken")
+			writeErrorCoded(w, http.StatusConflict, "organization_name_taken", "organization name is already taken")
 			return
 		}
 	}
 
 	verified, err := database.IsPlatformOwner(user.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to verify platform owner status")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_verify_platform_owner", "failed to verify platform owner status")
 		return
 	}
 
@@ -201,7 +201,7 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	tx, err := database.DB.Begin(ctx)
 	if err != nil {
 		log.Printf("ERROR: failed to begin transaction: %v", err)
-		writeError(w, http.StatusInternalServerError, "failed to create organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_create_organization", "failed to create organization")
 		return
 	}
 	defer tx.Rollback(ctx)
@@ -219,13 +219,13 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		log.Printf("ERROR: failed to create organization: %v", err)
-		writeError(w, http.StatusInternalServerError, "failed to create organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_create_organization", "failed to create organization")
 		return
 	}
 
 	if err := database.AddOrganizationMemberInTx(ctx, tx, orgID, user.ID, "owner", req.Pinned); err != nil {
 		log.Printf("ERROR: failed to add owner as member: %v", err)
-		writeError(w, http.StatusInternalServerError, "failed to add owner as member")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_add_org_owner", "failed to add owner as member")
 		return
 	}
 
@@ -239,14 +239,14 @@ func CreateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	if len(cleanTags) > 0 {
 		if err := database.SetOrganizationTagsInTx(ctx, tx, orgID, cleanTags); err != nil {
 			log.Printf("ERROR: failed to set organization tags: %v", err)
-			writeError(w, http.StatusInternalServerError, "failed to set organization tags")
+			writeErrorCoded(w, http.StatusInternalServerError, "failed_to_set_organization_tags", "failed to set organization tags")
 			return
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		log.Printf("ERROR: failed to commit transaction: %v", err)
-		writeError(w, http.StatusInternalServerError, "failed to create organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_create_organization", "failed to create organization")
 		return
 	}
 
@@ -315,7 +315,7 @@ func GetOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -324,11 +324,11 @@ func GetOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	org, err := database.GetOrganizationBySlug(slug)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "organization not found")
+			writeErrorCoded(w, http.StatusNotFound, "organization_not_found", "organization not found")
 			return
 		}
 		log.Printf("ERROR: failed to fetch organization %q: %v", slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to fetch organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_fetch_organization", "failed to fetch organization")
 		return
 	}
 
@@ -336,18 +336,18 @@ func GetOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	if org.Visibility == "members" {
 		user, err := authenticate(r)
 		if err != nil {
-			writeError(w, http.StatusUnauthorized, "authentication required for private organizations")
+			writeErrorCoded(w, http.StatusUnauthorized, "auth_required_for_private_org", "authentication required for private organizations")
 			return
 		}
 
 		member, err := database.IsOrganizationMember(org.ID, user.ID)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to check membership")
+			writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_membership", "failed to check membership")
 			return
 		}
 
 		if !member {
-			writeError(w, http.StatusForbidden, "you are not a member of this organization")
+			writeErrorCoded(w, http.StatusForbidden, "not_an_organization_member", "you are not a member of this organization")
 			return
 		}
 	}
@@ -364,11 +364,11 @@ func getOrganizationBySlugOr404(w http.ResponseWriter, slug string) (*database.O
 	org, err := database.GetOrganizationBySlug(slug)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "organization not found")
+			writeErrorCoded(w, http.StatusNotFound, "organization_not_found", "organization not found")
 			return nil, false
 		}
 		log.Printf("ERROR: failed to fetch organization %q: %v", slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to fetch organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_fetch_organization", "failed to fetch organization")
 		return nil, false
 	}
 
@@ -395,25 +395,25 @@ func orgRoleRank(role string) int {
 func requireOrgRole(w http.ResponseWriter, r *http.Request, org *database.OrganizationDetail, minRole string) (*AuthUser, bool) {
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return nil, false
 	}
 
 	role, err := database.GetOrganizationMemberRole(org.ID, user.ID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			writeError(w, http.StatusForbidden, "you are not a member of this organization")
+			writeErrorCoded(w, http.StatusForbidden, "not_an_organization_member", "you are not a member of this organization")
 			return nil, false
 		}
-		writeError(w, http.StatusInternalServerError, "failed to check membership")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_membership", "failed to check membership")
 		return nil, false
 	}
 
 	if orgRoleRank(role) < orgRoleRank(minRole) {
 		if minRole == "owner" {
-			writeError(w, http.StatusForbidden, "only organization owners can perform this action")
+			writeErrorCoded(w, http.StatusForbidden, "org_owner_required", "only organization owners can perform this action")
 		} else {
-			writeError(w, http.StatusForbidden, "only organization owners and admins can perform this action")
+			writeErrorCoded(w, http.StatusForbidden, "org_owner_or_admin_required", "only organization owners and admins can perform this action")
 		}
 		return nil, false
 	}
@@ -462,12 +462,12 @@ func authorizeOrgRepoView(w http.ResponseWriter, r *http.Request, info *database
 	}
 
 	if org.Visibility == "members" && !isMember {
-		writeError(w, http.StatusUnauthorized, "authentication required for private organizations")
+		writeErrorCoded(w, http.StatusUnauthorized, "auth_required_for_private_org", "authentication required for private organizations")
 		return false
 	}
 
 	if !info.Visibility && !isMember {
-		writeError(w, http.StatusForbidden, "this repository is private")
+		writeErrorCoded(w, http.StatusForbidden, "repository_is_private", "this repository is private")
 		return false
 	}
 
@@ -495,7 +495,7 @@ func GetOrganizationMembersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -511,18 +511,18 @@ func GetOrganizationMembersHandler(w http.ResponseWriter, r *http.Request) {
 	if org.Visibility == "members" {
 		user, err := authenticate(r)
 		if err != nil {
-			writeError(w, http.StatusUnauthorized, "authentication required for private organizations")
+			writeErrorCoded(w, http.StatusUnauthorized, "auth_required_for_private_org", "authentication required for private organizations")
 			return
 		}
 
 		member, err := database.IsOrganizationMember(org.ID, user.ID)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to check membership")
+			writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_membership", "failed to check membership")
 			return
 		}
 
 		if !member {
-			writeError(w, http.StatusForbidden, "you are not a member of this organization")
+			writeErrorCoded(w, http.StatusForbidden, "not_an_organization_member", "you are not a member of this organization")
 			return
 		}
 	}
@@ -530,7 +530,7 @@ func GetOrganizationMembersHandler(w http.ResponseWriter, r *http.Request) {
 	members, err := database.GetOrganizationMembers(org.ID)
 	if err != nil {
 		log.Printf("ERROR: failed to fetch members for organization %q: %v", slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to fetch organization members")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_fetch_organization_members", "failed to fetch organization members")
 		return
 	}
 
@@ -562,13 +562,13 @@ func JoinOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -581,18 +581,18 @@ func JoinOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 
 	member, err := database.IsOrganizationMember(org.ID, user.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to check membership")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_membership", "failed to check membership")
 		return
 	}
 
 	if member {
-		writeError(w, http.StatusConflict, "already a member of this organization")
+		writeErrorCoded(w, http.StatusConflict, "already_organization_member", "already a member of this organization")
 		return
 	}
 
 	if err := database.CreateOrganizationMember(org.ID, user.ID, "member", false); err != nil {
 		log.Printf("ERROR: failed to add member %s to organization %q: %v", user.ID, slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to join organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_join_organization", "failed to join organization")
 		return
 	}
 
@@ -622,13 +622,13 @@ func LeaveOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -642,23 +642,23 @@ func LeaveOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	role, err := database.GetOrganizationMemberRole(org.ID, user.ID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "not a member of this organization")
+			writeErrorCoded(w, http.StatusNotFound, "not_an_organization_member", "not a member of this organization")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, "failed to check membership")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_membership", "failed to check membership")
 		return
 	}
 
 	// The organization creator (always an owner) must never be able to leave
 	// through this path, and no other owner may orphan the organization either.
 	if user.ID == org.CreatedBy.ID || role == "owner" {
-		writeError(w, http.StatusForbidden, "organization owners cannot leave the organization")
+		writeErrorCoded(w, http.StatusForbidden, "org_owner_cannot_leave", "organization owners cannot leave the organization")
 		return
 	}
 
 	if err := database.RemoveOrganizationMember(org.ID, user.ID); err != nil {
 		log.Printf("ERROR: failed to remove member %s from organization %q: %v", user.ID, slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to leave organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_leave_organization", "failed to leave organization")
 		return
 	}
 
@@ -713,13 +713,13 @@ func UpdateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPatch {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -734,21 +734,21 @@ func UpdateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	role, err := database.GetOrganizationMemberRole(org.ID, user.ID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			writeError(w, http.StatusForbidden, "only organization owners can edit settings")
+			writeErrorCoded(w, http.StatusForbidden, "org_owner_required", "only organization owners can edit settings")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, "failed to check membership")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_membership", "failed to check membership")
 		return
 	}
 
 	if role != "owner" || user.ID != org.CreatedBy.ID {
-		writeError(w, http.StatusForbidden, "only organization owners can edit settings")
+		writeErrorCoded(w, http.StatusForbidden, "org_owner_required", "only organization owners can edit settings")
 		return
 	}
 
 	var req UpdateOrganizationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -759,27 +759,27 @@ func UpdateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	req.Status = strings.TrimSpace(req.Status)
 
 	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "organization name is required")
+		writeErrorCoded(w, http.StatusBadRequest, "organization_name_required", "organization name is required")
 		return
 	}
 
 	if len(req.Name) > 100 {
-		writeError(w, http.StatusBadRequest, "organization name must be 100 characters or less")
+		writeErrorCoded(w, http.StatusBadRequest, "organization_name_too_long", "organization name must be 100 characters or less")
 		return
 	}
 
 	if req.Status != "active" && req.Status != "suspended" {
-		writeError(w, http.StatusBadRequest, "status must be 'active' or 'suspended'")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_organization_status", "status must be 'active' or 'suspended'")
 		return
 	}
 
 	if req.Email != "" && !strings.Contains(req.Email, "@") {
-		writeError(w, http.StatusBadRequest, "invalid email address")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_email", "invalid email address")
 		return
 	}
 
 	if req.Purpose != "" && !allowedOrganizationPurposes[req.Purpose] {
-		writeError(w, http.StatusBadRequest, "invalid purpose")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_purpose", "invalid purpose")
 		return
 	}
 
@@ -808,14 +808,14 @@ func UpdateOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := database.UpdateOrganization(org.ID, req.Name, description, email, purpose, req.Status, cleanTags); err != nil {
 		log.Printf("ERROR: failed to update organization %q: %v", slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to update organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_update_organization", "failed to update organization")
 		return
 	}
 
 	updated, err := database.GetOrganizationBySlug(slug)
 	if err != nil {
 		log.Printf("ERROR: failed to fetch updated organization %q: %v", slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to fetch updated organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_fetch_updated_organization", "failed to fetch updated organization")
 		return
 	}
 
@@ -848,13 +848,13 @@ func DeleteOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodDelete {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -869,15 +869,15 @@ func DeleteOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	role, err := database.GetOrganizationMemberRole(org.ID, user.ID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			writeError(w, http.StatusForbidden, "only organization owners can delete this organization")
+			writeErrorCoded(w, http.StatusForbidden, "org_owner_required", "only organization owners can delete this organization")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, "failed to check membership")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_membership", "failed to check membership")
 		return
 	}
 
 	if role != "owner" || user.ID != org.CreatedBy.ID {
-		writeError(w, http.StatusForbidden, "only organization owners can delete this organization")
+		writeErrorCoded(w, http.StatusForbidden, "org_owner_required", "only organization owners can delete this organization")
 		return
 	}
 
@@ -885,13 +885,13 @@ func DeleteOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 	// follow via ON DELETE CASCADE, but the .git directories do not.
 	if repos, err := database.GetOrganizationRepositories(org.ID); err != nil {
 		log.Printf("ERROR: failed to fetch repositories for organization delete %q: %v", slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to delete organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_delete_organization", "failed to delete organization")
 		return
 	} else {
 		for _, repo := range repos {
 			if err := gitrepo.RemoveRepository(org.Slug, repo.Name, repo.Logo); err != nil {
 				log.Printf("ERROR: failed to remove repository %q/%q during organization delete: %v", org.Slug, repo.Name, err)
-				writeError(w, http.StatusInternalServerError, "failed to delete organization repositories")
+				writeErrorCoded(w, http.StatusInternalServerError, "failed_to_delete_organization_repos", "failed to delete organization repositories")
 				return
 			}
 		}
@@ -899,7 +899,7 @@ func DeleteOrganizationHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := database.DeleteOrganization(org.ID); err != nil {
 		log.Printf("ERROR: failed to delete organization %q: %v", slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to delete organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_delete_organization", "failed to delete organization")
 		return
 	}
 
@@ -948,18 +948,18 @@ func listVisibleOrgRepos(w http.ResponseWriter, r *http.Request, org *database.O
 	if org.Visibility == "members" {
 		user, err := authenticate(r)
 		if err != nil {
-			writeError(w, http.StatusUnauthorized, "authentication required for private organizations")
+			writeErrorCoded(w, http.StatusUnauthorized, "auth_required_for_private_org", "authentication required for private organizations")
 			return nil, false
 		}
 
 		member, err := database.IsOrganizationMember(org.ID, user.ID)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to check membership")
+			writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_membership", "failed to check membership")
 			return nil, false
 		}
 
 		if !member {
-			writeError(w, http.StatusForbidden, "you are not a member of this organization")
+			writeErrorCoded(w, http.StatusForbidden, "not_an_organization_member", "you are not a member of this organization")
 			return nil, false
 		}
 
@@ -973,7 +973,7 @@ func listVisibleOrgRepos(w http.ResponseWriter, r *http.Request, org *database.O
 	repos, err := database.GetOrganizationRepositories(org.ID)
 	if err != nil {
 		log.Printf("ERROR: failed to fetch repositories for organization %q: %v", org.Slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to fetch organization repositories")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_fetch_organization_repos", "failed to fetch organization repositories")
 		return nil, false
 	}
 
@@ -1030,7 +1030,7 @@ func OrganizationReposHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		CreateOrganizationRepoHandler(w, r)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -1132,7 +1132,7 @@ func GetOrganizationLanguagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -1242,7 +1242,7 @@ func CreateOrganizationRepoHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req CreateOrganizationRepoRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -1250,22 +1250,22 @@ func CreateOrganizationRepoHandler(w http.ResponseWriter, r *http.Request) {
 	description := strings.TrimSpace(req.Description)
 
 	if name == "" {
-		writeError(w, http.StatusBadRequest, "repository name is required")
+		writeErrorCoded(w, http.StatusBadRequest, "repository_name_required", "repository name is required")
 		return
 	}
 
 	if strings.HasPrefix(req.Name, " ") {
-		writeError(w, http.StatusBadRequest, "repository name cannot start with a space")
+		writeErrorCoded(w, http.StatusBadRequest, "repository_name_leading_space", "repository name cannot start with a space")
 		return
 	}
 
 	if _, err := createBareRepository(org.Slug, user.ID, user.Name, &org.ID, name, description, req.Visibility, user.Image); err != nil {
 		if errors.Is(err, errRepositoryExists) {
-			writeError(w, http.StatusConflict, "repository already exists")
+			writeErrorCoded(w, http.StatusConflict, "repository_already_exists", "repository already exists")
 			return
 		}
 		log.Printf("ERROR: failed to create repository %q for organization %q: %v", name, slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to create repository")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_create_repository", "failed to create repository")
 		return
 	}
 
@@ -1300,20 +1300,20 @@ func ListUserOrganizationsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
 	orgs, err := database.GetUserOrganizations(user.ID)
 	if err != nil {
 		log.Printf("ERROR: failed to fetch organizations for user %s: %v", user.ID, err)
-		writeError(w, http.StatusInternalServerError, "failed to fetch organizations")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_fetch_organizations", "failed to fetch organizations")
 		return
 	}
 
@@ -1346,19 +1346,19 @@ func CheckSlugHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	slug := strings.TrimSpace(r.URL.Query().Get("slug"))
 	if slug == "" {
-		writeError(w, http.StatusBadRequest, "slug parameter is required")
+		writeErrorCoded(w, http.StatusBadRequest, "slug_required", "slug parameter is required")
 		return
 	}
 
 	exists, err := database.SlugExists(slug)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to check slug")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_check_slug", "failed to check slug")
 		return
 	}
 
@@ -1395,13 +1395,13 @@ func OrganizationAvatarHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -1410,11 +1410,11 @@ func OrganizationAvatarHandler(w http.ResponseWriter, r *http.Request) {
 	org, err := database.GetOrganizationBySlug(slug)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "organization not found")
+			writeErrorCoded(w, http.StatusNotFound, "organization_not_found", "organization not found")
 			return
 		}
 		log.Printf("ERROR: failed to fetch organization %q for avatar upload: %v", slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to fetch organization")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_fetch_organization", "failed to fetch organization")
 		return
 	}
 
@@ -1422,14 +1422,14 @@ func OrganizationAvatarHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			log.Printf("ERROR: failed to fetch member role for org %q: %v", slug, err)
-			writeError(w, http.StatusInternalServerError, "failed to verify organization role")
+			writeErrorCoded(w, http.StatusInternalServerError, "failed_to_verify_org_role", "failed to verify organization role")
 			return
 		}
-		writeError(w, http.StatusForbidden, "only owners and admins can upload an avatar")
+		writeErrorCoded(w, http.StatusForbidden, "org_owner_or_admin_required", "only owners and admins can upload an avatar")
 		return
 	}
 	if role != "owner" && role != "admin" {
-		writeError(w, http.StatusForbidden, "only owners and admins can upload an avatar")
+		writeErrorCoded(w, http.StatusForbidden, "org_owner_or_admin_required", "only owners and admins can upload an avatar")
 		return
 	}
 
@@ -1437,44 +1437,44 @@ func OrganizationAvatarHandler(w http.ResponseWriter, r *http.Request) {
 
 	file, _, err := r.FormFile("avatar")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "missing avatar file")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_avatar_file", "missing avatar file")
 		return
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "failed to read uploaded file")
+		writeErrorCoded(w, http.StatusBadRequest, "failed_to_read_uploaded_file", "failed to read uploaded file")
 		return
 	}
 
 	if len(data) == 0 {
-		writeError(w, http.StatusBadRequest, "uploaded file is empty")
+		writeErrorCoded(w, http.StatusBadRequest, "uploaded_file_empty", "uploaded file is empty")
 		return
 	}
 
 	if len(data) > maxOrgAvatarSize {
-		writeError(w, http.StatusBadRequest, "image is too large. Maximum size is 2 MB")
+		writeErrorCoded(w, http.StatusBadRequest, "image_too_large_2mb", "image is too large. Maximum size is 2 MB")
 		return
 	}
 
 	ext, ok := orgImageExtension(data)
 	if !ok {
-		writeError(w, http.StatusBadRequest, "unsupported file type. Please upload a PNG, JPG, WebP, or GIF image")
+		writeErrorCoded(w, http.StatusBadRequest, "unsupported_image_type", "unsupported file type. Please upload a PNG, JPG, WebP, or GIF image")
 		return
 	}
 
 	avatarsDir := filepath.Join(config.App.ReposPath, "orgs")
 	if err := os.MkdirAll(avatarsDir, 0755); err != nil {
 		log.Printf("ERROR: failed to create org avatars directory: %v", err)
-		writeError(w, http.StatusInternalServerError, "failed to store avatar")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_store_avatar", "failed to store avatar")
 		return
 	}
 
 	target := filepath.Join(avatarsDir, slug+ext)
 	if err := os.WriteFile(target, data, 0644); err != nil {
 		log.Printf("ERROR: failed to write org avatar %q: %v", target, err)
-		writeError(w, http.StatusInternalServerError, "failed to store avatar")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_store_avatar", "failed to store avatar")
 		return
 	}
 
@@ -1482,7 +1482,7 @@ func OrganizationAvatarHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := database.UpdateOrganizationAvatar(slug, avatar); err != nil {
 		log.Printf("ERROR: failed to persist org avatar for %q: %v", slug, err)
-		writeError(w, http.StatusInternalServerError, "failed to save avatar")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_save_avatar", "failed to save avatar")
 		return
 	}
 

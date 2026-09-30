@@ -8,6 +8,9 @@ import {
   type Locale,
 } from "react-day-picker"
 
+import { useTranslation } from "react-i18next"
+
+import { dateFnsLocale, intlLocale } from "#/i18n/lib/format"
 import { cn } from "#/lib/utils.ts"
 import { Button, buttonVariants } from "#/components/ui/button.tsx"
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "lucide-react"
@@ -19,17 +22,30 @@ function Calendar({
   captionLayout = "label",
   buttonVariant = "ghost",
   locale,
+  labels,
   formatters,
   components,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
+  const { t } = useTranslation()
   const defaultClassNames = getDefaultClassNames()
+
+  // Without this, react-day-picker falls back to its own en-US default, which
+  // would keep month names and the prev/next labels English in every locale.
+  const resolvedLocale = locale ?? dateFnsLocale()
+  const intlTag = resolvedLocale.code || intlLocale()
 
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      locale={resolvedLocale}
+      labels={{
+        ...labels,
+        labelPrevious: () => t("common.actions.goToPreviousMonth"),
+        labelNext: () => t("common.actions.goToNextMonth"),
+      }}
       className={cn(
         "group/calendar bg-background p-2 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(7)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
@@ -37,10 +53,9 @@ function Calendar({
         className
       )}
       captionLayout={captionLayout}
-      locale={locale}
       formatters={{
         formatMonthDropdown: (date) =>
-          date.toLocaleString(locale?.code, { month: "short" }),
+          date.toLocaleString(intlTag, { month: "short" }),
         ...formatters,
       }}
       classNames={{
@@ -199,7 +214,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString(locale?.code)}
+      data-day={day.date.toLocaleDateString(intlLocale())}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

@@ -27,12 +27,12 @@ func PullImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	if _, err := authenticate(r); err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to upload images")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_upload", "you must be signed in to upload images")
 		return
 	}
 
@@ -45,30 +45,30 @@ func PullImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	file, _, err := r.FormFile("image")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "missing image file")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_image_file", "missing image file")
 		return
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "failed to read uploaded file")
+		writeErrorCoded(w, http.StatusBadRequest, "failed_to_read_uploaded_file", "failed to read uploaded file")
 		return
 	}
 
 	if len(data) == 0 {
-		writeError(w, http.StatusBadRequest, "uploaded file is empty")
+		writeErrorCoded(w, http.StatusBadRequest, "uploaded_file_empty", "uploaded file is empty")
 		return
 	}
 
 	if len(data) > maxPullImageSize {
-		writeError(w, http.StatusBadRequest, "image is too large. Maximum size is 5 MB")
+		writeErrorCoded(w, http.StatusBadRequest, "image_too_large_5mb", "image is too large. Maximum size is 5 MB")
 		return
 	}
 
 	ext, ok := imageExtension(data)
 	if !ok {
-		writeError(w, http.StatusBadRequest, "unsupported file type. Please upload a PNG, JPG, WebP, or GIF image")
+		writeErrorCoded(w, http.StatusBadRequest, "unsupported_image_type", "unsupported file type. Please upload a PNG, JPG, WebP, or GIF image")
 		return
 	}
 

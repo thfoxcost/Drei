@@ -29,13 +29,13 @@ func Status(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	snapshot := sysinfo.Current()
 	if snapshot == nil {
-		writeError(w, http.StatusServiceUnavailable, "system metrics are still starting up")
+		writeErrorCoded(w, http.StatusServiceUnavailable, "system_metrics_starting_up", "system metrics are still starting up")
 		return
 	}
 

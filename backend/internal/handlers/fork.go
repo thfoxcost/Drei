@@ -35,7 +35,7 @@ func ForksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -44,7 +44,7 @@ func ForksHandler(w http.ResponseWriter, r *http.Request) {
 
 	sourceInfo, err := database.GetRepository(sourceOwner, sourceRepoName)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
@@ -98,14 +98,14 @@ func ForkHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	// ── 1. Authenticate ────────────────────────────────────────────────
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
+		writeErrorCoded(w, http.StatusUnauthorized, "authentication_required", "authentication required")
 		return
 	}
 
@@ -115,13 +115,13 @@ func ForkHandler(w http.ResponseWriter, r *http.Request) {
 
 	sourceInfo, err := database.GetRepository(sourceOwner, sourceRepoName)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
 	// ── 3. Reject if user is the owner ─────────────────────────────────
 	if user.ID == sourceInfo.OwnerID {
-		writeError(w, http.StatusConflict, "you cannot fork your own repository")
+		writeErrorCoded(w, http.StatusConflict, "cannot_fork_own_repository", "you cannot fork your own repository")
 		return
 	}
 
@@ -133,7 +133,7 @@ func ForkHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if hasFork {
-		writeError(w, http.StatusConflict, "you already have a fork of this repository")
+		writeErrorCoded(w, http.StatusConflict, "fork_already_exists", "you already have a fork of this repository")
 		return
 	}
 

@@ -1,5 +1,6 @@
-import { useState } from "react";
 import { X } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 interface TagInputProps {
@@ -14,9 +15,10 @@ function TagInput({
 	tags,
 	setTags,
 	id,
-	placeholder = "Add a tag",
+	placeholder,
 	className,
 }: TagInputProps) {
+	const { t } = useTranslation();
 	const [inputValue, setInputValue] = useState("");
 
 	function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -65,7 +67,9 @@ function TagInput({
 				value={inputValue}
 				onChange={(e) => setInputValue(e.target.value)}
 				onKeyDown={handleKeyDown}
-				placeholder={tags.length === 0 ? placeholder : ""}
+				placeholder={
+					tags.length === 0 ? (placeholder ?? t("common.actions.addTag")) : ""
+				}
 				className="min-w-[120px] flex-1 bg-transparent py-0.5 outline-none placeholder:text-muted-foreground"
 			/>
 		</div>

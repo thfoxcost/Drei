@@ -1,5 +1,6 @@
 import { Spinner } from "#/components/ui/spinner"
 
+import { useTranslation } from "react-i18next"
 import { useNavigate } from "@tanstack/react-router"
 import { Separator } from "#/components/ui/separator"
 import {
@@ -54,6 +55,7 @@ export const Route = createFileRoute("/_app/new")({
 
 
 function New() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   // states to get the data
@@ -92,7 +94,7 @@ function New() {
 
     const trimmedName = name.trim()
     if (trimmedName === "" || description === "" || visibility === "") {
-      toast.error("Please fill all the fields")
+      toast.error(t("createRepo.fillAllFields"))
       setLoading(false)
       return
     }
@@ -100,7 +102,7 @@ function New() {
       setName(trimmedName)
     }
     if (/^\s/.test(name)) {
-      toast.error("Repository name cannot start with a space")
+      toast.error(t("createRepo.nameLeadingSpaceError"))
       setLoading(false)
       return
     }
@@ -145,7 +147,7 @@ function New() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.message || data.error || "Failed to create repository")
+        throw new Error(data.message || data.error || t("createRepo.createFailed"))
       }
 
       toast.success(data.message)
@@ -157,7 +159,7 @@ function New() {
       const createdName = data.repository?.name ?? trimmedName
 
       if (!createdOwner) {
-        throw new Error("Repository created, but the owner is unknown")
+        throw new Error(t("createRepo.ownerUnknown"))
       }
 
       navigate({
@@ -174,7 +176,7 @@ function New() {
       if (err instanceof Error) {
         toast.error(err.message)
       } else {
-        toast.error("Something went wrong")
+        toast.error(t("common.errors.somethingWentWrong"))
       }
     } finally {
       setLoading(false)
@@ -192,14 +194,14 @@ function New() {
     {
       value: "Public",
       icon: Globe,
-      description:
-        "Anyone on the internet can see this repository. You choose who can commit.",
+      labelKey: "createRepo.visibilityPublic",
+      descriptionKey: "createRepo.visibilityPublicHelp",
     },
     {
       value: "Private",
       icon: Lock,
-      description:
-        "You choose who can see and commit to this repository.",
+      labelKey: "createRepo.visibilityPrivate",
+      descriptionKey: "createRepo.visibilityPrivateHelp",
     },
   ] as const
 
@@ -213,11 +215,11 @@ function New() {
     <main className="mx-auto w-full max-w-4xl space-y-4 p-6">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold">
-          Create a new repository
+          {t("createRepo.heading")}
         </h1>
 
         <p className="text-muted-foreground">
-          A repository contains all of your project's files and revision history.
+          {t("createRepo.subtitle")}
         </p>
       </header>
 
@@ -232,7 +234,7 @@ function New() {
         <section className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium">Owner *</span>
+              <span className="text-sm font-medium">{t("createRepo.owner")}</span>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -262,7 +264,7 @@ function New() {
                           className="size-5.5"
                         />
                         <span className="text-xs">
-                          @{session?.user.name ?? "Unknown User"}
+                          @{session?.user.name ?? t("createRepo.unknownUser")}
                         </span>
                       </>
                     )}
@@ -281,7 +283,7 @@ function New() {
                       className="size-5.5"
                     />
                     <span className="text-xs flex-1">
-                      @{session?.user.name ?? "Unknown User"}
+                      @{session?.user.name ?? t("createRepo.unknownUser")}
                     </span>
                     {ownerSlug === "" && (
                       <Check className="size-4 text-primary shrink-0" />
@@ -318,15 +320,15 @@ function New() {
 
             <Field className="flex-1">
               <FieldLabel htmlFor="repo-name">
-                Repository name *
+                {t("createRepo.name")}
               </FieldLabel>
               <Input
                 id="repo-name"
                 name="name"
-                placeholder="awesome-project"
+                placeholder={t("createRepo.namePlaceholder")}
                 required
                 pattern="[^\s].*"
-                title="Name cannot start with a space"
+                title={t("createRepo.nameLeadingSpace")}
                 value={name}
                 onChange={(e) => setName(e.target.value.replace(/^\s+/, ""))}
               />
@@ -334,20 +336,21 @@ function New() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Great repository names are short and memorable. Need inspiration?{" "}
+            {t("createRepo.nameHelp")} {" "}
             <a
               href="https://www.behindthename.com/random/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary underline"
             >
-              Generate a random name
-            </a>.
+              {t("createRepo.generateName")}
+            </a>
+            {t("createRepo.generateNameEnd")}
           </p>
 
           <Field>
             <FieldLabel htmlFor="description">
-              Description
+              {t("createRepo.description")}
             </FieldLabel>
 
             <Textarea
@@ -355,30 +358,30 @@ function New() {
               name="description"
               rows={3}
               maxLength={350}
-              placeholder="Tell people what your repository is about..."
+              placeholder={t("createRepo.descriptionPlaceholder")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
 
             <FieldDescription>
-              Briefly describe your repository (optional, max 350 characters).
+              {t("createRepo.descriptionHelp")}
             </FieldDescription>
           </Field>
         </section>
       </form>
 
-      <p className="text-md mb-0 font-bold">Configuration</p>
+      <p className="text-md mb-0 font-bold">{t("createRepo.configuration")}</p>
       <Card size="sm" className="my-5">
         <CardContent>
           <div className="flex flex-row justify-between items-center">
             <div className="">
               <p className="text-md font-bold">
-                Choose visibility
+                {t("createRepo.chooseVisibility")}
               </p>
-              <span className="text-muted-foreground">Choose who can see and commit to this repository</span>
+              <span className="text-muted-foreground">{t("createRepo.chooseVisibilityHelp")}</span>
               {isOrgSelected && (
                 <span className="block text-xs text-muted-foreground">
-                  Organization repositories are public for now.
+                  {t("createRepo.orgRepositoriesPublic")}
                 </span>
               )}
             </div>
@@ -388,7 +391,7 @@ function New() {
                 <Button variant="outline" className="gap-2">
                   <SelectedIcon className="size-4
       text-muted-foreground" />
-                  <span>{selectedVisibility.value}</span>
+                  <span>{t(selectedVisibility.labelKey)}</span>
                   <ChevronDown className="size-4 opacity-60" />
                 </Button>
               </DropdownMenuTrigger>
@@ -410,9 +413,9 @@ function New() {
                       <Icon className="mt-0.5 size-4 text-muted-foreground shrink-0" />
 
                       <div className="flex-1">
-                        <div className="font-medium">{option.value}</div>
+                        <div className="font-medium">{t(option.labelKey)}</div>
                         <p className="text-xs text-muted-foreground">
-                          {option.description}
+                          {t(option.descriptionKey)}
                         </p>
                       </div>
 
@@ -428,7 +431,7 @@ function New() {
 
       <div className="flex justify-end gap-3">
         <a href="/">
-          <Button variant="outline">Cancel</Button>
+          <Button variant="outline">{t("common.actions.cancel")}</Button>
         </a>
         <Button
           onClick={createRepository}
@@ -437,10 +440,10 @@ function New() {
           {loading ? (
             <>
               <Spinner />
-              <span className="ml-2">Creating...</span>
+              <span className="ml-2">{t("createRepo.creating")}</span>
             </>
           ) : (
-            "Create repository"
+            t("createRepo.create")
           )}
         </Button>
       </div>

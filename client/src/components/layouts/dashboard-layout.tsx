@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import Profile from "#/components/home/profile";
 import { authClient } from "#/lib/auth-client";
@@ -11,6 +12,8 @@ interface DashboardLayoutProps {
 }
 
 function DashboardLayout({ children, wide }: DashboardLayoutProps) {
+	const { t } = useTranslation();
+
 	const { data: session } = authClient.useSession();
 
 	const username = session?.user.name;
@@ -20,7 +23,7 @@ function DashboardLayout({ children, wide }: DashboardLayoutProps) {
 			<div className="flex flex-col gap-4">
 				<Profile />
 				<div className="flex h-26 w-auto items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
-					@{username ?? "username"}
+					@{username ?? t("common.states.unknownUser")}
 				</div>
 			</div>
 

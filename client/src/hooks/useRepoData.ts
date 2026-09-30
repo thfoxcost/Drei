@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 import type { RepoData } from "#/types/repo";
 
 export function useRepoData(owner: string, repo: string, branch?: string) {
@@ -22,7 +23,12 @@ export function useRepoData(owner: string, repo: string, branch?: string) {
 				} catch {
 					message = text;
 				}
-				throw new Error(message || "Failed to fetch repository");
+				throw new Error(
+					message ||
+						apiErrorMessage(null, {
+							fallbackKey: "errors.client.fetchRepository",
+						}),
+				);
 			}
 			return res.json();
 		},
@@ -31,7 +37,6 @@ export function useRepoData(owner: string, repo: string, branch?: string) {
 		// 5 seconds while the repo has no commits (e.g. the user just pushed
 		// the first commit from the NoRepo instructions). Polling stops
 		// automatically once hasCommits becomes true.
-		refetchInterval: (query) =>
-			query.state.data?.hasCommits ? false : 5_000,
+		refetchInterval: (query) => (query.state.data?.hasCommits ? false : 5_000),
 	});
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 import { authClient } from "#/lib/auth-client";
 
 export interface Repo {
@@ -44,7 +44,9 @@ function useUserRepos() {
 				);
 
 				if (!res.ok) {
-					throw new Error("Failed to fetch repos");
+					throw new Error(
+						apiErrorMessage(null, { fallbackKey: "errors.client.fetchRepos" }),
+					);
 				}
 
 				const data: Repo[] = await res.json();

@@ -2,6 +2,7 @@
 
 import { BookMarkedIcon, UsersIcon } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "#/components/ui/button";
 import { ButtonGroup } from "#/components/ui/button-group";
 import { cn } from "#/lib/utils.ts";
@@ -10,17 +11,17 @@ export type PeopleView = "users" | "repos";
 
 const views: {
   id: PeopleView;
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
 }[] = [
     {
       id: "users",
-      label: "Users",
+      labelKey: "common.views.users",
       icon: <UsersIcon aria-hidden="true" className="size-3.5" />,
     },
     {
       id: "repos",
-      label: "Repos",
+      labelKey: "common.views.repos",
       icon: <BookMarkedIcon aria-hidden="true" className="size-3.5" />,
     },
   ];
@@ -36,6 +37,7 @@ export function ViewToggle({
   defaultValue = "users",
   onValueChange,
 }: ViewToggleProps) {
+  const { t } = useTranslation();
   const [internal, setInternal] = useState<PeopleView>(defaultValue);
   const active = value ?? internal;
 
@@ -63,7 +65,7 @@ export function ViewToggle({
           aria-pressed={active === view.id}
         >
           {view.icon}
-          {view.label}
+          {t(view.labelKey)}
         </Button>
       ))}
     </ButtonGroup>

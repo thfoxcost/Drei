@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 
 export function useMergePullRequest(
 	owner: string,
@@ -18,7 +19,7 @@ export function useMergePullRequest(
 			);
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
-				throw new Error(body?.error ?? "Failed to merge pull request");
+				throw new Error(apiErrorMessage(body));
 			}
 			return res.json();
 		},

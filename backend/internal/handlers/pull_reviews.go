@@ -48,7 +48,7 @@ func PullReviewsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		user, err := authenticate(r)
 		if err != nil {
-			writeError(w, http.StatusUnauthorized, "you must be signed in to review")
+			writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_review", "you must be signed in to review")
 			return
 		}
 
@@ -59,7 +59,7 @@ func PullReviewsHandler(w http.ResponseWriter, r *http.Request) {
 
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
@@ -69,14 +69,14 @@ func PullReviewsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.Unmarshal(bodyBytes, &req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
 		// PR authors cannot approve or request changes on their own PR.
 		if pull.Author.ID == user.ID {
 			if req.State == "approved" || req.State == "changes_requested" {
-				writeError(w, http.StatusForbidden, "you cannot approve or request changes on your own pull request")
+				writeErrorCoded(w, http.StatusForbidden, "cannot_review_own_pull", "you cannot approve or request changes on your own pull request")
 				return
 			}
 		}
@@ -85,13 +85,13 @@ func PullReviewsHandler(w http.ResponseWriter, r *http.Request) {
 		req.Body = strings.TrimSpace(req.Body)
 
 		if req.State != "comment" && req.State != "approved" && req.State != "changes_requested" {
-			writeError(w, http.StatusBadRequest, "invalid review state: must be comment, approved, or changes_requested")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_review_state", "invalid review state: must be comment, approved, or changes_requested")
 			return
 		}
 
 		// Comment reviews require a body.
 		if req.State == "comment" && req.Body == "" {
-			writeError(w, http.StatusBadRequest, "comment reviews require a body")
+			writeErrorCoded(w, http.StatusBadRequest, "comment_review_requires_body", "comment reviews require a body")
 			return
 		}
 
@@ -104,7 +104,7 @@ func PullReviewsHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusCreated, review)
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -120,7 +120,7 @@ func PullReviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodDelete {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -136,13 +136,13 @@ func PullReviewHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in to delete a review")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_delete_review", "you must be signed in to delete a review")
 		return
 	}
 
 	reviewID, err := strconv.ParseInt(r.PathValue("reviewId"), 10, 64)
 	if err != nil || reviewID <= 0 {
-		writeError(w, http.StatusBadRequest, "invalid review id")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_review_id", "invalid review id")
 		return
 	}
 

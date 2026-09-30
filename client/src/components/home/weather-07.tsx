@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { MoveDownIcon, MoveUpIcon } from "lucide-react";
 
 import {
@@ -15,7 +16,8 @@ import {
   WidgetTitle,
 } from "#/components/ui/widget.tsx";
 
-export default function Weather() {
+export default function Weather() {  const { t } = useTranslation();
+
   const { coordinates, city, isLoading: isLoadingLocation } = useLocation();
   const { data: weather, isLoading: isLoadingWeather } = useWeather(
     coordinates?.lat ?? DEFAULT_LOCATION.lat,
@@ -37,7 +39,7 @@ export default function Weather() {
     return (
       <Widget design="mumbai" className="gap-6">
         <WidgetContent className="flex items-center justify-center">
-          <Label className="animate-pulse">Loading...</Label>
+          <Label className="animate-pulse">{t("dashboard.weather.loading")}</Label>
         </WidgetContent>
       </Widget>
     );
@@ -48,11 +50,11 @@ export default function Weather() {
       <WidgetHeader className="flex items-center justify-between gap-3">
   <div className="flex min-w-0 flex-col gap-2">
     <Label className="truncate">
-      {city || "Unknown"}
+      {city || t("common.states.unknown")}
     </Label>
 
     <Label className="text-muted-foreground">
-      Feels Like {weather?.feelsLike}&deg;
+      {t("dashboard.weather.feelsLike", { value: weather?.feelsLike })}
     </Label>
   </div>
 

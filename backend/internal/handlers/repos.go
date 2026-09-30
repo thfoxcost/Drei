@@ -140,13 +140,7 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := parseRequest(r); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   err.Error(),
-		})
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -155,13 +149,7 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 	current.Reponame = strings.TrimSpace(current.Reponame)
 
 	if current.Reponame == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   "repository name is required",
-		})
+		writeErrorCoded(w, http.StatusBadRequest, "repository_name_required", "repository name is required")
 		return
 	}
 
@@ -180,19 +168,14 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 
 			json.NewEncoder(w).Encode(map[string]any{
 				"success": false,
+				"code":    "repository_already_exists",
 				"message": "Repository already exists",
 			})
 			return
 		}
 
 		// Disk cleanup on failure happens inside createBareRepository.
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   err.Error(),
-		})
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_create_repository", "failed to create repository")
 		return
 	}
 
@@ -217,19 +200,14 @@ type UpdateRepoRequest struct {
 }
 
 func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string) {
-	writeErr := func(status int, msg string) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(status)
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   msg,
-		})
+	writeErr := func(status int, code string, msg string) {
+		writeErrorCoded(w, status, code, msg)
 	}
 
 	var req UpdateRepoRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeErr(http.StatusBadRequest, "invalid request body")
+		writeErr(http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -241,7 +219,7 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
-		writeErr(http.StatusNotFound, "repository not found")
+		writeErr(http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
@@ -252,7 +230,7 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 
 	currentDefault, err := gitrepo.DefaultBranch(owner, repo)
 	if err != nil {
-		writeErr(http.StatusInternalServerError, err.Error())
+		writeErr(http.StatusInternalServerError, ErrCodeUnknown, err.Error())
 		return
 	}
 
@@ -260,7 +238,7 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 	// the branch HEAD points to when the request arrives.
 	if req.RenameDefaultBranch != "" && req.RenameDefaultBranch != currentDefault {
 		if err := gitrepo.RenameDefaultBranch(owner, repo, req.RenameDefaultBranch); err != nil {
-			writeErr(http.StatusBadRequest, err.Error())
+			writeErr(http.StatusBadRequest, ErrCodeUnknown, err.Error())
 			return
 		}
 
@@ -270,7 +248,7 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 	// Switch the default branch (HEAD) to an existing branch.
 	if req.DefaultBranch != "" && req.DefaultBranch != currentDefault {
 		if err := gitrepo.SetDefaultBranch(owner, repo, req.DefaultBranch); err != nil {
-			writeErr(http.StatusBadRequest, err.Error())
+			writeErr(http.StatusBadRequest, ErrCodeUnknown, err.Error())
 			return
 		}
 
@@ -280,35 +258,35 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 	// Rename the repository itself (bare repo directory + database row).
 	if req.Name != "" && req.Name != repo {
 		if err := gitrepo.RenameRepository(owner, repo, req.Name); err != nil {
-			writeErr(http.StatusBadRequest, err.Error())
+			writeErr(http.StatusBadRequest, ErrCodeUnknown, err.Error())
 			return
 		}
 
 		newPath := filepath.Join(config.App.ReposPath, owner, req.Name+".git")
 
 		if err := database.UpdateRepositoryName(owner, repo, req.Name, newPath); err != nil {
-			writeErr(http.StatusInternalServerError, err.Error())
+			writeErr(http.StatusInternalServerError, ErrCodeUnknown, err.Error())
 			return
 		}
 
 		// Keep the retained backup's stored path in sync (the bundle file
 		// itself was already moved by RenameRepository).
 		if err := database.UpdateBackupPath(info.ID, gitrepo.BackupFilePath(owner, req.Name)); err != nil {
-			writeErr(http.StatusInternalServerError, err.Error())
+			writeErr(http.StatusInternalServerError, ErrCodeUnknown, err.Error())
 			return
 		}
 
 		// Keep the stored logo in sync so its public URL still works.
 		if info.Logo != "" {
 			if err := gitrepo.RenameLogo(owner, repo, req.Name, info.Logo); err != nil {
-				writeErr(http.StatusInternalServerError, err.Error())
+				writeErr(http.StatusInternalServerError, ErrCodeUnknown, err.Error())
 				return
 			}
 
 			newLogo := fmt.Sprintf("%s/%s%s", owner, req.Name, filepath.Ext(info.Logo))
 
 			if err := database.UpdateRepositoryLogo(owner, req.Name, newLogo); err != nil {
-				writeErr(http.StatusInternalServerError, err.Error())
+				writeErr(http.StatusInternalServerError, ErrCodeUnknown, err.Error())
 				return
 			}
 		}
@@ -317,17 +295,17 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 	}
 
 	if err := database.UpdateRepositoryDescription(owner, repo, req.Description); err != nil {
-		writeErr(http.StatusInternalServerError, err.Error())
+		writeErr(http.StatusInternalServerError, ErrCodeUnknown, err.Error())
 		return
 	}
 
 	if err := database.UpdateRepositoryWebsite(owner, repo, req.Website); err != nil {
-		writeErr(http.StatusInternalServerError, err.Error())
+		writeErr(http.StatusInternalServerError, ErrCodeUnknown, err.Error())
 		return
 	}
 
 	if err := database.UpdateRepositoryDefaultBranch(owner, repo, currentDefault); err != nil {
-		writeErr(http.StatusInternalServerError, err.Error())
+		writeErr(http.StatusInternalServerError, ErrCodeUnknown, err.Error())
 		return
 	}
 
@@ -342,18 +320,13 @@ func updateRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 }
 
 func deleteRepository(w http.ResponseWriter, r *http.Request, owner, repo string) {
-	writeErr := func(status int, msg string) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(status)
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   msg,
-		})
+	writeErr := func(status int, code string, msg string) {
+		writeErrorCoded(w, status, code, msg)
 	}
 
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
-		writeErr(http.StatusNotFound, "repository not found")
+		writeErr(http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
@@ -363,12 +336,12 @@ func deleteRepository(w http.ResponseWriter, r *http.Request, owner, repo string
 	}
 
 	if err := gitrepo.RemoveRepository(owner, repo, info.Logo); err != nil {
-		writeErr(http.StatusInternalServerError, err.Error())
+		writeErr(http.StatusInternalServerError, ErrCodeUnknown, err.Error())
 		return
 	}
 
 	if err := database.DeleteRepository(owner, repo); err != nil {
-		writeErr(http.StatusInternalServerError, err.Error())
+		writeErr(http.StatusInternalServerError, ErrCodeUnknown, err.Error())
 		return
 	}
 
@@ -455,12 +428,12 @@ func RepoHandler(w http.ResponseWriter, r *http.Request) {
 
 	repository, err := gitrepo.GetRepo(owner, repo, ref)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_load_repository", "failed to load repository")
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(repository); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_encode_response", "failed to encode response")
 		return
 	}
 }

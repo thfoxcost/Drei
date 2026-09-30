@@ -14,6 +14,7 @@ import ContentAccount from "./content/account"
 import ContentNotifications from "./content/notifications"
 import ContentAppearance from "./content/appearance"
 import ContentGeneral from "./content/general"
+import { useTranslation } from "react-i18next"
 
 const tabClass =
   "w-full justify-start gap-2 text-left data-active:bg-primary/20! data-active:text-primary! data-active:shadow-none! dark:data-active:border-transparent"
@@ -23,6 +24,8 @@ interface VerticalTabsSettingsProps {
 }
 
 function VerticalTabsSettings({ header }: VerticalTabsSettingsProps) {
+  const { t } = useTranslation()
+
   return (
     <Tabs
       defaultValue="profile"
@@ -35,32 +38,32 @@ function VerticalTabsSettings({ header }: VerticalTabsSettingsProps) {
         <TabsList className="bg-background mt-2 h-auto w-[200px] flex-col items-stretch gap-1 rounded-none p-0">
           <TabsTrigger value="profile" className={tabClass}>
             <Settings className="size-4" />
-            Public Profile
+{t("settings.tabs.profile")}
           </TabsTrigger>
 
           <TabsTrigger value="account" className={tabClass}>
             <CircleUserRound className="size-4" />
-            Account
+{t("settings.tabs.account")}
           </TabsTrigger>
 
           <TabsTrigger value="general" className={tabClass}>
             <ListChecks className="size-4" />
-            General
+{t("settings.tabs.general")}
           </TabsTrigger>
 
           <TabsTrigger value="actions" className={tabClass} disabled>
             <CirclePlay className="size-4" />
-            Actions
+            {t("settings.tabs.actions")}
           </TabsTrigger>
 
           <TabsTrigger value="notifications" className={tabClass}>
             <Bell className="size-4" />
-            Notifications
+{t("settings.tabs.notifications")}
           </TabsTrigger>
 
           <TabsTrigger value="appearance" className={tabClass}>
             <Palette className="size-4" />
-            Appearance
+{t("settings.tabs.appearance")}
           </TabsTrigger>
         </TabsList>
       </div>
@@ -81,12 +84,11 @@ function VerticalTabsSettings({ header }: VerticalTabsSettingsProps) {
         <TabsContent value="actions">
           <div className="space-y-1">
             <h3 className="font-medium">
-              Actions
+              {t("settings.actions.heading")}
             </h3>
 
             <p className="text-muted-foreground text-sm">
-              Configure automated workflows and
-              actions for your repository.
+              {t("settings.actions.description")}
             </p>
           </div>
         </TabsContent>

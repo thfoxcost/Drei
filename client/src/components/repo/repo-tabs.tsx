@@ -10,6 +10,7 @@ import {
   Shield,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIssues } from "@/hooks/useIssues";
@@ -19,18 +20,18 @@ import { authClient } from "#/lib/auth-client";
 import RepoStarsheader from "./repo-stars-header";
 
 const tabs = [
-  { name: "Code", value: "files", icon: Code, disabled: false },
-  { name: "Issues", value: "issues", icon: CircleDot, disabled: false },
+  { labelKey: "repo.tabs.code", value: "files", icon: Code, disabled: false },
+  { labelKey: "repo.tabs.issues", value: "issues", icon: CircleDot, disabled: false },
   {
-    name: "Pull Requests",
+    labelKey: "repo.tabs.pulls",
     value: "pulls",
     icon: GitPullRequest,
     disabled: false,
   },
-  { name: "Actions", value: "actions", icon: Play, disabled: false },
-  { name: "Security", value: "security", icon: Shield, disabled: false },
-  { name: "Insights", value: "insights", icon: BarChart3, disabled: false },
-  { name: "Settings", value: "settings", icon: Settings, disabled: false },
+  { labelKey: "repo.tabs.actions", value: "actions", icon: Play, disabled: false },
+  { labelKey: "repo.tabs.security", value: "security", icon: Shield, disabled: false },
+  { labelKey: "repo.tabs.insights", value: "insights", icon: BarChart3, disabled: false },
+  { labelKey: "repo.tabs.settings", value: "settings", icon: Settings, disabled: false },
 ];
 
 const tabRouteTo = {
@@ -49,6 +50,7 @@ interface RepoProps {
 }
 
 export default function RepoTabs({ owner, repo }: RepoProps) {
+  const { t } = useTranslation();
   const { data: repoData, isPending } = useRepoData(owner, repo);
   const { data: session } = authClient.useSession();
   const { data: issuesData } = useIssues(owner, repo, { state: "open" });
@@ -173,7 +175,7 @@ export default function RepoTabs({ owner, repo }: RepoProps) {
                     <Icon className="size-4" />
                   )}
 
-                  <span className="text-sm">{tab.name}</span>
+                  <span className="text-sm">{t(tab.labelKey)}</span>
 
                   {tab.value === "issues" &&
                     (issuesData?.open ?? 0) > 0 && (

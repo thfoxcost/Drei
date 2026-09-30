@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TriangleAlertIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import PrNew from "#/components/repo/pulls/pr-new";
 import { Alert, AlertDescription, AlertTitle } from "#/components/ui/alert";
 import { Spinner } from "#/components/ui/spinner";
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/$username/$repo/compare/$")({
 });
 
 function RouteComponent() {
+	const { t } = useTranslation();
 	const { _splat } = Route.useParams();
 	const { username: owner, repo } = Route.useParams();
 	const ctx = useCompareContext();
@@ -18,9 +20,9 @@ function RouteComponent() {
 		return (
 			<Alert className="border-none bg-destructive/10 text-destructive">
 				<TriangleAlertIcon />
-				<AlertTitle>Invalid comparison</AlertTitle>
+				<AlertTitle>{t("compare.invalidTitle")}</AlertTitle>
 				<AlertDescription className="text-destructive/80">
-					Please provide a valid base and source branch.
+					{t("compare.invalidDescription")}
 				</AlertDescription>
 			</Alert>
 		);
@@ -32,9 +34,9 @@ function RouteComponent() {
 		return (
 			<Alert className="border-none bg-destructive/10 text-destructive">
 				<TriangleAlertIcon />
-				<AlertTitle>Invalid comparison</AlertTitle>
+				<AlertTitle>{t("compare.invalidTitle")}</AlertTitle>
 				<AlertDescription className="text-destructive/80">
-					Something went wrong. Please try again or use a different comparison.
+					{t("compare.genericError")}
 				</AlertDescription>
 			</Alert>
 		);
@@ -44,10 +46,9 @@ function RouteComponent() {
 		return (
 			<Alert className="border-none bg-destructive/10 text-destructive">
 				<TriangleAlertIcon />
-				<AlertTitle>Same branch selected</AlertTitle>
+				<AlertTitle>{t("compare.sameBranchTitle")}</AlertTitle>
 				<AlertDescription className="text-destructive/80">
-					Base and compare branches must be different. Please select a different
-					compare branch.
+					{t("compare.sameBranchDescription")}
 				</AlertDescription>
 			</Alert>
 		);
@@ -57,7 +58,7 @@ function RouteComponent() {
 		return (
 			<div className="flex items-center justify-center py-8 text-muted-foreground">
 				<Spinner className="mr-2" />
-				<span>Loading comparison...</span>
+				<span>{t("compare.loading")}</span>
 			</div>
 		);
 	}
@@ -66,9 +67,9 @@ function RouteComponent() {
 		return (
 			<Alert className="border-none bg-destructive/10 text-destructive">
 				<TriangleAlertIcon />
-				<AlertTitle>Failed to load comparison</AlertTitle>
+				<AlertTitle>{t("compare.loadFailed")}</AlertTitle>
 				<AlertDescription className="text-destructive/80">
-					{ctx.errorMessage || "Could not compare these branches."}
+					{ctx.errorMessage || t("compare.loadFailedBody")}
 				</AlertDescription>
 			</Alert>
 		);

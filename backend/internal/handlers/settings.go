@@ -12,11 +12,35 @@ func writeSuccess(w http.ResponseWriter, payload map[string]any) {
 	json.NewEncoder(w).Encode(payload)
 }
 
+// ErrCodeUnknown is the code emitted by writeError when the caller does not
+// supply a stable one. The client only translates known codes, so an
+// uncoded error always falls back to the English `error` text.
+const ErrCodeUnknown = "unknown"
+
+// writeError emits the legacy shape: a human-readable English message only.
+//
+// It now also emits a `code` field so the client response shape is uniform
+// across every endpoint. Callers that surface a message the UI needs to
+// translate should use writeErrorCoded instead.
 func writeError(w http.ResponseWriter, status int, msg string) {
+	writeErrorCoded(w, status, ErrCodeUnknown, msg)
+}
+
+// writeErrorCoded emits `{"success": false, "code": "...", "error": "..."}`.
+//
+// `code` is a stable, machine-readable identifier (lower_snake_case) that the
+// client maps to a translated message. `msg` stays as the English fallback so
+// older clients and API consumers keep working unchanged.
+func writeErrorCoded(w http.ResponseWriter, status int, code string, msg string) {
+	if code == "" {
+		code = ErrCodeUnknown
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(map[string]any{
 		"success": false,
+		"code":    code,
 		"error":   msg,
 	})
 }
@@ -64,7 +88,7 @@ func ArchiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -73,7 +97,7 @@ func ArchiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -82,7 +106,7 @@ func ArchiveHandler(w http.ResponseWriter, r *http.Request) {
 
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
@@ -131,7 +155,7 @@ func VisibilityHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -140,7 +164,7 @@ func VisibilityHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -149,7 +173,7 @@ func VisibilityHandler(w http.ResponseWriter, r *http.Request) {
 
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 

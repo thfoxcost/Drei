@@ -1,11 +1,13 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { Check, ChevronDown, CircleCheck, CircleDot, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Contributor } from "#/components/repo/contributor-avatars";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Field } from "#/components/ui/field";
 import { Input } from "#/components/ui/input";
 import { InputGroup, InputGroupInput } from "#/components/ui/input-group";
+import { Separator } from "#/components/ui/separator";
 import { Spinner } from "#/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "#/components/ui/tabs";
 import { type IssueFilters, useIssues } from "#/hooks/useIssues";
@@ -22,17 +24,22 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import IssueItem from "./issue-item";
-import { Separator } from "#/components/ui/separator";
 
-const sortOptions: { value: IssueSort; label: string }[] = [
-	{ value: "newest", label: "Newest" },
-	{ value: "oldest", label: "Oldest" },
-	{ value: "recently-updated", label: "Most recently updated" },
-	{ value: "least-updated", label: "Least recently updated" },
-	{ value: "most-commented", label: "Most commented" },
-	{ value: "least-commented", label: "Least commented" },
-	{ value: "nearest-due", label: "Nearest due date" },
-	{ value: "farthest-due", label: "Farthest due date" },
+const sortOptions: { value: IssueSort; labelKey: string }[] = [
+	{ value: "newest", labelKey: "issues.sort.newest" },
+	{ value: "oldest", labelKey: "issues.sort.oldest" },
+	{
+		value: "recently-updated",
+		labelKey: "issues.sort.mostRecentlyUpdated",
+	},
+	{
+		value: "least-updated",
+		labelKey: "issues.sort.leastRecentlyUpdated",
+	},
+	{ value: "most-commented", labelKey: "issues.sort.mostCommented" },
+	{ value: "least-commented", labelKey: "issues.sort.leastCommented" },
+	{ value: "nearest-due", labelKey: "issues.sort.nearestDueDate" },
+	{ value: "farthest-due", labelKey: "issues.sort.farthestDueDate" },
 ];
 
 function getInitials(name: string): string {
@@ -57,6 +64,7 @@ function ContributorAvatar({ contributor }: { contributor: Contributor }) {
 }
 
 function Issues() {
+	const { t } = useTranslation();
 	const { username, repo } = useParams({ strict: false });
 	const navigate = useNavigate();
 
@@ -97,21 +105,21 @@ function Issues() {
 	const activeAuthor = contributors.find((c) => c.id === author);
 	const activeAssignee = contributors.find((c) => c.id === assignee);
 	const activeSortLabel =
-		sortOptions.find((option) => option.value === sort)?.label ?? "Sort";
+		sortOptions.find((option) => option.value === sort)?.labelKey ??
+		"issues.sort.label";
 
 	const authorList = matchQuery(contributors, authorQuery);
 	const assigneeList = matchQuery(contributors, assigneeQuery);
 
-
 	return (
 		<div className="mx-30 my-5">
 			<div className="flex items-center justify-between">
-				<h1 className="text-2xl">Issues</h1>
+				<h1 className="text-2xl">{t("issues.title")}</h1>
 				<Button
 					onClick={() => navigate({ to: `/${username}/${repo}/issues/new` })}
 				>
 					<Plus className="size-4" />
-					New Issue
+					{t("issues.newIssue")}
 				</Button>
 			</div>
 
@@ -128,12 +136,16 @@ function Issues() {
 					<TabsList>
 						<TabsTrigger value="open">
 							<CircleDot />
-							Open {data ? `(${data.open})` : ""}
+							{t("issues.openTab", {
+								count: data ? ` (${data.open})` : "",
+							})}
 						</TabsTrigger>
 
 						<TabsTrigger value="close">
 							<CircleCheck />
-							Closed {data ? `(${data.closed})` : ""}
+							{t("issues.closedTab", {
+								count: data ? ` (${data.closed})` : "",
+							})}
 						</TabsTrigger>
 					</TabsList>
 				</Tabs>
@@ -141,7 +153,7 @@ function Issues() {
 				<Field className="mx-3 w-full">
 					<InputGroup>
 						<InputGroupInput
-							placeholder="Type to search"
+							placeholder={t("common.states.typeToSearch")}
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
 						/>
@@ -152,7 +164,9 @@ function Issues() {
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="outline">
-								{activeAuthor ? activeAuthor.username : "Author"}
+								{activeAuthor
+									? activeAuthor.username
+									: t("issues.filters.author")}
 								<ChevronDown />
 							</Button>
 						</DropdownMenuTrigger>
@@ -160,7 +174,7 @@ function Issues() {
 						<DropdownMenuContent className="w-auto">
 							<DropdownMenuGroup>
 								<Input
-									placeholder="Type to search"
+									placeholder={t("common.states.typeToSearch")}
 									className="w-[200px]"
 									value={authorQuery}
 									onChange={(e) => setAuthorQuery(e.target.value)}
@@ -178,7 +192,7 @@ function Issues() {
 								>
 									<span className="flex items-center gap-2">
 										{!activeAuthor && <Check size={14} />}
-										Any author
+										{t("issues.filters.anyAuthor")}
 									</span>
 								</DropdownMenuItem>
 
@@ -199,7 +213,7 @@ function Issues() {
 
 								{authorList.length === 0 && (
 									<DropdownMenuItem disabled>
-										No contributors found
+										{t("issues.filters.noContributors")}
 									</DropdownMenuItem>
 								)}
 							</DropdownMenuGroup>
@@ -209,7 +223,7 @@ function Issues() {
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="outline">
-								{activeSortLabel}
+								{t(activeSortLabel)}
 								<ChevronDown />
 							</Button>
 						</DropdownMenuTrigger>
@@ -223,7 +237,7 @@ function Issues() {
 									>
 										<span className="flex items-center gap-2">
 											{sort === option.value && <Check size={14} />}
-											{option.label}
+											{t(option.labelKey)}
 										</span>
 									</DropdownMenuItem>
 								))}
@@ -234,7 +248,9 @@ function Issues() {
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="outline">
-								{activeAssignee ? activeAssignee.username : "Assigned"}
+								{activeAssignee
+									? activeAssignee.username
+									: t("issues.filters.assigned")}
 								<ChevronDown />
 							</Button>
 						</DropdownMenuTrigger>
@@ -242,7 +258,7 @@ function Issues() {
 						<DropdownMenuContent className="w-auto">
 							<DropdownMenuGroup>
 								<Input
-									placeholder="Type to search"
+									placeholder={t("common.states.typeToSearch")}
 									className="w-[200px]"
 									value={assigneeQuery}
 									onChange={(e) => setAssigneeQuery(e.target.value)}
@@ -257,7 +273,7 @@ function Issues() {
 								>
 									<span className="flex items-center gap-2">
 										{assignee === "none" && <Check size={14} />}
-										Assigned to nobody
+										{t("issues.filters.assignedToNobody")}
 									</span>
 								</DropdownMenuItem>
 
@@ -269,7 +285,7 @@ function Issues() {
 								>
 									<span className="flex items-center gap-2">
 										{!assignee && <Check size={14} />}
-										Any assignee
+										{t("issues.filters.anyAssignee")}
 									</span>
 								</DropdownMenuItem>
 							</DropdownMenuGroup>
@@ -277,7 +293,9 @@ function Issues() {
 							<DropdownMenuSeparator />
 
 							<DropdownMenuGroup>
-								<DropdownMenuLabel>Contributors</DropdownMenuLabel>
+								<DropdownMenuLabel>
+									{t("issues.filters.contributors")}
+								</DropdownMenuLabel>
 
 								{assigneeList.map((contributor) => (
 									<DropdownMenuItem
@@ -296,14 +314,12 @@ function Issues() {
 
 								{assigneeList.length === 0 && (
 									<DropdownMenuItem disabled>
-										No contributors found
+										{t("issues.filters.noContributors")}
 									</DropdownMenuItem>
 								)}
 							</DropdownMenuGroup>
 						</DropdownMenuContent>
 					</DropdownMenu>
-
-
 				</div>
 			</div>
 
@@ -315,15 +331,15 @@ function Issues() {
 				) : isError ? (
 					<div className="flex flex-col items-center gap-2 p-10">
 						<p className="text-sm text-muted-foreground">
-							Failed to load issues.
+							{t("issues.loadFailed")}
 						</p>
 						<Button variant="outline" onClick={() => refetch()}>
-							Retry
+							{t("common.actions.retry")}
 						</Button>
 					</div>
 				) : (data?.issues.length ?? 0) === 0 ? (
 					<p className="p-10 text-center text-sm text-muted-foreground">
-						No {tab === "open" ? "open" : "closed"} issues found.
+						{tab === "open" ? t("issues.emptyOpen") : t("issues.emptyClosed")}
 					</p>
 				) : (
 					data?.issues.map((issue) => (

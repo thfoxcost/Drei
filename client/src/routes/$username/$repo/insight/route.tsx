@@ -4,6 +4,7 @@ import {
 	Outlet,
 	useParams,
 } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/$username/$repo/insight")({
 	component: RouteComponent,
@@ -11,24 +12,25 @@ export const Route = createFileRoute("/$username/$repo/insight")({
 
 const insights = [
 	{
-		name: "Pulse",
+		labelKey: "insights.tabs.pulse",
 		to: "/$username/$repo/insight",
 	},
 	{
-		name: "Contributors",
+		labelKey: "insights.tabs.contributors",
 		to: "/$username/$repo/insight/contributors",
 	},
 	{
-		name: "Code Frequency",
+		labelKey: "insights.tabs.codeFrequency",
 		to: "/$username/$repo/insight/code-frequency",
 	},
 	{
-		name: "Recent Commits",
+		labelKey: "insights.tabs.recentCommits",
 		to: "/$username/$repo/insight/recent-commits",
 	},
 ] as const;
 
 function RouteComponent() {
+	const { t } = useTranslation();
 	const { username, repo } = useParams({
 		from: "/$username/$repo/insight",
 	});
@@ -40,7 +42,7 @@ function RouteComponent() {
 					<tbody>
 						{insights.map((insight) => (
 							<tr
-								key={insight.name}
+								key={insight.labelKey}
 								className="border-b last:border-b-0 hover:bg-muted/50"
 							>
 								<td className="px-4 py-3">
@@ -55,7 +57,7 @@ function RouteComponent() {
 										}}
 										className="flex items-center gap-2 font-medium hover:underline"
 									>
-										{insight.name}
+										{t(insight.labelKey)}
 									</Link>
 								</td>
 							</tr>

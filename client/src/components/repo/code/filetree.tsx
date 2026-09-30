@@ -1,12 +1,7 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
-import {
-	File,
-	Folder,
-	PanelLeftClose,
-	Plus,
-	SearchIcon,
-} from "lucide-react";
+import { File, Folder, PanelLeftClose, Plus, SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { type TreeDataItem, TreeView } from "#/components/tree-view";
 import { Button } from "#/components/ui/button";
 import {
@@ -75,6 +70,7 @@ function Filetree({
 	currentFilePath,
 	onToggleSidebar,
 }: FiletreeProps) {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const { username, repo } = useParams({ strict: false });
 	const owner = username as string;
@@ -200,11 +196,16 @@ function Filetree({
 		<div className="flex h-screen w-xs flex-col border-r">
 			<div className="shrink-0 flex flex-col gap-2 px-4 pt-4">
 				<div className="flex items-center gap-2">
-					<Button variant="outline" size="icon" onClick={onToggleSidebar}>
+					<Button
+						variant="outline"
+						size="icon"
+						onClick={onToggleSidebar}
+						aria-label={t("repo.code.browseSidebarTitle")}
+					>
 						<PanelLeftClose />
 					</Button>
 
-					<span className="font-semibold">Files</span>
+					<span className="font-semibold">{t("repo.code.files")}</span>
 				</div>
 
 				<div className="flex items-center gap-2">
@@ -218,7 +219,12 @@ function Filetree({
 						onSelectTag={handleTagClick}
 					/>
 
-					<Button variant="outline" size="icon" disabled>
+					<Button
+						variant="outline"
+						size="icon"
+						disabled
+						aria-label={t("repo.refSwitcher.branches")}
+					>
 						<Plus className="h-4 w-4" />
 					</Button>
 				</div>
@@ -228,7 +234,7 @@ function Filetree({
 						<SearchIcon />
 					</InputGroupAddon>
 					<InputGroupInput
-						placeholder="Go to file"
+						placeholder={t("repo.code.goToFile")}
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 					/>

@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next"
+import { apiErrorMessage } from "#/i18n/lib/api-error"
+import { i18n } from "#/i18n/i18n"
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ImagePlus, Save, Trash2 } from "lucide-react";
@@ -49,15 +52,16 @@ const ACCEPTED_AVATAR_TYPES = [
 
 function validateAvatarFile(file: File): string | null {
   if (file.size > MAX_AVATAR_BYTES) {
-    return "Image is too large. Maximum size is 2 MB";
+    return i18n.t("errors.code.image_too_large_2mb") as string;
   }
   if (!ACCEPTED_AVATAR_TYPES.includes(file.type)) {
-    return "Unsupported file type. Please upload a PNG, JPG, WebP, or GIF image";
+    return i18n.t("errors.code.unsupported_image_type") as string;
   }
   return null;
 }
 
 function RouteComponent() {
+	const { t } = useTranslation()
   const { org } = Route.useParams();
   const { data, isLoading, isError } = useOrganization(org);
   const { data: session, isPending: isSessionPending } =
@@ -103,7 +107,7 @@ function RouteComponent() {
   if (isError || !data) {
     return (
       <div className="flex h-[60vh] w-full items-center justify-center text-muted-foreground">
-        Organization not found
+        {t("orgs.notFound")}
       </div>
     );
   }
@@ -137,7 +141,7 @@ function RouteComponent() {
     if (isSavingRef.current || updateOrganization.isPending) return;
 
     if (!name.trim()) {
-      toast.error("Organization name is required");
+      toast.error(t("orgs.settings.nameRequired"));
       return;
     }
 
@@ -170,7 +174,7 @@ function RouteComponent() {
           if (!avatarRes.ok) {
             const body = await avatarRes.json().catch(() => null);
             throw new Error(
-              body?.error ?? "Failed to upload organization avatar",
+              apiErrorMessage(body) ?? t("orgs.new.uploadFailed"),
             );
           }
 
@@ -182,21 +186,23 @@ function RouteComponent() {
           await queryClient.invalidateQueries({
             queryKey: ["organization", org],
           });
-          toast.success("Organization updated");
+          toast.success(t("orgs.settings.updatedToast"));
         } catch (err) {
-          toast.error("Organization updated, but avatar upload failed.", {
+          toast.error(t("orgs.settings.updatedButAvatarFailed"), {
             description:
-              err instanceof Error ? err.message : "Something went wrong",
+              err instanceof Error
+                ? err.message
+                : t("common.errors.somethingWentWrong"),
           });
         }
       } else {
-        toast.success("Organization updated");
+        toast.success(t("orgs.settings.updatedToast"));
       }
     } catch (err) {
       if (err instanceof Error) {
         toast.error(err.message);
       } else {
-        toast.error("Failed to update organization");
+        toast.error(t("orgs.settings.updateFailed"));
       }
     } finally {
       isSavingRef.current = false;
@@ -206,14 +212,14 @@ function RouteComponent() {
   const handleDelete = async () => {
     try {
       await deleteOrganization.mutateAsync();
-      toast.success("Organization deleted");
+      toast.success(t("orgs.settings.deletedToast"));
       setDeleteOpen(false);
       navigate({ to: "/orgs" });
     } catch (err) {
       if (err instanceof Error) {
         toast.error(err.message);
       } else {
-        toast.error("Failed to delete organization");
+        toast.error(t("orgs.settings.deleteFailed"));
       }
     }
   };
@@ -221,15 +227,15 @@ function RouteComponent() {
   return (
     <div className="mx-40 my-5 max-w-3xl">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Organization settings</h1>
+        <h1 className="text-2xl font-semibold">{t("orgs.settings.heading")}</h1>
 
         <p className="text-sm text-muted-foreground">
-          Manage the details and settings for {data.name}.
+          {t("orgs.settings.subtitle", { name: data.name })}
         </p>
 
         {!canEdit && !isSessionPending && (
           <p className="text-sm text-muted-foreground">
-            Only the organization owner can edit these settings.
+            {t("orgs.settings.ownerOnly")}
           </p>
         )}
       </div>
@@ -239,42 +245,42 @@ function RouteComponent() {
       <div className="flex flex-col gap-8">
         {/* Name */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="name">Name</Label>
+          <Label htmlFor="name">{t("orgs.settings.name")}</Label>
 
           <Input
             id="name"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Organization name"
+            placeholder={t("orgs.settings.namePlaceholder")}
             disabled={!canEdit}
           />
 
           <p className="text-xs text-muted-foreground">
-            The name of your organization.
+            {t("orgs.settings.nameHelp")}
           </p>
         </div>
 
         {/* Description */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="description">Description</Label>
+          <Label htmlFor="description">{t("orgs.settings.description")}</Label>
 
           <Textarea
             id="description"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            placeholder="Describe your organization..."
+            placeholder={t("orgs.settings.descriptionPlaceholder")}
             rows={4}
             disabled={!canEdit}
           />
 
           <p className="text-xs text-muted-foreground">
-            A short description about what this organization is for.
+            {t("orgs.settings.descriptionHelp")}
           </p>
         </div>
 
         {/* Purpose */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="purpose">Purpose</Label>
+          <Label htmlFor="purpose">{t("orgs.settings.purpose")}</Label>
 
           <Select
             value={purpose}
@@ -282,7 +288,7 @@ function RouteComponent() {
             disabled={!canEdit}
           >
             <SelectTrigger id="purpose" className="w-full">
-              <SelectValue placeholder="Select purpose" />
+              <SelectValue placeholder={t("orgs.settings.selectPurpose")} />
             </SelectTrigger>
 
             <SelectContent>
@@ -292,7 +298,7 @@ function RouteComponent() {
                   <SelectItem key={item.value} value={item.value}>
                     <span className="flex items-center gap-2">
                       <Icon className="size-4" />
-                      {item.label}
+                      {t(item.labelKey)}
                     </span>
                   </SelectItem>
                 );
@@ -301,49 +307,49 @@ function RouteComponent() {
           </Select>
 
           <p className="text-xs text-muted-foreground">
-            What this organization is primarily used for.
+            {t("orgs.settings.purposeHelp")}
           </p>
         </div>
 
         {/* Tags */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="tags">Tags</Label>
+          <Label htmlFor="tags">{t("orgs.settings.tags")}</Label>
 
           <div className={canEdit ? undefined : "pointer-events-none opacity-60"}>
             <TagInput
               id="tags"
               tags={tags}
               setTags={setTags}
-              placeholder="e.g. open-source, react, go"
+              placeholder={t("orgs.settings.tagsPlaceholder")}
             />
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Press Enter or comma to add a tag. Click a tag to remove it.
+            {t("orgs.settings.tagsHelp")}
           </p>
         </div>
 
         {/* Email */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("orgs.settings.email")}</Label>
 
           <Input
             id="email"
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="organization@example.com"
+            placeholder={t("orgs.settings.emailPlaceholder")}
             disabled={!canEdit}
           />
 
           <p className="text-xs text-muted-foreground">
-            The public contact email for this organization.
+            {t("orgs.settings.emailHelp")}
           </p>
         </div>
 
         {/* Picture */}
         <div className="flex flex-col gap-3">
-          <Label>Picture</Label>
+          <Label>{t("orgs.settings.picture")}</Label>
 
           <div className="flex items-center gap-4">
             <Avatar className="size-20 rounded-xl">
@@ -372,7 +378,7 @@ function RouteComponent() {
                 }
               >
                 <ImagePlus className="size-4" />
-                Change picture
+                {t("orgs.settings.changePicture")}
               </Button>
 
               <input
@@ -387,7 +393,7 @@ function RouteComponent() {
               />
 
               <p className="text-xs text-muted-foreground">
-                PNG, JPG, WebP, or GIF. Maximum 2 MB.
+                {t("orgs.settings.pictureHelp")}
               </p>
             </div>
           </div>
@@ -395,7 +401,7 @@ function RouteComponent() {
 
         {/* Status */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="status">Status</Label>
+          <Label htmlFor="status">{t("orgs.settings.status")}</Label>
 
           <Select
             value={status}
@@ -405,17 +411,17 @@ function RouteComponent() {
             disabled={!canEdit}
           >
             <SelectTrigger id="status" className="w-full">
-              <SelectValue placeholder="Select status" />
+              <SelectValue placeholder={t("orgs.settings.selectStatus")} />
             </SelectTrigger>
 
             <SelectContent>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
+              <SelectItem value="active">{t("orgs.settings.active")}</SelectItem>
+              <SelectItem value="suspended">{t("orgs.settings.suspended")}</SelectItem>
             </SelectContent>
           </Select>
 
           <p className="text-xs text-muted-foreground">
-            Suspended organizations are unavailable to members.
+            {t("orgs.settings.suspendedHelp")}
           </p>
         </div>
 
@@ -432,18 +438,18 @@ function RouteComponent() {
               disabled={isSaving || deleteOrganization.isPending}
             >
               <Trash2 className="size-4" />
-              Delete organization
+              {t("orgs.settings.delete")}
             </Button>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? (
                 <>
                   <Spinner />
-                  <span className="ml-2">Saving…</span>
+                  <span className="ml-2">{t("common.actions.saving")}</span>
                 </>
               ) : (
                 <>
                   <Save className="size-4" />
-                  Save changes
+                  {t("orgs.settings.saveChanges")}
                 </>
               )}
             </Button>
@@ -454,22 +460,23 @@ function RouteComponent() {
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {data?.name ?? org}?</DialogTitle>
+            <DialogTitle>
+              {t("orgs.settings.deleteDialogTitle", {
+                name: data?.name ?? org,
+              })}
+            </DialogTitle>
             <DialogDescription>
-              This action cannot be undone. This will permanently delete the{" "}
-              <span className="font-medium text-foreground">
-                {data?.name ?? org}
-              </span>{" "}
-              organization, its repositories, and all of its contents. Please
-              type the organization slug to confirm.
+              {t("orgs.settings.deleteDialogDescription", {
+                name: data?.name ?? org,
+              })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
             <Label htmlFor="confirm-org-slug">
-              To confirm, type{" "}
-              <span className="font-medium">{data?.slug ?? org}</span> in the
-              box below
+              {t("orgs.settings.confirmSlug", {
+                slug: data?.slug ?? org,
+              })}
             </Label>
             <Input
               id="confirm-org-slug"
@@ -482,7 +489,7 @@ function RouteComponent() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-              Cancel
+              {t("common.actions.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -495,10 +502,10 @@ function RouteComponent() {
               {deleteOrganization.isPending ? (
                 <>
                   <Spinner />
-                  <span className="ml-2">Deleting…</span>
+                  <span className="ml-2">{t("orgs.settings.deleting")}</span>
                 </>
               ) : (
-                "I understand, delete this organization"
+                t("orgs.settings.deleteConfirm")
               )}
             </Button>
           </DialogFooter>

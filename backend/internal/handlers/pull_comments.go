@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"backend/internal/database"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
-	"encoding/json"
 )
 
 // PullCommentsHandler lists and creates comments on a pull request.
@@ -47,7 +47,7 @@ func PullCommentsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		user, err := authenticate(r)
 		if err != nil {
-			writeError(w, http.StatusUnauthorized, "you must be signed in to comment")
+			writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_comment", "you must be signed in to comment")
 			return
 		}
 
@@ -56,14 +56,14 @@ func PullCommentsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
 		req.Body = strings.TrimSpace(req.Body)
 
 		if req.Body == "" {
-			writeError(w, http.StatusBadRequest, "comment body is required")
+			writeErrorCoded(w, http.StatusBadRequest, "comment_body_required", "comment body is required")
 			return
 		}
 
@@ -74,14 +74,14 @@ func PullCommentsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if comment.ID == 0 {
-			writeError(w, http.StatusNotFound, "pull request not found")
+			writeErrorCoded(w, http.StatusNotFound, "pull_request_not_found", "pull request not found")
 			return
 		}
 
 		writeJSON(w, http.StatusCreated, comment)
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -109,7 +109,7 @@ func PullCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	commentID, err := strconv.ParseInt(r.PathValue("commentId"), 10, 64)
 	if err != nil || commentID <= 0 {
-		writeError(w, http.StatusBadRequest, "invalid comment id")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_comment_id", "invalid comment id")
 		return
 	}
 
@@ -120,14 +120,14 @@ func PullCommentHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
 		req.Body = strings.TrimSpace(req.Body)
 
 		if req.Body == "" {
-			writeError(w, http.StatusBadRequest, "comment body is required")
+			writeErrorCoded(w, http.StatusBadRequest, "comment_body_required", "comment body is required")
 			return
 		}
 
@@ -138,7 +138,7 @@ func PullCommentHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if comment.ID == 0 {
-			writeError(w, http.StatusNotFound, "comment not found")
+			writeErrorCoded(w, http.StatusNotFound, "comment_not_found", "comment not found")
 			return
 		}
 
@@ -153,6 +153,6 @@ func PullCommentHandler(w http.ResponseWriter, r *http.Request) {
 		writeSuccess(w, map[string]any{"success": true})
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }

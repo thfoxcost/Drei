@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { i18n } from "#/i18n/i18n";
 
 interface Coordinates {
   lat: number;
@@ -118,7 +119,7 @@ export function useLocation(): LocationData {
 
       // 3. Try Browser Geolocation
       if (!navigator.geolocation) {
-        fallbackToIP("Geolocation not supported");
+        fallbackToIP(i18n.t("errors.client.geolocationNotSupported") as string);
         return;
       }
 

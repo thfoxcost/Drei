@@ -1,4 +1,6 @@
-"use client";
+import { useTranslation } from "react-i18next";
+
+("use client");
 
 import {
 	CircleDot,
@@ -34,22 +36,24 @@ interface ActivityRadarChartProps {
 	prCount?: number;
 }
 
-const chartConfig = {
-	value: {
-		label: "Activity",
-		color: "#22c55e",
-	},
-} satisfies ChartConfig;
-
 export function ActivityRadarChart({
 	commitCount = 0,
 	issueCount = 0,
 	prCount = 0,
 }: ActivityRadarChartProps) {
+	const { t } = useTranslation();
+
+	const chartConfig = {
+		value: {
+			label: t("repo.charts.activity"),
+			color: "#22c55e",
+		},
+	} satisfies ChartConfig;
+
 	const chartData: ActivityDatum[] = [
-		{ activity: "Commits", value: commitCount, icon: GitCommit },
-		{ activity: "PRs", value: prCount, icon: GitPullRequest },
-		{ activity: "Issues", value: issueCount, icon: CircleDot },
+		{ activity: t("repo.charts.commits"), value: commitCount, icon: GitCommit },
+		{ activity: t("repo.charts.prs"), value: prCount, icon: GitPullRequest },
+		{ activity: t("repo.charts.issues"), value: issueCount, icon: CircleDot },
 	];
 	return (
 		<div className="w-full">

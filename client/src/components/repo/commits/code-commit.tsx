@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Check, ChevronDown, Copy } from "lucide-react"
 import { useCopyToClipboard } from "#/hooks/use-copy-to-clipboard"
 
@@ -68,6 +69,7 @@ function CodeCommitBlock({
 	diffId,
 	viewed = false,
 }: CodeCommitBlockProps) {
+	const { t } = useTranslation()
 	const { isCopied, copyToClipboard } =
 		useCopyToClipboard()
 
@@ -118,8 +120,8 @@ function CodeCommitBlock({
 					className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 					aria-label={
 						isExpanded
-							? "Collapse code"
-							: "Expand code"
+							? t("repo.code.collapsedCode")
+							: t("repo.code.expandedCode")
 					}
 				>
 					<ChevronDown
@@ -138,7 +140,7 @@ function CodeCommitBlock({
 
 				{viewed && (
 					<span className="shrink-0 rounded-full border border-secondary-foreground/20 bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
-						Viewed
+						{t("repo.code.viewed")}
 					</span>
 				)}
 
@@ -192,11 +194,11 @@ function CodeCommitBlock({
 							copyToClipboard(filePath)
 						}
 						className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-						aria-label={
-							isCopied
-								? "Copied"
-								: "Copy file path"
-						}
+aria-label={
+						isCopied
+							? t("common.actions.copied")
+							: t("repo.code.copyFilePath")
+					}
 					>
 						{isCopied ? (
 							<Check size={15} />

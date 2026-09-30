@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import DashboardLayout from "#/components/layouts/dashboard-layout";
 import { PeopleTable } from "#/components/people/people-table";
 import { ReposTable } from "#/components/people/repos-table";
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/_app/people")({
 });
 
 function PeoplePage() {
+	const { t } = useTranslation();
 	const [view, setView] = useState<PeopleView>("users");
 
 	return (
@@ -22,7 +24,9 @@ function PeoplePage() {
 			<div className="my-1">
 				<div className="flex items-center justify-between gap-2">
 					<h1 className="text-2xl">
-						{view === "users" ? "People" : "Repositories"}
+						{view === "users"
+							? t("people.heading")
+							: t("people.repositoriesHeading")}
 					</h1>
 					<ViewToggle value={view} onValueChange={setView} />
 				</div>

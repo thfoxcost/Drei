@@ -1,7 +1,7 @@
 import { Folder, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "#/components/ui/button";
-import { Spinner } from "#/components/ui/spinner";
 import {
 	Empty,
 	EmptyDescription,
@@ -9,6 +9,7 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "#/components/ui/empty";
+import { Spinner } from "#/components/ui/spinner";
 import { useBlob } from "#/hooks/useBlob";
 import { useRepoData } from "#/hooks/useRepoData";
 import Codeblock from "./code-block";
@@ -97,20 +98,13 @@ function decodeContent(content: string): string {
 	return new TextDecoder("utf-8").decode(bytes);
 }
 
-function Code({
-	owner,
-	repo,
-	branch,
-	filePath,
-	mode = "code",
-}: CodeProps) {
+function Code({ owner, repo, branch, filePath, mode = "code" }: CodeProps) {
+	const { t } = useTranslation();
 	const [sidebarOpen, setSidebarOpen] = useState(true);
 
-	const isTree =
-		mode === "tree" && owner && repo && branch && filePath;
+	const isTree = mode === "tree" && owner && repo && branch && filePath;
 
-	const isBlob =
-		mode === "blob" && owner && repo && branch && filePath;
+	const isBlob = mode === "blob" && owner && repo && branch && filePath;
 
 	const {
 		data: blobData,
@@ -123,32 +117,21 @@ function Code({
 		isBlob ? (filePath ?? "") : "",
 	);
 
-	const {
-		data: repoData,
-		isLoading: repoLoading,
-	} = useRepoData(
+	const { data: repoData, isLoading: repoLoading } = useRepoData(
 		owner ?? "",
 		repo ?? "",
 		branch,
 	);
 
 	const fileName = blobData?.name ?? "";
-	const decoded = blobData?.content
-		? decodeContent(blobData.content)
-		: "";
+	const decoded = blobData?.content ? decodeContent(blobData.content) : "";
 
-	const language = fileName
-		? detectLanguage(fileName)
-		: "plaintext";
+	const language = fileName ? detectLanguage(fileName) : "plaintext";
 
-	const lineCount = decoded
-		? decoded.split("\n").length
-		: 0;
+	const lineCount = decoded ? decoded.split("\n").length : 0;
 
 	const locCount = decoded
-		? decoded
-				.split("\n")
-				.filter((l) => l.trim().length > 0).length
+		? decoded.split("\n").filter((l) => l.trim().length > 0).length
 		: 0;
 
 	const byteSize = blobData?.size ?? 0;
@@ -188,6 +171,7 @@ function Code({
 						size="icon"
 						className="sticky top-2 ml-2 mt-2 shrink-0"
 						onClick={() => setSidebarOpen(true)}
+						aria-label={t("repo.code.browseSidebarTitle")}
 					>
 						<PanelLeftOpen className="h-4 w-4" />
 					</Button>
@@ -217,7 +201,7 @@ function Code({
 				)}
 
 				<main className="mx-5 flex h-[60vh] min-w-0 flex-2 items-center justify-center text-muted-foreground">
-					Failed to load file
+					{t("repo.code.failedToLoad")}
 				</main>
 			</div>
 		);
@@ -240,6 +224,7 @@ function Code({
 					size="icon"
 					className="sticky top-2 ml-2 mt-2 shrink-0"
 					onClick={() => setSidebarOpen(true)}
+					aria-label={t("repo.code.browseSidebarTitle")}
 				>
 					<PanelLeftOpen className="h-4 w-4" />
 				</Button>
@@ -250,17 +235,11 @@ function Code({
 					<span className="cursor-pointer text-blue-400 hover:underline">
 						{repo}
 					</span>{" "}
-
 					{breadcrumbs.map((bc, i) => (
 						<span key={`${bc.label}-${i}`}>
-							<span className="text-muted-foreground">
-								/
-							</span>{" "}
-
+							<span className="text-muted-foreground">/</span>{" "}
 							{bc.isLast ? (
-								<span className="font-medium">
-									{bc.label}
-								</span>
+								<span className="font-medium">{bc.label}</span>
 							) : (
 								<span className="cursor-pointer text-blue-400 hover:underline">
 									{bc.label}
@@ -276,11 +255,9 @@ function Code({
 							<EmptyMedia variant="icon">
 								<Folder />
 							</EmptyMedia>
-							<EmptyTitle>
-								Please browse the files from the sidebar
-							</EmptyTitle>
+							<EmptyTitle>{t("repo.code.browseSidebarTitle")}</EmptyTitle>
 							<EmptyDescription>
-								Select a file from the sidebar to view its contents.
+								{t("repo.code.browseSidebarDescription")}
 							</EmptyDescription>
 						</EmptyHeader>
 					</Empty>

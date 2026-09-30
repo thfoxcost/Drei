@@ -22,7 +22,7 @@ func BranchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodDelete {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -33,13 +33,13 @@ func BranchHandler(w http.ResponseWriter, r *http.Request) {
 
 	branch := strings.TrimSpace(r.PathValue("branch"))
 	if branch == "" {
-		writeError(w, http.StatusBadRequest, "branch name is required")
+		writeErrorCoded(w, http.StatusBadRequest, "branch_name_required", "branch name is required")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "you must be signed in")
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required", "you must be signed in")
 		return
 	}
 
@@ -50,7 +50,7 @@ func BranchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !member {
-		writeError(w, http.StatusForbidden, "you must be a contributor of this repository")
+		writeErrorCoded(w, http.StatusForbidden, "contributor_required", "you must be a contributor of this repository")
 		return
 	}
 

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error"
 
 export function useRevertMerge(owner: string, repo: string, number: number) {
 	const queryClient = useQueryClient();
@@ -15,7 +16,7 @@ export function useRevertMerge(owner: string, repo: string, number: number) {
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
 				throw new Error(
-					body?.error ?? "Failed to revert pull request",
+					apiErrorMessage(body),
 				);
 			}
 			return res.json();

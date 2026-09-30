@@ -31,7 +31,7 @@ func RawHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
@@ -42,19 +42,19 @@ func RawHandler(w http.ResponseWriter, r *http.Request) {
 	filePath = strings.TrimPrefix(filePath, "/")
 
 	if owner == "" || repo == "" || filePath == "" {
-		writeError(w, http.StatusBadRequest, "missing required parameters")
+		writeErrorCoded(w, http.StatusBadRequest, "missing_required_parameters", "missing required parameters")
 		return
 	}
 
 	file, err := gitrepo.GetFile(owner, repo, branch, filePath)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "file not found")
+		writeErrorCoded(w, http.StatusNotFound, "file_not_found", "file not found")
 		return
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(file.Content)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to decode file content")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_decode_file_content", "failed to decode file content")
 		return
 	}
 

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type { CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import {
 	type ChartConfig,
@@ -14,17 +15,6 @@ export const Route = createFileRoute("/$username/$repo/insight/code-frequency")(
 		component: RouteComponent,
 	},
 );
-
-const chartConfig = {
-	additions: {
-		label: "Additions",
-		color: "rgb(34 197 94)",
-	},
-	deletions: {
-		label: "Deletions",
-		color: "rgb(239 68 68)",
-	},
-} satisfies ChartConfig;
 
 function CrosshatchPattern({ config }: { config: ChartConfig }) {
 	const entries = Object.entries(config).filter(([, value]) => value.color);
@@ -50,33 +40,45 @@ function CrosshatchPattern({ config }: { config: ChartConfig }) {
 }
 
 function RouteComponent() {
+	const { t } = useTranslation();
 	const { username, repo } = Route.useParams();
 	const { data, isPending, isError } = useCodeFrequency(username, repo);
 	const chartData = data ?? [];
 
+	const chartConfig = {
+		additions: {
+			label: t("insights.codeFrequency.additions"),
+			color: "rgb(34 197 94)",
+		},
+		deletions: {
+			label: t("insights.codeFrequency.deletions"),
+			color: "rgb(239 68 68)",
+		},
+	} satisfies ChartConfig;
+
 	return (
 		<div className="flex w-full flex-col gap-4">
 			<span className="text-2xl font-medium">
-				Code frequency over the history of {username}/{repo}
+				{t("insights.codeFrequency.heading", { owner: username, repo })}
 			</span>
 
 			<div className="overflow-hidden rounded-md border">
 				<div className="border-b bg-accent/40 px-4 py-2 font-medium">
-					Code Frequency
+					{t("insights.codeFrequency.subheading")}
 				</div>
 
 				<div className="px-4 py-6">
 					{isPending ? (
 						<div className="flex h-[420px] items-center justify-center text-sm text-muted-foreground">
-							Loading code frequency…
+							{t("insights.codeFrequency.loading")}
 						</div>
 					) : isError ? (
 						<div className="flex h-[420px] items-center justify-center text-sm text-destructive">
-							Failed to load code frequency.
+							{t("insights.codeFrequency.loadFailed")}
 						</div>
 					) : chartData.length === 0 ? (
 						<div className="flex h-[420px] items-center justify-center text-sm text-muted-foreground">
-							No commits yet in this repository.
+							{t("insights.codeFrequency.empty")}
 						</div>
 					) : (
 						<ChartContainer config={chartConfig} className="h-[420px] w-full">
@@ -107,7 +109,7 @@ function RouteComponent() {
 											labelFormatter={(value) => (
 												<div className="border-border/50 mb-0.5 border-b pb-2">
 													<span className="text-xs font-medium">
-														Week of {value}
+														{t("insights.codeFrequency.weekOf", { value })}
 													</span>
 												</div>
 											)}

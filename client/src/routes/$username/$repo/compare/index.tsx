@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { GitBranch, InfoIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Alert, AlertAction, AlertTitle } from "#/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
@@ -8,12 +9,12 @@ export const Route = createFileRoute("/$username/$repo/compare/")({
 });
 
 export function CompareIndex() {
+	const { t } = useTranslation();
+
 	return (
 		<Alert className="border-blue-500/50 bg-blue-500/10 py-3 text-blue-500">
 			<InfoIcon />
-			<AlertTitle>
-				Select two branches above to compare changes and create a pull request.
-			</AlertTitle>
+			<AlertTitle>{t("compare.selectBranchesTitle")}</AlertTitle>
 			<AlertAction>
 				<Button
 					variant="outline"
@@ -21,7 +22,7 @@ export function CompareIndex() {
 					disabled
 				>
 					<GitBranch className="size-3.5" />
-					Select branches to continue
+					{t("compare.selectBranchesButton")}
 				</Button>
 			</AlertAction>
 		</Alert>

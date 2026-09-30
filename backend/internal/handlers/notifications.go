@@ -15,14 +15,14 @@ import (
 
 // Webhook represents a stored webhook notification configuration.
 type Webhook struct {
-	ID           int64   `json:"id"`
-	UserID       string  `json:"user_id"`
-	RepositoryID *int64  `json:"repository_id"`
-	Type         string  `json:"type"`
-	EncodedURL   string  `json:"encoded_url"`
-	Enabled      bool    `json:"enabled"`
-	CreatedAt    string  `json:"created_at"`
-	UpdatedAt    string  `json:"updated_at"`
+	ID           int64  `json:"id"`
+	UserID       string `json:"user_id"`
+	RepositoryID *int64 `json:"repository_id"`
+	Type         string `json:"type"`
+	EncodedURL   string `json:"encoded_url"`
+	Enabled      bool   `json:"enabled"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 }
 
 // NotificationsHandler routes /api/notifications to the appropriate method.
@@ -59,7 +59,7 @@ func NotificationsHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -69,7 +69,7 @@ func NotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		handleCreateNotification(w, r, user)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -109,7 +109,7 @@ func NotificationItemHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -121,7 +121,7 @@ func NotificationItemHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		handleDeleteNotification(w, user, id)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -149,13 +149,13 @@ func NotificationTestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -166,7 +166,7 @@ func NotificationTestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -179,13 +179,13 @@ func NotificationTestHandler(w http.ResponseWriter, r *http.Request) {
 		WHERE id = $1 AND user_id = $2
 	`, req.WebhookID, user.ID).Scan(&encodedURL, &webhookType)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "webhook not found")
+		writeErrorCoded(w, http.StatusNotFound, "webhook_not_found", "webhook not found")
 		return
 	}
 
 	decodedURL, err := base64.StdEncoding.DecodeString(encodedURL)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to decode webhook URL")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_decode_webhook_url", "failed to decode webhook URL")
 		return
 	}
 
@@ -226,29 +226,29 @@ func NotificationSendHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
 	var req struct {
 		RepositoryID *int64 `json:"repository_id"`
-		Title       string `json:"title"`
-		Description string `json:"description"`
+		Title        string `json:"title"`
+		Description  string `json:"description"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
 	if req.Title == "" {
-		writeError(w, http.StatusBadRequest, "title is required")
+		writeErrorCoded(w, http.StatusBadRequest, "title_required", "title is required")
 		return
 	}
 
@@ -258,7 +258,7 @@ func NotificationSendHandler(w http.ResponseWriter, r *http.Request) {
 		  AND (repository_id IS NULL OR repository_id = $2)
 	`, user.ID, req.RepositoryID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to fetch notifications")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_fetch_notifications", "failed to fetch notifications")
 		return
 	}
 	defer rows.Close()
@@ -334,7 +334,7 @@ func handleListNotifications(w http.ResponseWriter, user *AuthUser) {
 		ORDER BY created_at DESC
 	`, user.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to fetch notifications")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_fetch_notifications", "failed to fetch notifications")
 		return
 	}
 	defer rows.Close()
@@ -349,7 +349,7 @@ func handleListNotifications(w http.ResponseWriter, user *AuthUser) {
 			&n.ID, &n.UserID, &n.RepositoryID, &n.Type,
 			&n.EncodedURL, &n.Enabled, &createdAt, &updatedAt,
 		); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to scan notification")
+			writeErrorCoded(w, http.StatusInternalServerError, "failed_to_scan_notification", "failed to scan notification")
 			return
 		}
 
@@ -368,13 +368,13 @@ func handleListNotifications(w http.ResponseWriter, user *AuthUser) {
 
 func handleCreateNotification(w http.ResponseWriter, r *http.Request, user *AuthUser) {
 	var req struct {
-		Type         string  `json:"type"`
-		EncodedURL   string  `json:"encoded_url"`
-		RepositoryID *int64  `json:"repository_id"`
+		Type         string `json:"type"`
+		EncodedURL   string `json:"encoded_url"`
+		RepositoryID *int64 `json:"repository_id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -383,7 +383,7 @@ func handleCreateNotification(w http.ResponseWriter, r *http.Request, user *Auth
 	}
 
 	if req.EncodedURL == "" {
-		writeError(w, http.StatusBadRequest, "encoded_url is required")
+		writeErrorCoded(w, http.StatusBadRequest, "webhook_url_required", "encoded_url is required")
 		return
 	}
 
@@ -399,7 +399,7 @@ func handleCreateNotification(w http.ResponseWriter, r *http.Request, user *Auth
 		&n.EncodedURL, &n.Enabled, &createdAt, &updatedAt,
 	)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to create notification")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_create_notification", "failed to create notification")
 		return
 	}
 
@@ -418,7 +418,7 @@ func handleUpdateNotification(w http.ResponseWriter, r *http.Request, user *Auth
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -429,7 +429,7 @@ func handleUpdateNotification(w http.ResponseWriter, r *http.Request, user *Auth
 			WHERE id = $2 AND user_id = $3
 		`, *req.EncodedURL, id, user.ID)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to update notification")
+			writeErrorCoded(w, http.StatusInternalServerError, "failed_to_update_notification", "failed to update notification")
 			return
 		}
 	}
@@ -441,7 +441,7 @@ func handleUpdateNotification(w http.ResponseWriter, r *http.Request, user *Auth
 			WHERE id = $2 AND user_id = $3
 		`, *req.Enabled, id, user.ID)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to update notification")
+			writeErrorCoded(w, http.StatusInternalServerError, "failed_to_update_notification", "failed to update notification")
 			return
 		}
 	}
@@ -456,7 +456,7 @@ func handleDeleteNotification(w http.ResponseWriter, user *AuthUser, id string) 
 		DELETE FROM webhooks WHERE id = $1 AND user_id = $2
 	`, id, user.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to delete notification")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_delete_notification", "failed to delete notification")
 		return
 	}
 

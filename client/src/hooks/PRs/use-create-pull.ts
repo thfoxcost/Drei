@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 import type { PullRequest } from "#/types/prs";
 
 interface CreatePullRequestParams {
@@ -29,7 +30,7 @@ export function useCreatePullRequest(owner: string, repo: string) {
 			);
 			if (!res.ok) {
 				const body = await res.json().catch(() => null);
-				throw new Error(body?.error ?? "Failed to create pull request");
+				throw new Error(apiErrorMessage(body));
 			}
 			return res.json();
 		},

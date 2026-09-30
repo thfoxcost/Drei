@@ -1,4 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { apiErrorMessage } from "#/i18n/lib/api-error";
 import type { IssueFilters, IssuesList } from "#/types/issues";
 
 export type { IssueFilters };
@@ -35,7 +36,10 @@ export function useIssues(
 			const res = await fetch(
 				`http://localhost:3200/api/repos/${owner}/${repo}/issues${qs}`,
 			);
-			if (!res.ok) throw new Error("Failed to fetch issues");
+			if (!res.ok)
+				throw new Error(
+					apiErrorMessage(null, { fallbackKey: "errors.client.fetchIssues" }),
+				);
 			return res.json();
 		},
 		staleTime: 30_000,

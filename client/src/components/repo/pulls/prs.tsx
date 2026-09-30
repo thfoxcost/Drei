@@ -9,22 +9,22 @@ import {
 	Search,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { Contributor } from "#/components/repo/contributor-avatars";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { usePullRequests } from "#/hooks/PRs/use-pull-requests";
 import { useUsers } from "#/hooks/useUsers";
 import type { PRFilters, PRSort } from "#/types/prs";
-import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
-import type { Contributor } from "#/components/repo/contributor-avatars";
 import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuGroup,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
 	InputGroup,
@@ -36,15 +36,15 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PullRequestItem from "./pr-item";
 
-const sortOptions: { value: PRSort; label: string }[] = [
-	{ value: "newest", label: "Newest" },
-	{ value: "oldest", label: "Oldest" },
-	{ value: "recently-updated", label: "Most recently updated" },
-	{ value: "least-updated", label: "Least recently updated" },
-	{ value: "most-commented", label: "Most commented" },
-	{ value: "least-commented", label: "Least commented" },
-	{ value: "source-branch", label: "Source branch" },
-	{ value: "target-branch", label: "Target branch" },
+const sortOptions: { value: PRSort; labelKey: string }[] = [
+	{ value: "newest", labelKey: "pulls.sort.newest" },
+	{ value: "oldest", labelKey: "pulls.sort.oldest" },
+	{ value: "recently-updated", labelKey: "pulls.sort.mostRecentlyUpdated" },
+	{ value: "least-updated", labelKey: "pulls.sort.leastRecentlyUpdated" },
+	{ value: "most-commented", labelKey: "pulls.sort.mostCommented" },
+	{ value: "least-commented", labelKey: "pulls.sort.leastCommented" },
+	{ value: "source-branch", labelKey: "pulls.sort.sourceBranch" },
+	{ value: "target-branch", labelKey: "pulls.sort.targetBranch" },
 ];
 
 function getInitials(name: string): string {
@@ -74,6 +74,7 @@ interface PullRequestsProps {
 }
 
 export default function PullRequests({ owner, repo }: PullRequestsProps) {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 
 	const [tab, setTab] = useState<"open" | "closed" | "merged">("open");
@@ -112,14 +113,15 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 
 	const activeAuthor = users.find((user) => user.id === author);
 	const activeSortLabel =
-		sortOptions.find((option) => option.value === sort)?.label ?? "Sort";
+		sortOptions.find((option) => option.value === sort)?.labelKey ??
+		"pulls.sort.label";
 
 	const authorList = matchQuery(users, authorQuery);
 
 	return (
 		<div className="my-5 mx-30 mb-10">
 			<div className="flex items-center justify-between">
-				<h1 className="text-2xl">Pull Requests</h1>
+				<h1 className="text-2xl">{t("pulls.title")}</h1>
 
 				<Button
 					onClick={() =>
@@ -129,7 +131,7 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 					}
 				>
 					<Plus className="size-4" />
-					New Pull Request
+					{t("pulls.newPull")}
 				</Button>
 			</div>
 
@@ -146,17 +148,17 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 					<TabsList>
 						<TabsTrigger value="open">
 							<GitPullRequest />
-							Open ({openCount})
+							{t("pulls.openTab", { count: openCount })}
 						</TabsTrigger>
 
 						<TabsTrigger value="closed">
 							<GitPullRequestClosed />
-							Closed ({closedCount})
+							{t("pulls.closedTab", { count: closedCount })}
 						</TabsTrigger>
 
 						<TabsTrigger value="merged">
 							<GitMerge />
-							Merged ({mergedCount})
+							{t("pulls.mergedTab", { count: mergedCount })}
 						</TabsTrigger>
 					</TabsList>
 				</Tabs>
@@ -164,7 +166,7 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 				<Field className="w-full">
 					<InputGroup>
 						<InputGroupInput
-							placeholder="Search pull requests..."
+							placeholder={t("pulls.searchPlaceholder")}
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
 						/>
@@ -174,8 +176,9 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 						</InputGroupAddon>
 
 						<InputGroupAddon align="inline-end">
-							{pulls.length} result
-							{pulls.length === 1 ? "" : "s"}
+							{t("common.counts.results", {
+								count: pulls.length,
+							})}
 						</InputGroupAddon>
 					</InputGroup>
 				</Field>
@@ -184,7 +187,9 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="outline">
-								{activeAuthor ? activeAuthor.username : "Author"}
+								{activeAuthor
+									? activeAuthor.username
+									: t("pulls.filters.author")}
 								<ChevronDown />
 							</Button>
 						</DropdownMenuTrigger>
@@ -192,7 +197,7 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 						<DropdownMenuContent className="w-auto">
 							<DropdownMenuGroup>
 								<Input
-									placeholder="Type to search"
+									placeholder={t("common.states.typeToSearch")}
 									className="w-[200px]"
 									value={authorQuery}
 									onChange={(e) => setAuthorQuery(e.target.value)}
@@ -210,7 +215,7 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 								>
 									<span className="flex items-center gap-2">
 										{!activeAuthor && <Check size={14} />}
-										Any author
+										{t("pulls.filters.anyAuthor")}
 									</span>
 								</DropdownMenuItem>
 
@@ -230,7 +235,9 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 								))}
 
 								{authorList.length === 0 && (
-									<DropdownMenuItem disabled>No users found</DropdownMenuItem>
+									<DropdownMenuItem disabled>
+										{t("pulls.filters.noUsers")}
+									</DropdownMenuItem>
 								)}
 							</DropdownMenuGroup>
 						</DropdownMenuContent>
@@ -239,7 +246,7 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="outline">
-								{activeSortLabel}
+								{t(activeSortLabel)}
 								<ChevronDown />
 							</Button>
 						</DropdownMenuTrigger>
@@ -253,7 +260,7 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 									>
 										<span className="flex items-center gap-2">
 											{sort === option.value && <Check size={14} />}
-											{option.label}
+											{t(option.labelKey)}
 										</span>
 									</DropdownMenuItem>
 								))}
@@ -271,10 +278,10 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 				) : isError ? (
 					<div className="flex flex-col items-center gap-2 p-10">
 						<p className="text-sm text-muted-foreground">
-							Failed to load pull requests.
+							{t("pulls.loadFailed")}
 						</p>
 						<Button variant="outline" onClick={() => refetch()}>
-							Retry
+							{t("common.actions.retry")}
 						</Button>
 					</div>
 				) : pulls.length === 0 ? (
@@ -287,7 +294,9 @@ export default function PullRequests({ owner, repo }: PullRequestsProps) {
 							<GitMerge className="size-8 text-muted-foreground" />
 						)}
 						<p className="text-sm text-muted-foreground">
-							No {tab} pull requests found.
+							{t("pulls.empty", {
+								tab: t(`pulls.state.${tab}`),
+							})}
 						</p>
 					</div>
 				) : (

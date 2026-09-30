@@ -1,4 +1,8 @@
+import { useTranslation } from "react-i18next";
+
 export function ProfessionIcon(props: React.ComponentProps<"svg">) {
+	const { t } = useTranslation();
+
 	return (
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -7,7 +11,7 @@ export function ProfessionIcon(props: React.ComponentProps<"svg">) {
 			viewBox="0 0 48 48"
 			{...props}
 		>
-			<title>Profession</title>
+			<title>{t("people.peopleTable.columns.profession")}</title>
 			<g fill="none" stroke="currentColor">
 				<path
 					strokeLinecap="round"

@@ -64,7 +64,7 @@ func CollaboratorsHandler(w http.ResponseWriter, r *http.Request) {
 
 	info, err := database.GetRepository(owner, repo)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeErrorCoded(w, http.StatusNotFound, "repository_not_found", "repository not found")
 		return
 	}
 
@@ -92,21 +92,21 @@ func CollaboratorsHandler(w http.ResponseWriter, r *http.Request) {
 		var req database.Contributor
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
 		req.Username = strings.TrimSpace(req.Username)
 
 		if req.Username == "" {
-			writeError(w, http.StatusBadRequest, "username is required")
+			writeErrorCoded(w, http.StatusBadRequest, "username_required", "username is required")
 			return
 		}
 
 		// The owner can never be re-added as a collaborator; they already own
 		// the repository and always stay in the contributors table.
 		if strings.EqualFold(req.Username, info.Owner) {
-			writeError(w, http.StatusBadRequest, "cannot add the repository owner")
+			writeErrorCoded(w, http.StatusBadRequest, "cannot_add_repository_owner", "cannot add the repository owner")
 			return
 		}
 
@@ -127,19 +127,19 @@ func CollaboratorsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+			writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 			return
 		}
 
 		req.Username = strings.TrimSpace(req.Username)
 
 		if req.Username == "" {
-			writeError(w, http.StatusBadRequest, "username is required")
+			writeErrorCoded(w, http.StatusBadRequest, "username_required", "username is required")
 			return
 		}
 
 		if strings.EqualFold(req.Username, info.Owner) {
-			writeError(w, http.StatusBadRequest, "cannot remove the repository owner")
+			writeErrorCoded(w, http.StatusBadRequest, "cannot_remove_repository_owner", "cannot remove the repository owner")
 			return
 		}
 
@@ -151,6 +151,6 @@ func CollaboratorsHandler(w http.ResponseWriter, r *http.Request) {
 		writeSuccess(w, map[string]any{"success": true})
 
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Tag } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { absoluteDate, timeAgo } from "#/lib/time-ago";
 import type { TagInfo } from "#/types/repo";
 import { Badge } from "../../ui/badge";
@@ -24,6 +25,8 @@ function TagRow({
 	tag: TagInfo;
 	isLast: boolean;
 }) {
+	const { t } = useTranslation();
+
 	return (
 		<div
 			className={`flex flex-row items-center gap-4 border border-t-0 px-3 py-2 text-sm first:border-t first:rounded-t-sm transition-colors hover:bg-muted/50${isLast ? " rounded-b-sm" : ""}`}
@@ -44,9 +47,9 @@ function TagRow({
 
 			<span
 				className="min-w-0 flex-1 truncate text-muted-foreground text-sm pl-20"
-				title={tag.commitMessage || "No commit message"}
+				title={tag.commitMessage || t("repo.tags.noMessage")}
 			>
-				{tag.commitMessage || "No commit message"}
+				{tag.commitMessage || t("repo.tags.noMessage")}
 			</span>
 
 			{tag.taggerDate ? (
@@ -85,6 +88,8 @@ export function TagsList({
 	isLoading,
 	isError,
 }: TagsListProps) {
+	const { t } = useTranslation();
+
 	if (isLoading) {
 		return (
 			<div className="flex h-[40vh] w-full items-center justify-center">
@@ -96,9 +101,9 @@ export function TagsList({
 	if (isError) {
 		return (
 			<div className="flex h-[40vh] w-full flex-col items-center justify-center gap-2 text-center">
-				<p className="text-sm font-medium">Failed to load tags</p>
+				<p className="text-sm font-medium">{t("repo.tags.loadFailed")}</p>
 				<p className="text-sm text-muted-foreground">
-					Something went wrong while fetching tags.
+					{t("repo.tags.loadFailedDescription")}
 				</p>
 			</div>
 		);
@@ -108,9 +113,9 @@ export function TagsList({
 		return (
 			<div className="flex h-[40vh] w-full flex-col items-center justify-center gap-2 text-center">
 				<Tag className="size-7 text-muted-foreground" />
-				<p className="text-sm font-medium">No tags</p>
+				<p className="text-sm font-medium">{t("repo.tags.empty")}</p>
 				<p className="text-sm text-muted-foreground">
-					Tags pushed to this repository will show up here.
+					{t("repo.tags.emptyDescription")}
 				</p>
 			</div>
 		);

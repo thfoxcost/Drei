@@ -62,7 +62,7 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -74,7 +74,7 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		handleDeleteAccount(w, r, user)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
 }
 
@@ -101,13 +101,13 @@ func AccountPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
 
 	user, err := authenticate(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "not authenticated")
+		writeErrorCoded(w, http.StatusUnauthorized, "not_authenticated", "not authenticated")
 		return
 	}
 
@@ -122,7 +122,7 @@ func handleGetAccount(w http.ResponseWriter, user *AuthUser) {
 		SELECT email FROM "user" WHERE id = $1
 	`, user.ID).Scan(&email)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to fetch account")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_fetch_account", "failed to fetch account")
 		return
 	}
 
@@ -137,13 +137,13 @@ func handleUpdateEmail(w http.ResponseWriter, r *http.Request, user *AuthUser) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
 	email := strings.TrimSpace(req.Email)
 	if email == "" {
-		writeError(w, http.StatusBadRequest, "email is required")
+		writeErrorCoded(w, http.StatusBadRequest, "email_required", "email is required")
 		return
 	}
 
@@ -151,7 +151,7 @@ func handleUpdateEmail(w http.ResponseWriter, r *http.Request, user *AuthUser) {
 		UPDATE "user" SET email = $1, updated_at = NOW() WHERE id = $2
 	`, email, user.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to update email")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_update_email", "failed to update email")
 		return
 	}
 
@@ -169,22 +169,22 @@ func handleChangePassword(w http.ResponseWriter, r *http.Request, user *AuthUser
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
 	if req.CurrentPassword == "" {
-		writeError(w, http.StatusBadRequest, "current password is required")
+		writeErrorCoded(w, http.StatusBadRequest, "current_password_required", "current password is required")
 		return
 	}
 
 	if req.NewPassword == "" {
-		writeError(w, http.StatusBadRequest, "new password is required")
+		writeErrorCoded(w, http.StatusBadRequest, "new_password_required", "new password is required")
 		return
 	}
 
 	if len(req.NewPassword) < 8 {
-		writeError(w, http.StatusBadRequest, "new password must be at least 8 characters")
+		writeErrorCoded(w, http.StatusBadRequest, "password_too_short", "new password must be at least 8 characters")
 		return
 	}
 
@@ -195,25 +195,25 @@ func handleChangePassword(w http.ResponseWriter, r *http.Request, user *AuthUser
 		SELECT password FROM account WHERE user_id = $1 AND provider_id = 'credential'
 	`, user.ID).Scan(&passwordHash)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to verify account")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_verify_account", "failed to verify account")
 		return
 	}
 
 	if passwordHash == nil || *passwordHash == "" {
-		writeError(w, http.StatusBadRequest, "no password set for this account")
+		writeErrorCoded(w, http.StatusBadRequest, "no_password_set", "no password set for this account")
 		return
 	}
 
 	// Verify current password against stored hash.
 	if err := bcrypt.CompareHashAndPassword([]byte(*passwordHash), []byte(req.CurrentPassword)); err != nil {
-		writeError(w, http.StatusUnauthorized, "current password is incorrect")
+		writeErrorCoded(w, http.StatusUnauthorized, "current_password_incorrect", "current password is incorrect")
 		return
 	}
 
 	// Hash the new password.
 	newHash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to hash password")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_hash_password", "failed to hash password")
 		return
 	}
 
@@ -222,7 +222,7 @@ func handleChangePassword(w http.ResponseWriter, r *http.Request, user *AuthUser
 		UPDATE account SET password = $1, updated_at = NOW() WHERE user_id = $2 AND provider_id = 'credential'
 	`, string(newHash), user.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to update password")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_update_password", "failed to update password")
 		return
 	}
 
@@ -238,12 +238,12 @@ func handleDeleteAccount(w http.ResponseWriter, r *http.Request, user *AuthUser)
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
 	if req.Password == "" {
-		writeError(w, http.StatusBadRequest, "password is required")
+		writeErrorCoded(w, http.StatusBadRequest, "password_required", "password is required")
 		return
 	}
 
@@ -254,18 +254,18 @@ func handleDeleteAccount(w http.ResponseWriter, r *http.Request, user *AuthUser)
 		SELECT password FROM account WHERE user_id = $1 AND provider_id = 'credential'
 	`, user.ID).Scan(&passwordHash)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to verify account")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_verify_account", "failed to verify account")
 		return
 	}
 
 	if passwordHash == nil || *passwordHash == "" {
-		writeError(w, http.StatusBadRequest, "no password set for this account")
+		writeErrorCoded(w, http.StatusBadRequest, "no_password_set", "no password set for this account")
 		return
 	}
 
 	// Verify password.
 	if err := bcrypt.CompareHashAndPassword([]byte(*passwordHash), []byte(req.Password)); err != nil {
-		writeError(w, http.StatusUnauthorized, "incorrect password")
+		writeErrorCoded(w, http.StatusUnauthorized, "incorrect_password", "incorrect password")
 		return
 	}
 
@@ -274,7 +274,7 @@ func handleDeleteAccount(w http.ResponseWriter, r *http.Request, user *AuthUser)
 		DELETE FROM "user" WHERE id = $1
 	`, user.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to delete account")
+		writeErrorCoded(w, http.StatusInternalServerError, "failed_to_delete_account", "failed to delete account")
 		return
 	}
 

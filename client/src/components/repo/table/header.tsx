@@ -1,5 +1,6 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { RotateCcwClock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { UserAvatar } from "#/components/UserAvatar";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
@@ -7,6 +8,7 @@ import { useRepoData } from "#/hooks/useRepoData";
 import { absoluteDate, timeAgo } from "#/lib/time-ago";
 
 function Mainheader({ branch }: { branch?: string }) {
+	const { t } = useTranslation();
 	const { username, repo } = useParams({ strict: false });
 	const { data: repoData, isLoading } = useRepoData(username, repo, branch);
 
@@ -61,7 +63,9 @@ function Mainheader({ branch }: { branch?: string }) {
 						<Button variant="ghost">
 							<RotateCcwClock size={15} className="text-muted-foreground" />
 							<span className="whitespace-nowrap text-xs">
-								{commits.length.toLocaleString()} Commits
+								{t("repo.table.commitsCount", {
+									count: commits.length,
+								})}
 							</span>
 						</Button>
 					</a>

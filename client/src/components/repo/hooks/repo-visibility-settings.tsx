@@ -1,6 +1,7 @@
 "use client";
 
 import { Settings2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -25,6 +26,8 @@ export function RepoVisibilitySettings({
 	onToggle,
 	availableItems,
 }: RepoVisibilitySettingsProps) {
+	const { t } = useTranslation();
+
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
@@ -32,7 +35,7 @@ export function RepoVisibilitySettings({
 					variant="ghost"
 					size="icon"
 					className="h-6 w-6 text-muted-foreground hover:text-white"
-					aria-label="Customize sidebar sections"
+					aria-label={t("repo.sidebar.customizeSidebar")}
 				>
 					<Settings2 size={16} />
 				</Button>
@@ -40,9 +43,9 @@ export function RepoVisibilitySettings({
 
 			<DialogContent className="sm:max-w-sm">
 				<DialogHeader>
-					<DialogTitle>Sidebar sections</DialogTitle>
+					<DialogTitle>{t("repo.sidebar.sidebarSections")}</DialogTitle>
 					<DialogDescription>
-						Choose what shows up in the sidebar. Saved to this browser only.
+						{t("repo.sidebar.sidebarSectionsDescription")}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -53,7 +56,7 @@ export function RepoVisibilitySettings({
 								htmlFor={`toggle-${item.id}`}
 								className="text-sm font-normal"
 							>
-								{item.name}
+								{t(item.nameKey)}
 							</Label>
 							<Switch
 								id={`toggle-${item.id}`}
