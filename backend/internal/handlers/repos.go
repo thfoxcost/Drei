@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -50,7 +51,7 @@ func createRepoFiles(userPath, repoPath string) error {
 		return err
 	}
 
-	fmt.Println("[OK] Repository created:", repoPath)
+	log.Println("[OK] Repository created:", repoPath)
 
 	return nil
 }

@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -21,6 +22,6 @@ func Connect(databaseURL string) error {
 		return fmt.Errorf("ping database: %w", err)
 	}
 
-	fmt.Println("[OK] Connected to PostgreSQL")
+	log.Println("[OK] Connected to PostgreSQL")
 	return nil
 }

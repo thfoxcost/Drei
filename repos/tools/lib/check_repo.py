@@ -2,7 +2,13 @@ import os
 import subprocess
 
 
-REPOS_PATH = "/home/thefoxcost/Documents/Drei/repos"
+# Repository root: override with REPOS_PATH in the environment; otherwise
+# resolve the repos/ directory relative to this file so the tool works on
+# any machine without hardcoded paths.
+REPOS_PATH = os.environ.get(
+    "REPOS_PATH",
+    os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")),
+)
 
 
 def run_git(repo_path, args):

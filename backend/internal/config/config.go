@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -15,6 +16,10 @@ type Config struct {
 	DatabaseURL string
 	ClientURL   string
 	Environment string
+	// AllowedOrigins is the explicit CORS allowlist for credentialed
+	// browser requests. It always contains ClientURL; in non-production
+	// environments the local dev client is allowed as well.
+	AllowedOrigins []string
 }
 
 var App Config
@@ -55,6 +60,27 @@ func Load() error {
 
 	if App.Environment == "" {
 		App.Environment = "development"
+	}
+
+	// Explicit CORS allowlist: the client URL is always allowed.
+	// ALLOWED_ORIGINS (comma-separated) adds deployment-specific origins.
+	// Local development origins are allowed outside production so
+	// `bun run dev` keeps working without extra configuration.
+	App.AllowedOrigins = []string{App.ClientURL}
+
+	if extra := os.Getenv("ALLOWED_ORIGINS"); extra != "" {
+		for _, origin := range strings.Split(extra, ",") {
+			if origin = strings.TrimSpace(origin); origin != "" {
+				App.AllowedOrigins = append(App.AllowedOrigins, origin)
+			}
+		}
+	}
+
+	if App.Environment != "production" {
+		App.AllowedOrigins = append(App.AllowedOrigins,
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+		)
 	}
 
 	return nil

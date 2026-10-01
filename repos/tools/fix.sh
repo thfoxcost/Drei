@@ -1,4 +1,4 @@
-cd /home/thefoxcost/Documents/Drei/repos/tools
+cd "$(dirname "$0")"
 
 python -m venv .venv
 source .venv/bin/activate

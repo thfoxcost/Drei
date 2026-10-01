@@ -151,7 +151,6 @@ function New() {
       }
 
       toast.success(data.message)
-      console.log(data)
 
       // Navigate using the server-returned owner/name (source of truth),
       // falling back to the submitted values.

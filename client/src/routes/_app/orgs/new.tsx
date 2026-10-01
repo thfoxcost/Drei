@@ -1,7 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCreateOrganization } from "@/hooks/useOrganizations";
 import { authClient } from "@/lib/auth-client";
+import { backendUrl } from "@/lib/backend-url";
 import { authMiddleware } from "@/lib/middleware";
 import { cn } from "@/lib/utils";
 
@@ -115,6 +116,37 @@ function RouteComponent() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const isSubmittingRef = useRef(false);
 	const createdOrgSlugRef = useRef<string | null>(null);
+	// Platform-operator preview badge ("Created by platform owner"): driven
+	// by the existing platform_owner flag via /api/profile, replacing the
+	// former hardcoded-username check. The backend remains authoritative —
+	// it stamps `verified` at creation with database.IsPlatformOwner.
+	const [isPlatformOwner, setIsPlatformOwner] = useState(false);
+
+	useEffect(() => {
+		let cancelled = false;
+
+		async function fetchPlatformOwner() {
+			try {
+				const res = await fetch(`${backendUrl()}/api/profile`, {
+					credentials: "include",
+				});
+
+				if (!res.ok) return;
+
+				const data = await res.json();
+
+				if (!cancelled) setIsPlatformOwner(data?.platformOwner === true);
+			} catch {
+				// Badge stays hidden when the profile cannot be loaded.
+			}
+		}
+
+		fetchPlatformOwner();
+
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	const form = useForm({
 		defaultValues: {
@@ -270,7 +302,7 @@ function RouteComponent() {
 
 				<h1 className="mb-3 flex items-center gap-2 pl-24 text-5xl font-bold">
 					{orgName || t("orgs.new.heading")}
-					{session?.user.name === "thefoxcost" && (
+					{isPlatformOwner && (
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<span className="[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5 mt-2">

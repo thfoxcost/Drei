@@ -5,6 +5,7 @@ import (
 	"backend/internal/database"
 	"backend/internal/gitrepo"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -192,7 +193,7 @@ func ForkHandler(w http.ResponseWriter, r *http.Request) {
 		Avatar:   user.Image,
 	}); err != nil {
 		// Non-fatal: log but don't fail the fork.
-		fmt.Printf("[WARN] failed to add contributor for fork %s/%s: %v\n", user.Name, forkName, err)
+		log.Printf("[WARN] failed to add contributor for fork %s/%s: %v\n", user.Name, forkName, err)
 	}
 
 	// ── 9. Return success ──────────────────────────────────────────────
