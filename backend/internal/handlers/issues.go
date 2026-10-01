@@ -10,6 +10,24 @@ import (
 	"time"
 )
 
+// requireRepoMember requires contributor membership on the repository for an
+// already-authenticated user. It writes the error response itself and reports
+// whether the caller may continue.
+func requireRepoMember(w http.ResponseWriter, info *database.RepoInfo, user *AuthUser, code, message string) bool {
+	member, err := database.IsRepoMember(info.ID, user.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return false
+	}
+
+	if !member {
+		writeErrorCoded(w, http.StatusForbidden, code, message)
+		return false
+	}
+
+	return true
+}
+
 // resolveRepo loads the repository identified by the {owner}/{repo} path
 // values, or writes a 404 and returns false when it does not exist.
 func resolveRepo(w http.ResponseWriter, r *http.Request) (*database.RepoInfo, bool) {
@@ -233,6 +251,8 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		notifyRepoIssueOpened(info, author, &issue)
+
 		writeJSON(w, http.StatusCreated, issue)
 
 	default:
@@ -327,6 +347,16 @@ func IssueHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, issue)
 
 	case http.MethodPatch:
+		user, err := authenticate(r)
+		if err != nil {
+			writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_update_issue", "you must be signed in to update an issue")
+			return
+		}
+
+		if !requireRepoMember(w, info, user, "contributor_required_to_update_issue", "you must be a contributor of this repository to update an issue") {
+			return
+		}
+
 		if _, ok := getIssueOr404(w, info.ID, number); !ok {
 			return
 		}
@@ -468,6 +498,10 @@ func IssueStateHandler(w http.ResponseWriter, r *http.Request) {
 	author, err := authenticate(r)
 	if err != nil {
 		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_change_issue_state", "you must be signed in to change issue state")
+		return
+	}
+
+	if !requireRepoMember(w, info, author, "contributor_required_to_change_issue_state", "you must be a contributor of this repository to change issue state") {
 		return
 	}
 
@@ -680,6 +714,10 @@ func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if !requireRepoMember(w, info, author, "contributor_required_to_comment", "you must be a contributor of this repository to comment") {
+			return
+		}
+
 		var req struct {
 			Body string `json:"body"`
 		}
@@ -707,11 +745,48 @@ func IssueCommentsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// The parent issue is only needed for the notification self-skip
+		// check; a lookup failure skips the notification instead of the
+		// response.
+		if issue, err := database.GetIssue(info.ID, number); err == nil && issue != nil {
+			notifyRepoIssueComment(info, author, issue, comment.Body)
+		}
+
 		writeJSON(w, http.StatusCreated, comment)
 
 	default:
 		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 	}
+}
+
+// authorizeIssueComment authenticates the caller and allows modifying an
+// issue comment only for its author or a repository admin. It writes the
+// error response itself and reports whether the caller may continue.
+func authorizeIssueComment(w http.ResponseWriter, r *http.Request, info *database.RepoInfo, number int, commentID int64) (*AuthUser, bool) {
+	user, err := authenticate(r)
+	if err != nil {
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_modify_comment", "you must be signed in to modify a comment")
+		return nil, false
+	}
+
+	comment, err := database.GetIssueComment(info.ID, number, commentID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return nil, false
+	}
+
+	if comment == nil {
+		writeErrorCoded(w, http.StatusNotFound, "comment_not_found", "comment not found")
+		return nil, false
+	}
+
+	if comment.CreatedBy.ID != user.ID {
+		if _, ok := authorizeRepoAdmin(w, r, info); !ok {
+			return nil, false
+		}
+	}
+
+	return user, true
 }
 
 // IssueCommentHandler updates and deletes a single comment.
@@ -767,6 +842,10 @@ func IssueCommentHandler(w http.ResponseWriter, r *http.Request) {
 	commentID, err := strconv.ParseInt(r.PathValue("commentId"), 10, 64)
 	if err != nil || commentID <= 0 {
 		writeErrorCoded(w, http.StatusBadRequest, "invalid_comment_id", "invalid comment id")
+		return
+	}
+
+	if _, ok := authorizeIssueComment(w, r, info, number, commentID); !ok {
 		return
 	}
 

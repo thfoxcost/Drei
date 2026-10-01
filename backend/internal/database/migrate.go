@@ -860,6 +860,24 @@ func Migrate() error {
 		return err
 	}
 
+	// Repository Discord webhook configuration: one row per repository holding
+	// the channel webhook URL (Base64-encoded, same convention as the personal
+	// webhooks table) plus the PR/issue notification toggles, both defaulting
+	// to OFF. Personal user webhooks stay untouched in the webhooks table.
+	_, err = DB.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS repo_discord_configs (
+			repo_id BIGINT PRIMARY KEY REFERENCES repositories(id) ON DELETE CASCADE,
+			encoded_url TEXT NOT NULL,
+			pr_notifications BOOLEAN NOT NULL DEFAULT FALSE,
+			issue_notifications BOOLEAN NOT NULL DEFAULT FALSE,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+	if err != nil {
+		return err
+	}
+
 	// Username references: repairs rows predating rename propagation (e.g. a
 	// rename from settings before this shipped), syncing repository owners,
 	// contributor records, and on-disk namespaces back to the account name.

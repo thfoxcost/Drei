@@ -60,9 +60,11 @@ func GetContributors(repoID int64) ([]Contributor, error) {
 
 // CreateContributor inserts a new contributor for a repository. The unique
 // index on (repo_id, lower(username)) plus ON CONFLICT DO NOTHING guarantee a
-// user is never stored twice for the same repository.
-func CreateContributor(repoID int64, c Contributor) error {
-	_, err := DB.Exec(
+// user is never stored twice for the same repository. It reports whether a
+// row was actually inserted so callers can distinguish a real addition from
+// a duplicate no-op.
+func CreateContributor(repoID int64, c Contributor) (bool, error) {
+	tag, err := DB.Exec(
 		context.Background(),
 		`
 		INSERT INTO contributors (repo_id, user_id, username, avatar)
@@ -74,8 +76,11 @@ func CreateContributor(repoID int64, c Contributor) error {
 		c.Username,
 		c.Avatar,
 	)
+	if err != nil {
+		return false, err
+	}
 
-	return err
+	return tag.RowsAffected() > 0, nil
 }
 
 // GetCollaboratorCandidates returns every registered user that is not already a

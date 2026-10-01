@@ -19,6 +19,8 @@ import (
 
 var (
 	testUser    = &database.Contributor{ID: "test-user-id", Username: "testuser"}
+	testUser2   = &database.Contributor{ID: "test-user-2-id", Username: "testuser2"}
+	testUser3   = &database.Contributor{ID: "test-user-3-id", Username: "testuser3"}
 	testRepoID  int64
 	testRepoDir string
 	mux         *http.ServeMux
@@ -26,7 +28,7 @@ var (
 
 	// testUserIDs is the set of user IDs created by tests. Cleanup only
 	// touches these rows so real database data is preserved.
-	testUserIDs = []string{"test-user-id"}
+	testUserIDs = []string{"test-user-id", "test-user-2-id", "test-user-3-id"}
 )
 
 func TestMain(m *testing.M) {
@@ -68,6 +70,32 @@ func setupTestData() func() {
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "insert user: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Create second test user for multi-actor tests (comments, reviews,
+	// permissions). Authenticated with the "session=test-session-2" cookie.
+	_, err = database.DB.Exec(context.Background(),
+		`INSERT INTO "user" (id, name, email, "emailVerified")
+		 VALUES ($1, $2, $3, false)
+		 ON CONFLICT (id) DO UPDATE SET name = $2`,
+		testUser2.ID, testUser2.Username, "test2@example.com",
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "insert user 2: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Create third test user for non-member permission tests.
+	// Authenticated with the "session=test-session-3" cookie.
+	_, err = database.DB.Exec(context.Background(),
+		`INSERT INTO "user" (id, name, email, "emailVerified")
+		 VALUES ($1, $2, $3, false)
+		 ON CONFLICT (id) DO UPDATE SET name = $2`,
+		testUser3.ID, testUser3.Username, "test3@example.com",
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "insert user 3: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -128,7 +156,7 @@ func setupTestData() func() {
 	testRepoID = repoID
 
 	// Add user as contributor.
-	database.CreateContributor(repoID, database.Contributor{
+	_, _ = database.CreateContributor(repoID, database.Contributor{
 		ID:       testUser.ID,
 		Username: testUser.Username,
 	})
@@ -192,6 +220,8 @@ func cleanTestData() {
 
 	database.DB.Exec(ctx, `DELETE FROM contributors WHERE repo_id IN
 		(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo')`)
+	database.DB.Exec(ctx, `DELETE FROM repo_discord_configs WHERE repo_id IN
+		(SELECT id FROM repositories WHERE owner = 'testowner' AND name = 'testrepo')`)
 	database.DB.Exec(ctx, `DELETE FROM repositories WHERE owner = 'testowner' AND name = 'testrepo'`)
 
 	// Delete only test users — never touch real accounts.
@@ -208,7 +238,16 @@ func runGit(args ...string) {
 func startAuthServer() *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie := r.Header.Get("Cookie")
-		if cookie == "" || cookie != "session=test-session" {
+
+		user := testUser
+		switch cookie {
+		case "session=test-session":
+			user = testUser
+		case "session=test-session-2":
+			user = testUser2
+		case "session=test-session-3":
+			user = testUser3
+		default:
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -216,8 +255,8 @@ func startAuthServer() *httptest.Server {
 		json.NewEncoder(w).Encode(map[string]any{
 			"session": map[string]any{"id": "sess1"},
 			"user": map[string]any{
-				"id":    testUser.ID,
-				"name":  testUser.Username,
+				"id":    user.ID,
+				"name":  user.Username,
 				"image": nil,
 			},
 		})

@@ -171,8 +171,8 @@ func TestGetPullRequest_IncludesComments(t *testing.T) {
 	}
 	result := parseJSON(t, w)
 	comments := result["comments"].([]any)
-	if len(comments) != 1 {
-		t.Fatalf("expected 1 comment, got %d", len(comments))
+	if len(comments) != 2 {
+		t.Fatalf("expected 2 comments (seed + created), got %d", len(comments))
 	}
 }
 
@@ -181,7 +181,7 @@ func TestUpdatePullRequest_Success(t *testing.T) {
 	w := req(t, "PATCH", fmt.Sprintf("/api/repos/testowner/testrepo/pulls/%d", num), `{
 		"title": "Updated PR title",
 		"description": "Updated description"
-	}`, false)
+	}`, true)
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 	}
@@ -195,7 +195,7 @@ func TestUpdatePullRequest_EmptyTitle(t *testing.T) {
 	num := createTestPR(t)
 	w := req(t, "PATCH", fmt.Sprintf("/api/repos/testowner/testrepo/pulls/%d", num), `{
 		"title": ""
-	}`, false)
+	}`, true)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", w.Code)
 	}

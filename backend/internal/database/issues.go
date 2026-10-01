@@ -803,6 +803,50 @@ func ListIssueComments(repoID int64, number int) ([]IssueComment, error) {
 	return comments, rows.Err()
 }
 
+// GetIssueComment returns a single comment of an issue, or nil when it does
+// not belong to the given repository and number.
+func GetIssueComment(repoID int64, number int, commentID int64) (*IssueComment, error) {
+	var comment IssueComment
+
+	var (
+		createdAt time.Time
+		updatedAt time.Time
+	)
+
+	err := DB.QueryRow(
+		context.Background(),
+		`
+		SELECT ic.id, ic.body, ic.created_by, COALESCE(u.name, ''), u.image, ic.created_at, ic.updated_at
+		FROM issue_comments ic
+		JOIN issues i ON i.id = ic.issue_id
+		LEFT JOIN "user" u ON u.id = ic.created_by
+		WHERE i.repo_id = $1 AND i.number = $2 AND ic.id = $3
+		`,
+		repoID,
+		number,
+		commentID,
+	).Scan(
+		&comment.ID,
+		&comment.Body,
+		&comment.CreatedBy.ID,
+		&comment.CreatedBy.Username,
+		&comment.CreatedBy.Avatar,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	comment.CreatedAt = createdAt.Format(time.RFC3339)
+	comment.UpdatedAt = updatedAt.Format(time.RFC3339)
+
+	return &comment, nil
+}
+
 // AddIssueComment creates a comment on an issue and returns it resolved.
 func AddIssueComment(repoID int64, number int, authorID, body string) (IssueComment, error) {
 	var comment IssueComment

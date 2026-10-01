@@ -1,9 +1,9 @@
 import type { EmojiClickData } from "emoji-picker-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { useEffect, useRef, useState } from "react";
-import ReactCountryFlag from "react-country-flag";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { CountryFlag } from "#/components/flags/country-flag";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import {
@@ -391,9 +391,8 @@ function ContentProfile() {
 									{(c) => (
 										<ComboboxItem key={c.code} value={c.name}>
 											<div className="flex items-center gap-2">
-												<ReactCountryFlag
+												<CountryFlag
 													countryCode={c.code}
-													svg
 													style={{
 														width: "1.5em",
 														height: "1.5em",

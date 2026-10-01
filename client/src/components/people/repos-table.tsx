@@ -1,11 +1,9 @@
 import { useTranslation } from "react-i18next";
 
-import { dateFnsLocale } from "#/i18n/lib/format";
-
 ("use client");
 
 import { Link } from "@tanstack/react-router";
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
 import {
 	ArrowDown,
 	ArrowUp,
@@ -19,9 +17,7 @@ import {
 	Search,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import ReactCountryFlag from "react-country-flag";
-import { ProfessionIcon } from "#/components/profession-icon";
-import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
+import { UserHoverCard } from "#/components/people/user-hover-card";
 import { Button } from "#/components/ui/button";
 import { Card } from "#/components/ui/card";
 import {
@@ -32,11 +28,6 @@ import {
 	DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
 import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "#/components/ui/hover-card";
-import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
@@ -46,7 +37,6 @@ import { useAllRepos } from "#/hooks/useAllRepos";
 import { useIssues } from "#/hooks/useIssues";
 import { type Person, usePeople } from "#/hooks/usePeople";
 import type { Repo } from "#/hooks/useUserRepos";
-import { getCountryCode } from "#/lib/countries";
 import { getLanguageColor } from "#/lib/language-color";
 
 const PAGE_SIZE_OPTIONS = [5, 8, 12, 13];
@@ -136,10 +126,6 @@ function OpenIssuesCell({ owner, repo }: { owner: string; repo: string }) {
 	);
 }
 
-function getInitials(name: string): string {
-	return name.slice(0, 2).toUpperCase();
-}
-
 function OwnerHover({
 	username,
 	person,
@@ -147,68 +133,16 @@ function OwnerHover({
 	username: string;
 	person: Person | undefined;
 }) {
-	const code = getCountryCode(person?.country ?? null);
-
 	return (
-		<HoverCard>
-			<HoverCardTrigger asChild>
-				<Link
-					to="/$username"
-					params={{ username }}
-					className="text-foreground hover:text-primary hover:underline"
-				>
-					@{username}
-				</Link>
-			</HoverCardTrigger>
-			<HoverCardContent align="start">
-				{person ? (
-					<div className="space-y-2">
-						<div className="flex items-center gap-2.5">
-							<Avatar className="size-10">
-								{person.avatar && (
-									<AvatarImage src={person.avatar} alt={person.username} />
-								)}
-								<AvatarFallback>{getInitials(person.username)}</AvatarFallback>
-							</Avatar>
-							<div className="min-w-0">
-								<p className="truncate font-bold">{person.username}</p>
-								<p className="truncate text-xs text-muted-foreground">
-									@{person.username}
-								</p>
-							</div>
-						</div>
-						{person.profession && (
-							<p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-								<ProfessionIcon className="size-3.5 shrink-0" />
-								<span className="truncate">{person.profession}</span>
-							</p>
-						)}
-						<div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-							{code ? (
-								<span className="flex items-center gap-1.5">
-									<ReactCountryFlag
-										countryCode={code}
-										svg
-										style={{ width: "18px", borderRadius: "3px" }}
-									/>
-									{person.country}
-								</span>
-							) : (
-								<span>—</span>
-							)}
-							<span>
-								Joined{" "}
-								{format(new Date(person.joinedAt), "MMM, yyyy", {
-									locale: dateFnsLocale(),
-								})}
-							</span>
-						</div>
-					</div>
-				) : (
-					<p className="text-sm text-muted-foreground">@{username}</p>
-				)}
-			</HoverCardContent>
-		</HoverCard>
+		<UserHoverCard username={username} person={person} align="start">
+			<Link
+				to="/$username"
+				params={{ username }}
+				className="text-foreground hover:text-primary hover:underline"
+			>
+				@{username}
+			</Link>
+		</UserHoverCard>
 	);
 }
 

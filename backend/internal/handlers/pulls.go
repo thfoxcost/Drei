@@ -169,6 +169,8 @@ func PullsHandler(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 
+		notifyRepoPROpened(info, user, &pull)
+
 		writeJSON(w, http.StatusCreated, pull)
 
 	default:
@@ -269,6 +271,16 @@ func PullHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, pull)
 
 	case http.MethodPatch:
+		user, err := authenticate(r)
+		if err != nil {
+			writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_update_pull", "you must be signed in to update a pull request")
+			return
+		}
+
+		if !requireRepoMember(w, info, user, "contributor_required_to_update_pull", "you must be a contributor of this repository to update a pull request") {
+			return
+		}
+
 		if _, ok := getPullOr404(w, info.ID, number); !ok {
 			return
 		}
@@ -341,6 +353,10 @@ func PullCloseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !requireRepoMember(w, info, user, "contributor_required_to_close_pull", "you must be a contributor of this repository to close a pull request") {
+		return
+	}
+
 	if _, ok := getPullOr404(w, info.ID, number); !ok {
 		return
 	}
@@ -382,6 +398,10 @@ func PullReopenHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := authenticate(r)
 	if err != nil {
 		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_reopen_pull", "you must be signed in to reopen a pull request")
+		return
+	}
+
+	if !requireRepoMember(w, info, user, "contributor_required_to_reopen_pull", "you must be a contributor of this repository to reopen a pull request") {
 		return
 	}
 
@@ -946,62 +966,6 @@ func PRLabelHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	writeJSON(w, http.StatusOK, pull)
-}
-
-// PRNotificationsHandler updates the notification preference for a pull request.
-//
-//	POST /api/repos/{owner}/{repo}/pulls/{number}/notifications
-func PRNotificationsHandler(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, r, "POST")
-
-	if r.Method == http.MethodOptions {
-		handleOptions(w, r)
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		writeErrorCoded(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
-		return
-	}
-
-	info, ok := resolveRepo(w, r)
-	if !ok {
-		return
-	}
-
-	number, ok := parsePullNumber(w, r)
-	if !ok {
-		return
-	}
-
-	_, err := authenticate(r)
-	if err != nil {
-		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_update_notifications", "you must be signed in to update notifications")
-		return
-	}
-
-	pull, ok := getPullOr404(w, info.ID, number)
-	if !ok {
-		return
-	}
-
-	var req struct {
-		Notifications bool `json:"notifications"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeErrorCoded(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
-		return
-	}
-
-	if err := database.SetPRNotifications(pull.ID, req.Notifications); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	pull.Notifications = req.Notifications
 
 	writeJSON(w, http.StatusOK, pull)
 }

@@ -186,7 +186,7 @@ func ForkHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ── 8. Add the forking user as the first contributor ───────────────
-	if err := database.CreateContributor(newRepoID, database.Contributor{
+	if _, err := database.CreateContributor(newRepoID, database.Contributor{
 		ID:       user.ID,
 		Username: user.Name,
 		Avatar:   user.Image,

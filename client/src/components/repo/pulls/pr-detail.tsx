@@ -580,30 +580,30 @@ function PRdetail({ pull }: { pull: string }) {
 					{isOpen && (
 						<Badge
 							variant="secondary"
-							className="h-7 gap-1.5 bg-green-600 text-sm text-foreground"
+							className="h-7 gap-1.5 bg-green-600 text-sm text-white dark:text-black"
 						>
-						<GitPullRequest className="size-4 shrink-0" />
-						<span className="font-bold">{t("pulls.state.open")}</span>
+							<GitPullRequest className="size-4 shrink-0" />
+							<span className="font-bold">{t("pulls.state.open")}</span>
 						</Badge>
 					)}
 
 					{isMerged && (
 						<Badge
 							variant="secondary"
-							className="h-7 gap-1.5 bg-purple-700 text-sm text-foreground"
+							className="h-7 gap-1.5 bg-purple-700 text-sm text-white dark:text-black"
 						>
-						<GitMerge className="size-4 shrink-0" />
-						<span className="font-bold">{t("pulls.state.merged")}</span>
+							<GitMerge className="size-4 shrink-0" />
+							<span className="font-bold">{t("pulls.state.merged")}</span>
 						</Badge>
 					)}
 
 					{pr.state === "closed" && !isMerged && (
 						<Badge
 							variant="secondary"
-							className="h-7 gap-1.5 bg-red-600 text-sm text-foreground"
+							className="h-7 gap-1.5 bg-red-600 text-sm text-white dark:text-black"
 						>
-						<GitPullRequestClosed className="size-4 shrink-0" />
-						<span className="font-bold">{t("pulls.state.closed")}</span>
+							<GitPullRequestClosed className="size-4 shrink-0" />
+							<span className="font-bold">{t("pulls.state.closed")}</span>
 						</Badge>
 					)}
 

@@ -83,6 +83,7 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/visibility", handlers.VisibilityHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/logo", handlers.LogoHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/collaborators", handlers.CollaboratorsHandler)
+	http.HandleFunc("/api/repos/{owner}/{repo}/discord", handlers.RepoDiscordHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/issues", handlers.IssuesHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/issues/images", handlers.IssueImageHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/issues/{number}", handlers.IssueHandler)
@@ -114,7 +115,6 @@ func main() {
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/labels", handlers.PRLabelHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/files", handlers.PullFilesHandler)
 	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/viewed", handlers.PullViewedFilesHandler)
-	http.HandleFunc("/api/repos/{owner}/{repo}/pulls/{number}/notifications", handlers.PRNotificationsHandler)
 	http.HandleFunc("/api/orgs", handlers.OrganizationsHandler)
 	http.HandleFunc("/api/orgs/{slug}", handlers.GetOrganizationHandler)
 	http.HandleFunc("/api/orgs/{slug}/repos", handlers.OrganizationReposHandler)
@@ -126,7 +126,6 @@ func main() {
 	http.HandleFunc("/api/notifications", handlers.NotificationsHandler)
 	http.HandleFunc("/api/notifications/{id}", handlers.NotificationItemHandler)
 	http.HandleFunc("/api/notifications/test", handlers.NotificationTestHandler)
-	http.HandleFunc("/api/notifications/send", handlers.NotificationSendHandler)
 	http.HandleFunc("/git/", handlers.GitHandler)
 
 	// Serve uploaded repo logos from <REPOS_PATH>/logos under /uploads/.
