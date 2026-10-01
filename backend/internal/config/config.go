@@ -83,5 +83,40 @@ func Load() error {
 		)
 	}
 
+	// A deployment that only knows its internal client address would end up
+	// with an allowlist no browser can ever match, which silently breaks
+	// every API call. Treat that as a startup misconfiguration rather than
+	// letting it surface as blank pages.
+	if len(App.AllowedOrigins) == 1 && !originIsBrowserFacing(App.AllowedOrigins[0]) {
+		log.Printf(
+			"warning: ALLOWED_ORIGINS is unset and CLIENT_URL (%s) is not browser-reachable; "+
+				"set ALLOWED_ORIGINS to the origin users visit (e.g. http://localhost:3000) "+
+				"or credentialed API calls will be blocked",
+			App.AllowedOrigins[0],
+		)
+	}
+
 	return nil
+}
+
+// originIsBrowserFacing reports whether an origin looks like an address a
+// browser would actually send, i.e. a host:port rather than a Docker service
+// name such as "http://client:3000".
+func originIsBrowserFacing(origin string) bool {
+	host := origin
+	if idx := strings.Index(host, "://"); idx >= 0 {
+		host = host[idx+3:]
+	}
+
+	if idx := strings.IndexAny(host, "/?#"); idx >= 0 {
+		host = host[:idx]
+	}
+
+	// Strip the port; a bare service name without one is still not routable
+	// from the browser.
+	if idx := strings.LastIndex(host, ":"); idx >= 0 && !strings.Contains(host[idx:], "]") {
+		host = host[:idx]
+	}
+
+	return host != "" && host != "client"
 }
