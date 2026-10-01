@@ -19,11 +19,11 @@
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/empty.png" alt="مستودع فارغ" width="900">
+  <img src="assets/screenshots/repo.png" alt="المستودع" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/repo.png" alt="المستودع" width="900">
+  <img src="assets/screenshots/home-dark.png" alt="الصفحة الرئيسية بالوضع الداكن" width="900">
 </p>
 
 </details>

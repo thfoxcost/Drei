@@ -58,11 +58,11 @@ Learn more at **[drei.sh](https://drei.sh)**.
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/empty.png" alt="Empty repository" width="900">
+  <img src="assets/screenshots/repo.png" alt="Repository page" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/repo.png" alt="Repository page" width="900">
+  <img src="assets/screenshots/home-dark.png" alt="Drei home page in dark mode" width="900">
 </p>
 
 </details>
