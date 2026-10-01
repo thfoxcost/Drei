@@ -1,7 +1,7 @@
 import { i18n } from "#/i18n/i18n"
 import { useTranslation } from "react-i18next"
 import { useEffect, useState } from "react"
-import ReactCountryFlag from "react-country-flag"
+import { CountryFlag, ARAB_WORLD_COUNTRY_CODE } from "#/components/flags/country-flag"
 import { authClient } from "#/lib/auth-client"
 import { UserAvatar } from "@/components/UserAvatar"
 import {
@@ -126,7 +126,7 @@ function Profile() {  const { t } = useTranslation();
         />
       </div>
 
-      <div className="flex flex-row items-center gap-1 flex-wrap justify-center">
+      <div className="flex flex-row items-center gap-2 flex-wrap justify-center">
         <h1 className="text-center text-[23px] font-bold leading-tight tracking-tight text-foreground sm:text-[25px]">
           {session?.user.name}
         </h1>
@@ -134,12 +134,10 @@ function Profile() {  const { t } = useTranslation();
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="inline-flex shrink-0 items-center">
-                <ReactCountryFlag
+                <CountryFlag
                   countryCode={countryCode}
-                  svg
                   style={{
-                    width: "30px",
-                    borderRadius: "4px",
+                    width: countryCode === ARAB_WORLD_COUNTRY_CODE ? "24px" : "30px",
                   }}
                 />
               </span>

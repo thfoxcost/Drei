@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { UserHoverCard } from "#/components/people/user-hover-card";
 import { useActivity } from "#/hooks/useActivity";
 import type { ActivityItem } from "#/lib/activity";
 import { absoluteDate, timeAgo } from "#/lib/time-ago";
@@ -156,7 +157,17 @@ function ActivityRow({
 }
 
 function ActorName({ username }: { username: string }) {
-	return <span className="font-semibold">{username}</span>;
+	return (
+		<UserHoverCard username={username} side="left" align="start">
+			<Link
+				to="/$username"
+				params={{ username }}
+				className="font-semibold hover:underline"
+			>
+				{username}
+			</Link>
+		</UserHoverCard>
+	);
 }
 
 function RepoLink({ owner, name }: { owner: string; name: string }) {

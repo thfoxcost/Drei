@@ -14,8 +14,9 @@ func TestListPullComments_Empty(t *testing.T) {
 	}
 	result := parseJSON(t, w)
 	comments := result["comments"].([]any)
-	if len(comments) != 0 {
-		t.Fatalf("expected 0 comments, got %d", len(comments))
+	// A freshly created PR carries the "*No description*" seed comment.
+	if len(comments) != 1 {
+		t.Fatalf("expected 1 seed comment, got %d", len(comments))
 	}
 }
 
@@ -63,8 +64,9 @@ func TestListPullComments_AfterCreate(t *testing.T) {
 	}
 	result := parseJSON(t, w)
 	comments := result["comments"].([]any)
-	if len(comments) != 2 {
-		t.Fatalf("expected 2 comments, got %d", len(comments))
+	// Seed comment plus the two created ones.
+	if len(comments) != 3 {
+		t.Fatalf("expected 3 comments, got %d", len(comments))
 	}
 }
 
@@ -77,7 +79,7 @@ func TestUpdatePullComment_Success(t *testing.T) {
 
 	w := req(t, "PATCH",
 		fmt.Sprintf("/api/repos/testowner/testrepo/pulls/%d/comments/%d", num, commentID),
-		`{"body":"Updated body"}`, false)
+		`{"body":"Updated body"}`, true)
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 	}
@@ -96,7 +98,7 @@ func TestUpdatePullComment_EmptyBody(t *testing.T) {
 
 	w := req(t, "PATCH",
 		fmt.Sprintf("/api/repos/testowner/testrepo/pulls/%d/comments/%d", num, commentID),
-		`{"body":""}`, false)
+		`{"body":""}`, true)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", w.Code)
 	}
@@ -109,19 +111,24 @@ func TestDeletePullComment_Success(t *testing.T) {
 	createResult := parseJSON(t, createW)
 	commentID := int(createResult["id"].(float64))
 
+	countComments := func() int {
+		listW := req(t, "GET", fmt.Sprintf("/api/repos/testowner/testrepo/pulls/%d/comments", num), "", false)
+		listResult := parseJSON(t, listW)
+		return len(listResult["comments"].([]any))
+	}
+
+	before := countComments()
+
 	w := req(t, "DELETE",
 		fmt.Sprintf("/api/repos/testowner/testrepo/pulls/%d/comments/%d", num, commentID),
-		"", false)
+		"", true)
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
 
-	// Verify comment is gone.
-	listW := req(t, "GET", fmt.Sprintf("/api/repos/testowner/testrepo/pulls/%d/comments", num), "", false)
-	listResult := parseJSON(t, listW)
-	comments := listResult["comments"].([]any)
-	if len(comments) != 0 {
-		t.Fatalf("expected 0 comments after delete, got %d", len(comments))
+	// Verify the comment is gone.
+	if after := countComments(); after != before-1 {
+		t.Fatalf("expected %d comments after delete, got %d", before-1, after)
 	}
 }
 
@@ -129,8 +136,8 @@ func TestDeletePullComment_InvalidID(t *testing.T) {
 	num := createTestPR(t)
 	w := req(t, "DELETE",
 		fmt.Sprintf("/api/repos/testowner/testrepo/pulls/%d/comments/9999", num),
-		"", false)
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200 (no-op delete), got %d", w.Code)
+		"", true)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 for unknown comment, got %d", w.Code)
 	}
 }

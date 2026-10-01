@@ -110,9 +110,26 @@ func CollaboratorsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := database.CreateContributor(info.ID, req); err != nil {
+		inserted, err := database.CreateContributor(info.ID, req)
+		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
+		}
+
+		// Contributor-added notifications fire only for real additions, never
+		// for duplicate no-ops, and never depend on the PR/issue toggles. The
+		// actor is best-effort: this endpoint historically allows
+		// unauthenticated adds on personal repositories, so a missing session
+		// only skips the notification instead of failing the request.
+		if inserted {
+			if adder, err := authenticate(r); err == nil {
+				added, err := database.GetUserByUsername(req.Username)
+				if err != nil || added == nil {
+					added = &database.Contributor{ID: req.ID, Username: req.Username, Avatar: req.Avatar}
+				}
+
+				notifyRepoContributorAdded(info, adder, *added)
+			}
 		}
 
 		writeSuccess(w, map[string]any{"success": true})

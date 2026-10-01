@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next"
 import { dateFnsLocale } from "#/i18n/lib/format"
 import { format, formatDistanceToNowStrict } from "date-fns"
 import { BookMarked } from "lucide-react"
-import ReactCountryFlag from "react-country-flag"
+import { CountryFlag } from "#/components/flags/country-flag"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/reui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -82,9 +82,8 @@ function PersonPreviewBody({ person }: { person: Person }) {
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         {person.country && code && (
           <span className="flex items-center gap-1" title={person.country}>
-            <ReactCountryFlag
+            <CountryFlag
               countryCode={code}
-              svg
               style={{ width: "1em", height: "1em" }}
             />
             {person.country}

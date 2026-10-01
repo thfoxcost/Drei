@@ -81,7 +81,6 @@ export const errors = {
 		deleteOrganization: "Failed to delete organization",
 		createRepository: "Failed to create repository",
 		createNotification: "Failed to create notification",
-		sendNotification: "Failed to send notification",
 		testNotification: "Test failed",
 		testNotificationShort: "Test notification failed",
 		createBackup: "Failed to create backup",
@@ -102,7 +101,6 @@ export const errors = {
 		updateReviewers: "Failed to update reviewers",
 		updateLabels: "Failed to update labels",
 		createLabel: "Failed to create label",
-		updateNotifications: "Failed to update notifications",
 	},
 	auth: {
 		INVALID_EMAIL: "Invalid email address",
@@ -174,16 +172,30 @@ export const errors = {
 		comment_review_requires_body: "A comment review requires a body",
 		commit_not_found: "commit not found",
 		contributor_required: "You must be a contributor of this repository",
+		contributor_required_to_change_issue_state:
+			"you must be a contributor of this repository to change issue state",
+		contributor_required_to_close_pull:
+			"you must be a contributor of this repository to close a pull request",
+		contributor_required_to_comment:
+			"you must be a contributor of this repository to comment",
 		contributor_required_to_create_issue:
 			"you must be a contributor of this repository to create an issue",
 		contributor_required_to_create_pull:
 			"you must be a contributor of this repository to create a pull request",
 		contributor_required_to_merge_pull:
 			"you must be a contributor of this repository to merge a pull request",
+		contributor_required_to_reopen_pull:
+			"you must be a contributor of this repository to reopen a pull request",
+		contributor_required_to_review:
+			"you must be a contributor of this repository to review",
 		contributor_required_to_update_assignees:
 			"you must be a contributor of this repository to update assignees",
+		contributor_required_to_update_issue:
+			"you must be a contributor of this repository to update an issue",
 		contributor_required_to_update_labels:
 			"you must be a contributor of this repository to update labels",
+		contributor_required_to_update_pull:
+			"you must be a contributor of this repository to update a pull request",
 		contributor_required_to_update_reviewers:
 			"you must be a contributor of this repository to update reviewers",
 		current_password_incorrect: "Your current password is incorrect",
@@ -320,6 +332,8 @@ export const errors = {
 			"you must be signed in to delete a review",
 		sign_in_required_to_merge_pull:
 			"you must be signed in to merge a pull request",
+		sign_in_required_to_modify_comment:
+			"you must be signed in to modify a comment",
 		sign_in_required_to_reopen_pull:
 			"you must be signed in to reopen a pull request",
 		sign_in_required_to_revert_pull:
@@ -327,9 +341,11 @@ export const errors = {
 		sign_in_required_to_review: "you must be signed in to review",
 		sign_in_required_to_update_assignees:
 			"you must be signed in to update assignees",
+		sign_in_required_to_update_issue:
+			"you must be signed in to update an issue",
 		sign_in_required_to_update_labels: "you must be signed in to update labels",
-		sign_in_required_to_update_notifications:
-			"you must be signed in to update notifications",
+		sign_in_required_to_update_pull:
+			"you must be signed in to update a pull request",
 		sign_in_required_to_update_reviewers:
 			"you must be signed in to update reviewers",
 		sign_in_required_to_upload: "you must be signed in to upload images",

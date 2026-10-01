@@ -129,9 +129,6 @@ export const pulls = {
 		reviewers: "Reviewer:innen",
 		labels: "Labels",
 		contributors: "Mitwirkende",
-		notifications: "Benachrichtigungen",
-		notificationsHelp:
-			"Benachrichtigungen über Aktivitäten in diesem PR erhalten.",
 		selectAssignees: "Personen auswählen",
 		filterAssignees: "Zuweisung filtern",
 		selectReviewers: "Reviewer:innen auswählen",

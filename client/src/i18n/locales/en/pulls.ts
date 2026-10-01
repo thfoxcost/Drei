@@ -129,8 +129,6 @@ export const pulls = {
 		reviewers: "Reviewers",
 		labels: "Labels",
 		contributors: "Contributors",
-		notifications: "Notifications",
-		notificationsHelp: "Get notified about activity on this PR.",
 		selectAssignees: "Select assignees",
 		filterAssignees: "Filter assignees",
 		selectReviewers: "Select reviewers",

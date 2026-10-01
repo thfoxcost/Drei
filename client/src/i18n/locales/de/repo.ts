@@ -284,16 +284,11 @@ export const repo = {
 			tags: "Tags",
 			backup: "Backup",
 			actions: "Aktionen",
-			notifications: "Benachrichtigungen",
 			settings: "Einstellungen",
 			collaborators: "Mitwirkende",
 			code: "Code",
 			access: "Zugriff",
 			codeManagement: "Code-Verwaltung",
-			integration: "Integration",
-			discordNotifications: "Discord-Benachrichtigungen",
-			discordDescription:
-				"Discord-Benachrichtigungen für Aktivitäten und Ereignisse im Repository einrichten.",
 			backupDesc:
 				"Erstelle und verwalte Backups deines Repositorys, um deinen Code und deine Git-Historie zu schützen.",
 			branchesDesc:
@@ -302,8 +297,6 @@ export const repo = {
 				"Verwalte die Tags deines Repositorys und organisiere Releases und Versionen.",
 			actionsDesc:
 				"Konfiguriere automatisierte Workflows und Aktionen für dein Repository.",
-			notificationsDesc:
-				"Verwalte Benachrichtigungen und integriere externe Dienste.",
 		},
 		backup: {
 			title: "Backup",
@@ -347,6 +340,33 @@ export const repo = {
 			fetchFailed: "Mitwirkende konnten nicht geladen werden",
 			addFailed: "Mitwirkende:r konnte nicht hinzugefügt werden",
 			removeFailed: "Mitwirkende:r konnte nicht entfernt werden",
+		},
+		webhooks: {
+			title: "Repository-Webhooks",
+			description:
+				"Repository-Ereignisse an einen Discord-Kanal senden. Unabhängig von deinen persönlichen Benachrichtigungs-Webhooks.",
+			urlLabel: "Discord-Webhook-URL",
+			urlPlaceholder: "https://discord.com/api/webhooks/...",
+			configuredAs: "Konfiguriert als {{masked}}",
+			notConfigured: "Noch kein Discord-Webhook konfiguriert.",
+			prLabel: "Pull-Request-Benachrichtigungen",
+			prHelp:
+				"Benachrichtigen, wenn Pull Requests geöffnet, kommentiert, freigegeben oder mit Änderungswünschen versehen werden.",
+			issueLabel: "Issue-Benachrichtigungen",
+			issueHelp:
+				"Benachrichtigen, wenn Issues geöffnet werden oder neue Kommentare erhalten.",
+			loading: "Webhook-Konfiguration wird geladen...",
+			loadFailed: "Webhook-Konfiguration konnte nicht geladen werden",
+			forbidden:
+				"Nur der Repository-Eigentümer oder Admins können Webhooks verwalten.",
+			save: "Speichern",
+			saving: "Wird gespeichert...",
+			saved: "Discord-Webhook gespeichert",
+			saveFailed: "Discord-Webhook konnte nicht gespeichert werden",
+			delete: "Entfernen",
+			deleting: "Wird entfernt...",
+			deleted: "Discord-Webhook entfernt",
+			deleteFailed: "Discord-Webhook konnte nicht entfernt werden",
 		},
 		danger: {
 			title: "Gefahrenzone",

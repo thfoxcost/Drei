@@ -458,7 +458,21 @@ function RouteComponent() {
       </div>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent>
+        {/*
+          The shared DialogContent is `display: grid` and capped at
+          `sm:max-w-sm` (24rem), which squeezes this warning paragraph into a
+          very tall column.
+
+          Two things are needed to fix it:
+          - `sm:max-w-lg` raises the ceiling (keep the definite `w-full`;
+            adding `w-fit` would remove it and the text would stop wrapping,
+            because the implicit grid track would size to max-content).
+          - `grid-cols-1` pins that track to `minmax(0, 1fr)`. The default
+            implicit track is `minmax(auto, auto)`, whose automatic minimum is
+            min-content, so a long unbroken org name or slug would otherwise
+            still push past the box.
+        */}
+        <DialogContent className="grid-cols-1 sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {t("orgs.settings.deleteDialogTitle", {
