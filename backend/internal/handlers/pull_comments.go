@@ -8,6 +8,36 @@ import (
 	"strings"
 )
 
+// authorizePRComment authenticates the caller and allows modifying a pull
+// request comment only for its author or a repository admin. It writes the
+// error response itself and reports whether the caller may continue.
+func authorizePRComment(w http.ResponseWriter, r *http.Request, info *database.RepoInfo, number int, commentID int64) (*AuthUser, bool) {
+	user, err := authenticate(r)
+	if err != nil {
+		writeErrorCoded(w, http.StatusUnauthorized, "sign_in_required_to_modify_comment", "you must be signed in to modify a comment")
+		return nil, false
+	}
+
+	comment, err := database.GetPullRequestComment(info.ID, number, commentID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return nil, false
+	}
+
+	if comment == nil {
+		writeErrorCoded(w, http.StatusNotFound, "comment_not_found", "comment not found")
+		return nil, false
+	}
+
+	if comment.CreatedBy.ID != user.ID {
+		if _, ok := authorizeRepoAdmin(w, r, info); !ok {
+			return nil, false
+		}
+	}
+
+	return user, true
+}
+
 // PullCommentsHandler lists and creates comments on a pull request.
 //
 //	GET  /api/repos/{owner}/{repo}/pulls/{number}/comments
@@ -51,6 +81,10 @@ func PullCommentsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if !requireRepoMember(w, info, user, "contributor_required_to_comment", "you must be a contributor of this repository to comment") {
+			return
+		}
+
 		var req struct {
 			Body string `json:"body"`
 		}
@@ -76,6 +110,12 @@ func PullCommentsHandler(w http.ResponseWriter, r *http.Request) {
 		if comment.ID == 0 {
 			writeErrorCoded(w, http.StatusNotFound, "pull_request_not_found", "pull request not found")
 			return
+		}
+
+		// The parent PR is only needed for the notification self-skip check;
+		// a lookup failure skips the notification instead of the response.
+		if pull, err := database.GetPullRequest(info.ID, number); err == nil && pull != nil {
+			notifyRepoPRComment(info, user, pull, comment.Body)
 		}
 
 		writeJSON(w, http.StatusCreated, comment)
@@ -110,6 +150,10 @@ func PullCommentHandler(w http.ResponseWriter, r *http.Request) {
 	commentID, err := strconv.ParseInt(r.PathValue("commentId"), 10, 64)
 	if err != nil || commentID <= 0 {
 		writeErrorCoded(w, http.StatusBadRequest, "invalid_comment_id", "invalid comment id")
+		return
+	}
+
+	if _, ok := authorizePRComment(w, r, info, number, commentID); !ok {
 		return
 	}
 

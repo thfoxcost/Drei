@@ -57,7 +57,6 @@ export interface PullRequest {
 	reviewers?: PRUser[];
 	labels?: PRLabel[];
 	participants?: PRUser[];
-	notifications: boolean;
 	owner: string;
 	repo: string;
 }

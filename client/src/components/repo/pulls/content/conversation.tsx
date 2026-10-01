@@ -32,7 +32,6 @@ import {
 import { Input } from "#/components/ui/input";
 import { Separator } from "#/components/ui/separator";
 import { Spinner } from "#/components/ui/spinner";
-import { Switch } from "#/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
 import { Textarea } from "#/components/ui/textarea";
 import { useRepoData } from "#/hooks/useRepoData";
@@ -856,22 +855,6 @@ export function ConversationSheet({
 		},
 	});
 
-	const notificationsMutation = useMutation({
-		mutationFn: async (notifications: boolean) => {
-			const res = await fetch(
-				`http://localhost:3200/api/repos/${username}/${repo}/pulls/${pull.number}/notifications`,
-				{
-					method: "POST",
-					credentials: "include",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ notifications }),
-				},
-			);
-			if (!res.ok) throw new Error(t("errors.client.updateNotifications"));
-		},
-		onSuccess: invalidateAndRefresh,
-	});
-
 	const assignees = pull.assignees ?? [];
 	const reviewers = pull.reviewers ?? [];
 	const labels = pull.labels ?? [];
@@ -1251,20 +1234,6 @@ export function ConversationSheet({
 				</div>
 			</div>
 			<Separator className="my-2" />
-			<div className="flex items-center justify-between px-2">
-				<div className="space-y-0.5">
-					<span className="text-[13px] font-semibold">
-						{t("pulls.conversation.notifications")}
-					</span>
-					<p className="text-[12px] text-muted-foreground">
-						{t("pulls.conversation.notificationsHelp")}
-					</p>
-				</div>
-				<Switch
-					checked={pull.notifications}
-					onCheckedChange={(checked) => notificationsMutation.mutate(checked)}
-				/>
-			</div>
 		</div>
 	);
 }

@@ -52,6 +52,10 @@ func PullReviewsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if !requireRepoMember(w, info, user, "contributor_required_to_review", "you must be a contributor of this repository to review") {
+			return
+		}
+
 		pull, ok := getPullOr404(w, info.ID, number)
 		if !ok {
 			return
@@ -99,6 +103,12 @@ func PullReviewsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
+		}
+
+		// Only approvals and changes-requested reviews notify; plain comment
+		// reviews are covered by the PR comment flow when posted as comments.
+		if req.State == "approved" || req.State == "changes_requested" {
+			notifyRepoPRReview(info, user, pull, review)
 		}
 
 		writeJSON(w, http.StatusCreated, review)

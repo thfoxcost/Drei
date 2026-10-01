@@ -59,7 +59,6 @@ type PullRequest struct {
 	Reviewers       []PullRequestUser   `json:"reviewers"`
 	Labels          []PRLabel           `json:"labels"`
 	Participants    []PullRequestUser   `json:"participants"`
-	Notifications   bool                `json:"notifications"`
 	Owner           string              `json:"owner"`
 	Repo            string              `json:"repo"`
 }
@@ -100,7 +99,6 @@ const prSelectColumns = `
 		FROM pull_request_comments pc
 		WHERE pc.pull_request_id = pr.id
 	), 0),
-	pr.notifications,
 	COALESCE(r.owner, ''),
 	COALESCE(r.name, '')`
 
@@ -151,7 +149,6 @@ func scanPullRequest(row rowScanner) (PullRequest, error) {
 		&createdAt,
 		&updatedAt,
 		&pr.CommentCount,
-		&pr.Notifications,
 		&pr.Owner,
 		&pr.Repo,
 	)
@@ -855,6 +852,50 @@ func ListPullRequestComments(repoID int64, number int) ([]PullRequestComment, er
 	return comments, rows.Err()
 }
 
+// GetPullRequestComment returns a single comment of a pull request, or nil
+// when it does not belong to the given repository and number.
+func GetPullRequestComment(repoID int64, number int, commentID int64) (*PullRequestComment, error) {
+	var comment PullRequestComment
+
+	var (
+		createdAt time.Time
+		updatedAt time.Time
+	)
+
+	err := DB.QueryRow(
+		context.Background(),
+		`
+		SELECT pc.id, pc.body, pc.created_by, COALESCE(u.name, ''), u.image, pc.created_at, pc.updated_at
+		FROM pull_request_comments pc
+		JOIN pull_requests pr ON pr.id = pc.pull_request_id
+		LEFT JOIN "user" u ON u.id = pc.created_by
+		WHERE pr.repo_id = $1 AND pr.number = $2 AND pc.id = $3
+		`,
+		repoID,
+		number,
+		commentID,
+	).Scan(
+		&comment.ID,
+		&comment.Body,
+		&comment.CreatedBy.ID,
+		&comment.CreatedBy.Username,
+		&comment.CreatedBy.Avatar,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	comment.CreatedAt = createdAt.Format(time.RFC3339)
+	comment.UpdatedAt = updatedAt.Format(time.RFC3339)
+
+	return &comment, nil
+}
+
 // AddPullRequestComment creates a comment on a pull request and returns it
 // resolved. A "comment" event is recorded in the same transaction.
 func AddPullRequestComment(repoID int64, number int, authorID, body string) (PullRequestComment, error) {
@@ -1361,17 +1402,6 @@ func GetPRParticipants(pullRequestID int64) ([]PullRequestUser, error) {
 	}
 
 	return users, rows.Err()
-}
-
-// ── PR Notifications ──────────────────────────────────────────────────────
-
-// SetPRNotifications updates the notification preference for a pull request.
-func SetPRNotifications(pullRequestID int64, enabled bool) error {
-	_, err := DB.Exec(context.Background(),
-		`UPDATE pull_requests SET notifications = $2, updated_at = NOW() WHERE id = $1`,
-		pullRequestID, enabled,
-	)
-	return err
 }
 
 // ── PR Viewed Files ───────────────────────────────────────────────────────

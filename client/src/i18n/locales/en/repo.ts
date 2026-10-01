@@ -282,16 +282,11 @@ export const repo = {
 			tags: "Tags",
 			backup: "Backup",
 			actions: "Actions",
-			notifications: "Notifications",
 			settings: "Settings",
 			collaborators: "Collaborators",
 			code: "Code",
 			access: "Access",
 			codeManagement: "Code Management",
-			integration: "Integration",
-			discordNotifications: "Discord Notifications",
-			discordDescription:
-				"Configure Discord notifications for repository activity and events.",
 			backupDesc:
 				"Create and manage backups of your repository to protect your code and Git history.",
 			branchesDesc:
@@ -300,8 +295,6 @@ export const repo = {
 				"Manage repository tags and organize your releases and versions.",
 			actionsDesc:
 				"Configure automated workflows and actions for your repository.",
-			notificationsDesc:
-				"Manage notifications and configure integrations with external services.",
 		},
 		backup: {
 			title: "Backup",
@@ -344,6 +337,31 @@ export const repo = {
 			fetchFailed: "Failed to fetch collaborators",
 			addFailed: "Failed to add collaborator",
 			removeFailed: "Failed to remove collaborator",
+		},
+		webhooks: {
+			title: "Repository Webhooks",
+			description:
+				"Send repository events to a Discord channel. This is separate from your personal notification webhooks.",
+			urlLabel: "Discord webhook URL",
+			urlPlaceholder: "https://discord.com/api/webhooks/...",
+			configuredAs: "Configured as {{masked}}",
+			notConfigured: "No Discord webhook configured yet.",
+			prLabel: "Pull request notifications",
+			prHelp:
+				"Notify when pull requests are opened, commented on, approved, or have changes requested.",
+			issueLabel: "Issue notifications",
+			issueHelp: "Notify when issues are opened or receive new comments.",
+			loading: "Loading webhook configuration...",
+			loadFailed: "Failed to load webhook configuration",
+			forbidden: "Only the repository owner or admins can manage webhooks.",
+			save: "Save",
+			saving: "Saving...",
+			saved: "Discord webhook saved",
+			saveFailed: "Failed to save Discord webhook",
+			delete: "Remove",
+			deleting: "Removing...",
+			deleted: "Discord webhook removed",
+			deleteFailed: "Failed to remove Discord webhook",
 		},
 		danger: {
 			title: "Danger Zone",

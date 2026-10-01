@@ -86,7 +86,6 @@ export const errors = {
 		deleteOrganization: "Die Organisation konnte nicht gelöscht werden",
 		createRepository: "Repository konnte nicht erstellt werden",
 		createNotification: "Benachrichtigung konnte nicht erstellt werden",
-		sendNotification: "Benachrichtigung konnte nicht gesendet werden",
 		testNotification: "Test fehlgeschlagen",
 		testNotificationShort: "Testbenachrichtigung fehlgeschlagen",
 		createBackup: "Backup konnte nicht erstellt werden",
@@ -110,7 +109,6 @@ export const errors = {
 		updateReviewers: "Reviewer:innen konnten nicht aktualisiert werden",
 		updateLabels: "Labels konnten nicht aktualisiert werden",
 		createLabel: "Label konnte nicht erstellt werden",
-		updateNotifications: "Benachrichtigungen konnten nicht aktualisiert werden",
 	},
 	auth: {
 		INVALID_EMAIL: "Ungültige E-Mail-Adresse",
@@ -192,16 +190,30 @@ export const errors = {
 		comment_review_requires_body: "Ein Kommentar-Review benötigt einen Text",
 		commit_not_found: "Commit nicht gefunden",
 		contributor_required: "Du musst zu diesem Repository beitragen",
+		contributor_required_to_change_issue_state:
+			"Du musst zu diesem Repository beitragen, um den Issue-Status zu ändern",
+		contributor_required_to_close_pull:
+			"Du musst zu diesem Repository beitragen, um einen Pull Request zu schließen",
+		contributor_required_to_comment:
+			"Du musst zu diesem Repository beitragen, um zu kommentieren",
 		contributor_required_to_create_issue:
 			"Du musst zu diesem Repository beitragen, um ein Issue zu erstellen",
 		contributor_required_to_create_pull:
 			"Du musst zu diesem Repository beitragen, um einen Pull Request zu erstellen",
 		contributor_required_to_merge_pull:
 			"Du musst zu diesem Repository beitragen, um einen Pull Request zu mergen",
+		contributor_required_to_reopen_pull:
+			"Du musst zu diesem Repository beitragen, um einen Pull Request erneut zu öffnen",
+		contributor_required_to_review:
+			"Du musst zu diesem Repository beitragen, um zu reviewen",
 		contributor_required_to_update_assignees:
 			"Du musst zu diesem Repository beitragen, um Zuweisungen zu ändern",
+		contributor_required_to_update_issue:
+			"Du musst zu diesem Repository beitragen, um ein Issue zu ändern",
 		contributor_required_to_update_labels:
 			"Du musst zu diesem Repository beitragen, um Labels zu ändern",
+		contributor_required_to_update_pull:
+			"Du musst zu diesem Repository beitragen, um einen Pull Request zu ändern",
 		contributor_required_to_update_reviewers:
 			"Du musst zu diesem Repository beitragen, um Reviewer:innen zu ändern",
 		current_password_incorrect: "Dein aktuelles Passwort ist falsch",
@@ -368,6 +380,8 @@ export const errors = {
 			"Du musst angemeldet sein, um ein Review zu löschen",
 		sign_in_required_to_merge_pull:
 			"Du musst angemeldet sein, um einen Pull Request zu mergen",
+		sign_in_required_to_modify_comment:
+			"Du musst angemeldet sein, um einen Kommentar zu ändern",
 		sign_in_required_to_reopen_pull:
 			"Du musst angemeldet sein, um einen Pull Request wieder zu öffnen",
 		sign_in_required_to_revert_pull:
@@ -376,10 +390,12 @@ export const errors = {
 			"Du musst angemeldet sein, um ein Review abzugeben",
 		sign_in_required_to_update_assignees:
 			"Du musst angemeldet sein, um Zuweisungen zu ändern",
+		sign_in_required_to_update_issue:
+			"Du musst angemeldet sein, um ein Issue zu ändern",
 		sign_in_required_to_update_labels:
 			"Du musst angemeldet sein, um Labels zu ändern",
-		sign_in_required_to_update_notifications:
-			"Du musst angemeldet sein, um Benachrichtigungen zu ändern",
+		sign_in_required_to_update_pull:
+			"Du musst angemeldet sein, um einen Pull Request zu ändern",
 		sign_in_required_to_update_reviewers:
 			"Du musst angemeldet sein, um Reviewer:innen zu ändern",
 		sign_in_required_to_upload:

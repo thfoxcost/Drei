@@ -966,6 +966,8 @@ function IssueDetail() {
 							)}
 						</div>
 					</div>
+
+					<Separator className="my-2" />
 				</div>
 			</div>
 

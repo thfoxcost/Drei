@@ -21,6 +21,7 @@ import { Textarea } from "#/components/ui/textarea";
 import { useFileUpload } from "#/hooks/use-file-upload";
 import { useRepoData } from "#/hooks/useRepoData";
 import DangerZone from "./danger-zone";
+import Webhooks from "./webhooks";
 
 function General() {
 	const { t } = useTranslation();
@@ -298,6 +299,7 @@ function General() {
 					)}
 				</Button>
 			</div>
+			<Webhooks />
 			<DangerZone />
 		</div>
 	);

@@ -17,7 +17,7 @@ import {
 	Search,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import ReactCountryFlag from "react-country-flag";
+import { CountryFlag } from "#/components/flags/country-flag";
 import { Badge } from "#/components/reui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
@@ -569,9 +569,8 @@ export function PeopleTable() {
 												<span className="text-muted-foreground">—</span>
 											) : (
 												<span title={person.country}>
-													<ReactCountryFlag
+													<CountryFlag
 														countryCode={code}
-														svg
 														style={{
 															width: "1.5em",
 															height: "1.5em",

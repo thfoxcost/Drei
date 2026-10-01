@@ -102,7 +102,7 @@ func createBareRepository(namespace, ownerID, creatorName string, organizationID
 	}
 
 	// Add the repository creator as the first contributor.
-	if err := database.CreateContributor(repoID, database.Contributor{
+	if _, err := database.CreateContributor(repoID, database.Contributor{
 		ID:       ownerID,
 		Username: creatorName,
 		Avatar:   avatar,

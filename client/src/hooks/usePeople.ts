@@ -29,9 +29,15 @@ export interface Person {
 	topRepo: PersonTopRepo | null;
 }
 
-export function usePeople() {
+interface UsePeopleOptions {
+	/** Set to `false` to defer the request until the data is actually needed. */
+	enabled?: boolean;
+}
+
+export function usePeople({ enabled = true }: UsePeopleOptions = {}) {
 	return useQuery({
 		queryKey: ["people"],
+		enabled,
 		queryFn: async (): Promise<Person[]> => {
 			const res = await fetch("http://localhost:3200/api/people", {
 				credentials: "include",
