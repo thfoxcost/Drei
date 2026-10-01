@@ -93,6 +93,7 @@ export const common = {
 
 	units: {
 		bytes: "Bytes",
+		b: "B",
 		kb: "KB",
 		mb: "MB",
 		gb: "GB",
