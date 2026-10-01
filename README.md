@@ -89,13 +89,76 @@ Learn more at **[drei.sh](https://drei.sh)**.
 
 ## Getting Started
 
-Drei is designed to provide a simple self-hosting experience while remaining easy to configure and extend.
+Prerequisites: **Go 1.26+**, **Bun**, **Docker** (for PostgreSQL), and **Git**.
 
-> **Note:** Installation and deployment instructions are currently being finalized.
+### 1. Clone and start PostgreSQL
 
-For development, clone the repository and install the project dependencies before starting the frontend and backend services.
+```bash
+git clone https://github.com/thfoxcost/Drei.git
+cd Drei
 
-More detailed installation and deployment documentation will be available as the project matures.
+# Required by docker compose (also used for local development below).
+export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+
+docker compose up -d postgres
+```
+
+### 2. Configure the backend
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Edit `backend/.env`: set `REPOS_PATH` to an absolute directory for your bare
+repositories, and confirm `GIT_HTTP_BACKEND` matches your system
+(`git --exec-path` shows the directory containing `git-http-backend`;
+on Debian/Ubuntu it is `/usr/lib/git-core/git-http-backend`).
+
+### 3. Configure the client
+
+Create `client/.env` (gitignored, never commit it):
+
+```env
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=<same value as exported above>
+DB_HOST=postgres://user:password@localhost:5432/pg
+```
+
+### 4. Run the dev servers
+
+```bash
+# Terminal 1 — backend (http://localhost:3200)
+cd backend && air        # or: go run ./cmd/server
+
+# Terminal 2 — client (http://localhost:3000)
+cd client && bun install && bun run dev
+```
+
+Open **http://localhost:3000**, create an account, and create your first repository.
+
+### 5. Push over HTTP
+
+Git push requires your login session. Tell git to send the session cookie
+(find `better-auth.session_token` in your browser's devtools → Application →
+Cookies → `localhost`):
+
+```bash
+git config --global http.extraHeader "Cookie: better-auth.session_token=<paste-token-here>"
+```
+
+Then `git clone` / `git push` against
+`http://localhost:3200/git/<username>/<repo>.git` as usual.
+
+### Production with Docker Compose
+
+```bash
+export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+docker compose up --build
+```
+
+Change the default `user`/`password` PostgreSQL credentials in
+`docker-compose.yml` before exposing a deployment, and serve it behind
+HTTPS (Caddy, Nginx, or similar).
 
 ## License
 
