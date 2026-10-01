@@ -104,5 +104,10 @@ export function formatBytes(bytes: number): string {
 		Number(value.toFixed(value >= 100 || i === 0 ? 0 : 1)),
 	);
 
-	return `${formatted} ${i18n.t(`common.units.${units[i]}`) as string}`;
+	// Fall back to the raw unit when a locale is missing the key, so a
+	// translation gap can never surface as a literal key in the UI.
+	const unit = i18n.t(`common.units.${units[i]}`) as string;
+	const label = unit === `common.units.${units[i]}` ? units[i] : unit;
+
+	return `${formatted} ${label}`;
 }

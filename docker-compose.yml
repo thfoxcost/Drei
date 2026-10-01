@@ -59,6 +59,11 @@ services:
       DATABASE_URL: postgres://user:password@postgres:5432/pg
       CLIENT_URL: http://client:3000
       APP_ENV: production
+      # Browser-facing origins allowed to make credentialed API calls.
+      # CLIENT_URL above is the *internal* Docker address that the backend
+      # uses to validate sessions, but browsers only ever send the address
+      # they typed, so that origin must be listed here as well.
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
       - "3200:3200"
     volumes:

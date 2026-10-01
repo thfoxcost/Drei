@@ -98,9 +98,18 @@ func RunBackup(owner, repo string) (hash string, size int64, path string, err er
 	}
 
 	// 2. Verify the temporary bundle before it may replace anything.
+	// `git bundle verify` resolves prerequisites against a repository, so it
+	// must run with the repository context set; without --git-dir it fails
+	// with "need a repository to verify a bundle".
 	stderr.Reset()
 
-	verify := exec.Command("git", "bundle", "verify", tmpPath)
+	verify := exec.Command(
+		"git",
+		"--git-dir="+repoPath,
+		"bundle",
+		"verify",
+		tmpPath,
+	)
 	verify.Stderr = &stderr
 
 	if err := verify.Run(); err != nil {

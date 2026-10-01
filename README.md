@@ -58,11 +58,11 @@ Learn more at **[drei.sh](https://drei.sh)**.
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/empty.png" alt="Empty repository" width="900">
+  <img src="assets/screenshots/repo.png" alt="Repository page" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/repo.png" alt="Repository page" width="900">
+  <img src="assets/screenshots/home-dark.png" alt="Drei home page in dark mode" width="900">
 </p>
 
 </details>
@@ -89,13 +89,185 @@ Learn more at **[drei.sh](https://drei.sh)**.
 
 ## Getting Started
 
-Drei is designed to provide a simple self-hosting experience while remaining easy to configure and extend.
+Prerequisites: **Go 1.26+**, **Bun**, **Docker** (for PostgreSQL), and **Git**.
 
-> **Note:** Installation and deployment instructions are currently being finalized.
+### 1. Clone and start PostgreSQL
 
-For development, clone the repository and install the project dependencies before starting the frontend and backend services.
+```bash
+git clone https://github.com/thfoxcost/Drei.git
+cd Drei
 
-More detailed installation and deployment documentation will be available as the project matures.
+# Required by docker compose (also used for local development below).
+export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+
+docker compose up -d postgres
+```
+
+### 2. Configure the backend
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Edit `backend/.env`: set `REPOS_PATH` to an absolute directory for your bare
+repositories, and confirm `GIT_HTTP_BACKEND` matches your system
+(`git --exec-path` shows the directory containing `git-http-backend`;
+on Debian/Ubuntu it is `/usr/lib/git-core/git-http-backend`).
+
+### 3. Configure the client
+
+Create `client/.env` (gitignored, never commit it):
+
+```env
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=<same value as exported above>
+DB_HOST=postgres://user:password@localhost:5432/pg
+```
+
+### 4. Run the dev servers
+
+```bash
+# Terminal 1 — backend (http://localhost:3200)
+cd backend && air        # or: go run ./cmd/server
+
+# Terminal 2 — client (http://localhost:3000)
+cd client && bun install && bun run dev
+```
+
+Open **http://localhost:3000**, create an account, and create your first repository.
+
+### 5. Push over HTTP
+
+Git push requires your login session. Tell git to send the session cookie
+(find `better-auth.session_token` in your browser's devtools → Application →
+Cookies → `localhost`):
+
+```bash
+git config --global http.extraHeader "Cookie: better-auth.session_token=<paste-token-here>"
+```
+
+Then `git clone` / `git push` against
+`http://localhost:3200/git/<username>/<repo>.git` as usual.
+
+### Production with Docker Compose
+
+```bash
+export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+docker compose up --build
+```
+
+Change the default `user`/`password` PostgreSQL credentials in
+`docker-compose.yml` before exposing a deployment, and serve it behind
+HTTPS (Caddy, Nginx, or similar).
+
+## Deployment
+
+The compose stack runs three services: `client` (the web UI, port 3000),
+`backend` (REST API **and** git-over-HTTP, port 3200), and `postgres`.
+
+### First deploy
+
+```bash
+git clone https://github.com/thfoxcost/Drei.git
+cd Drei
+
+# 1. Generate a secret and keep it. Rotating it signs every user out.
+export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+echo "$BETTER_AUTH_SECRET"        # store it in your password manager
+
+# 2. Optional: point the stack at your own PostgreSQL credentials and the
+#    origin users will actually visit (see "Configuration" below).
+export ALLOWED_ORIGINS="https://git.example.com"
+
+# 3. Build and start.
+docker compose up -d --build
+docker compose ps                 # all three services should be Up/healthy
+```
+
+The client is served on **http://localhost:3000** and the API on
+**http://localhost:3200**. Create your first account there.
+
+### Configuration
+
+Most settings are plain environment variables. The ones you will want to
+change:
+
+| Variable | Service | Default | Purpose |
+| --- | --- | --- | --- |
+| `BETTER_AUTH_SECRET` | client | *(required)* | Signs session cookies. Compose refuses to start without it. |
+| `BETTER_AUTH_URL` | client | `http://localhost:3000` | Must match the address users visit. |
+| `ALLOWED_ORIGINS` | backend | `http://localhost:3000` | Comma-separated CORS allowlist for credentialed requests. |
+| `APP_ENV` | backend | `production` | Any other value also serves the Swagger UI at `/swagger/`. |
+| `DATABASE_URL` / `DB_HOST` | backend / client | dev defaults | PostgreSQL connection strings. |
+| `VITE_BACKEND_URL` | client (build arg) | `http://localhost:3200` | Baked into the browser bundle at build time. |
+
+> **Important:** `CLIENT_URL` is the *internal* Docker address
+> (`http://client:3000`) that the backend uses to validate sessions — it is
+> never seen by a browser. Because browsers send the origin they actually
+> typed, always set `ALLOWED_ORIGINS` to your public address. The backend
+> logs a warning at startup when its allowlist contains only an internal
+> address, and blocked origins surface as a UI that loads but shows no data.
+
+### Persistent data
+
+Two named volumes hold everything that matters:
+
+- `postgres_data` — accounts, sessions, repositories, issues, pull requests.
+- `repos_data` — the bare repositories, uploads (logos, avatars, issue
+  images) and repository backups. Mounted at `/data/repos` in the backend.
+
+Neither survives `docker compose down -v`, so avoid `-v` unless you intend
+to wipe the instance.
+
+### Backups
+
+```bash
+# Database
+docker compose exec -T postgres pg_dump -U user -d pg > drei-$(date +%F).sql
+
+# Repositories, uploads and backups
+docker run --rm -v drei_repos_data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/repos-$(date +%F).tar.gz -C /data .
+```
+
+Repositories can also be snapshotted from the UI (repo → Settings →
+Backup), which writes a verified `git bundle` per repository.
+
+### Upgrading
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+Schema changes are applied automatically on backend start.
+
+### Behind a reverse proxy
+
+Terminate TLS in front of the stack and route **both** services — the UI on
+`/` and everything under `/git/` plus `/api/` to the backend. Git
+over-HTTP is served by the backend, not the client.
+
+> **Note:** the client bundle currently talks to the backend on
+> `http://localhost:3200` in several places, so a remote deployment needs
+> either same-origin routing with those URLs adjusted or an SSH tunnel
+> (`ssh -L 3000:localhost:3000 -L 3200:localhost:3200 user@host`). This is
+> a known limitation, tracked for cleanup.
+
+### Security checklist
+
+- [ ] `BETTER_AUTH_SECRET` generated, stored, and unique to this instance.
+- [ ] PostgreSQL `user`/`password` changed from the defaults.
+- [ ] `ALLOWED_ORIGINS` set to your real origin (not left at localhost).
+- [ ] Served over HTTPS — session cookies travel in every API request.
+- [ ] Postgres port `5432` not exposed to the public internet.
+- [ ] `APP_ENV=production` so `/swagger/` is not served.
+
+Git pushes require an authenticated session: the backend verifies the
+better-auth cookie and requires contributor (or organization member) rights
+before handing a `receive-pack` request to `git-http-backend`. Private
+repositories are unreadable without the same permission, and archived
+repositories reject pushes outright.
 
 ## License
 

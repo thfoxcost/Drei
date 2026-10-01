@@ -96,8 +96,6 @@ const TabsVerticalLinedDemo = () => {
 						</TabsTrigger>
 					);
 				})}
-
-				<Separator className="my-2" />
 			</TabsList>
 
 			<div className="flex-1 px-6">
