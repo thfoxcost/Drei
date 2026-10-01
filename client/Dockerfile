@@ -6,6 +6,9 @@
 #     --build-arg VITE_BACKEND_URL=http://localhost:3200 \
 #     --build-arg DB_HOST=postgres://user:password@postgres:5432/pg \
 #     ./client
+# (The DB_HOST value above is the local development default — use real
+# credentials in production. DB_HOST is required: it has no image default
+# so production credentials are never baked in accidentally.)
 # Run:
 #   docker run -p 3000:3000 \
 #     -e BETTER_AUTH_URL=http://localhost:3000 \
@@ -29,7 +32,9 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 ARG VITE_BACKEND_URL=http://localhost:3200
-ARG DB_HOST=postgres://user:password@postgres:5432/pg
+# No default: pass --build-arg DB_HOST explicitly (local dev default is
+# postgres://user:password@postgres:5432/pg — change it in production).
+ARG DB_HOST
 ENV VITE_BACKEND_URL=${VITE_BACKEND_URL} \
     DB_HOST=${DB_HOST}
 

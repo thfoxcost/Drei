@@ -3,6 +3,7 @@ package gitrepo
 import (
 	"backend/internal/config"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,7 +13,7 @@ import (
 func CreateReposDIR(path string) {
 	err := os.Mkdir(path, 0755)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }
 
@@ -20,10 +21,10 @@ func CreateUserDIR(userPath string) {
 
 	err := os.Mkdir(userPath, 0755)
 	if err != nil {
-		fmt.Printf("[\033[33mWARN\033[0m] %v\n", err)
+		log.Printf("[WARN] %v\n", err)
 		return
 	} else {
-		fmt.Println("\033[32m[OK]\033[0m User directory created")
+		log.Println("[OK] User directory created")
 	}
 }
 

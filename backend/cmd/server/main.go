@@ -6,7 +6,6 @@ import (
 	"backend/internal/handlers"
 	"backend/internal/sysinfo"
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -147,12 +146,15 @@ func main() {
 	orgAvatarsDir := filepath.Join(config.App.ReposPath, "orgs")
 	http.Handle("/uploads/orgs/", http.StripPrefix("/uploads/orgs/", http.FileServer(http.Dir(orgAvatarsDir))))
 
-	// Swagger UI
-	http.Handle("/swagger/", httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"),
-	))
+	// Swagger UI is a development/debug surface: it is only served outside
+	// production so deployments do not unnecessarily expose the API map.
+	if config.App.Environment != "production" {
+		http.Handle("/swagger/", httpSwagger.Handler(
+			httpSwagger.URL("/swagger/doc.json"),
+		))
+	}
 
-	fmt.Printf("[OK] Server listening on :%s\n", config.App.Port)
+	log.Printf("[OK] Server listening on :%s\n", config.App.Port)
 
 	log.Fatal(http.ListenAndServe(":"+config.App.Port, nil))
 }

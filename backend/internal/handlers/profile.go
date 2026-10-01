@@ -19,6 +19,10 @@ type ProfileData struct {
 	QuotePersonTitle *string `json:"quotePersonTitle"`
 	QuotePersonImage *string `json:"quotePersonImage"`
 	QuoteVerified    bool    `json:"quoteVerified"`
+	// PlatformOwner mirrors the existing platform_owner flag (see
+	// database.IsPlatformOwner): true for platform operators. It is
+	// read-only here; PATCH never modifies it.
+	PlatformOwner bool `json:"platformOwner"`
 }
 
 // ProfileHandler godoc
@@ -75,7 +79,8 @@ func handleGetProfile(w http.ResponseWriter, user *AuthUser) {
 	err := database.DB.QueryRow(context.Background(), `
 		SELECT name, email, profession, biography, description, country,
 		       quote_person_name, quote_text, quote_person_title,
-		       quote_person_image, quote_verified
+		       quote_person_image, quote_verified,
+		       COALESCE(platform_owner, FALSE)
 		FROM "user"
 		WHERE id = $1
 	`, user.ID).Scan(
@@ -83,7 +88,7 @@ func handleGetProfile(w http.ResponseWriter, user *AuthUser) {
 		&profile.Profession, &profile.Biography, &profile.Description, &profile.Country,
 		&profile.QuotePersonName, &profile.QuoteText,
 		&profile.QuotePersonTitle, &profile.QuotePersonImage,
-		&profile.QuoteVerified,
+		&profile.QuoteVerified, &profile.PlatformOwner,
 	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to fetch profile: "+err.Error())

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backend/internal/config"
 	"backend/internal/database"
 	"encoding/json"
 	"net/http"
@@ -46,12 +47,18 @@ func writeErrorCoded(w http.ResponseWriter, status int, code string, msg string)
 }
 
 func setCORS(w http.ResponseWriter, r *http.Request, methods string) {
-	// Echo the request origin instead of using "*" so credentialed requests
-	// (the better-auth session cookie) are allowed by the browser.
+	// Explicit allowlist (see config.AllowedOrigins): only origins we
+	// trust receive Allow-Origin with credentials. Unknown origins get no
+	// Allow-Origin header so the browser blocks the response. Requests
+	// without an Origin (curl, git, server-to-server) keep the previous
+	// "*" behavior since CORS does not apply to them.
 	origin := r.Header.Get("Origin")
 
 	if origin == "" {
 		origin = "*"
+	} else if !originAllowed(origin) {
+		w.Header().Set("Vary", "Origin")
+		return
 	}
 
 	w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -59,6 +66,17 @@ func setCORS(w http.ResponseWriter, r *http.Request, methods string) {
 	w.Header().Set("Access-Control-Allow-Methods", methods+", OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	w.Header().Set("Vary", "Origin")
+}
+
+// originAllowed reports whether origin is on the explicit CORS allowlist.
+func originAllowed(origin string) bool {
+	for _, allowed := range config.App.AllowedOrigins {
+		if origin == allowed {
+			return true
+		}
+	}
+
+	return false
 }
 
 func handleOptions(w http.ResponseWriter, r *http.Request) {

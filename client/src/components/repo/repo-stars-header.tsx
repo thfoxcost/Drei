@@ -44,7 +44,6 @@ interface RepoStarsheaderProps {
 	reponame: string;
 	owner: string;
 	visibility: boolean;
-	link: string;
 	website?: string;
 	logo?: string;
 	commits?: Commit[];

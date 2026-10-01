@@ -94,7 +94,7 @@ EOF
 cat > AUTHORS << 'EOF'
 # Authors
 
-- thefoxcost
+- Your Name
 - Contributors
 EOF
 

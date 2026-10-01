@@ -8,6 +8,8 @@
 #     -e CLIENT_URL=http://localhost:3000 \
 #     -v drei-repos:/data/repos \
 #     drei-backend
+# (The DATABASE_URL above uses local development default credentials —
+# change user/password in production.)
 #
 # Runtime env (see backend/.env.example):
 #   PORT (default 3200), REPOS_PATH (default /data/repos),

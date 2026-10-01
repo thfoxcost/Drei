@@ -1,5 +1,14 @@
 repos/*
 !/repos/tools/
 test/*
-# Local compose secrets (BETTER_AUTH_SECRET) — never commit.
-.env
+# Local secrets and environment files — never commit.
+/.env
+**/.env
+# Python bytecode and virtualenvs (e.g. repos/tools).
+*.pyc
+__pycache__/
+**/.venv/
+# Logs.
+*.log
+logs/
+/aicommiter/

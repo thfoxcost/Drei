@@ -29,6 +29,7 @@ services:
     container_name: drei-postgres
     restart: unless-stopped
     environment:
+      # Local development defaults — change user/password in production.
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: pg
