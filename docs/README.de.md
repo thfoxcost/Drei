@@ -15,15 +15,15 @@
 <br>
 
 <p align="center">
-  <img src="assets/screenshots/home.png" alt="Startseite" width="900">
+  <img src="../assets/screenshots/home.png" alt="Startseite" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/repo.png" alt="Repository" width="900">
+  <img src="../assets/screenshots/repo.png" alt="Repository" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/home-dark.png" alt="Startseite im dunklen Modus" width="900">
+  <img src="../assets/screenshots/home-dark.png" alt="Startseite im dunklen Modus" width="900">
 </p>
 
 </details>

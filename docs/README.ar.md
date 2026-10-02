@@ -15,15 +15,15 @@
 <br>
 
 <p align="center">
-  <img src="assets/screenshots/home.png" alt="الصفحة الرئيسية" width="900">
+  <img src="../assets/screenshots/home.png" alt="الصفحة الرئيسية" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/repo.png" alt="المستودع" width="900">
+  <img src="../assets/screenshots/repo.png" alt="المستودع" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/home-dark.png" alt="الصفحة الرئيسية بالوضع الداكن" width="900">
+  <img src="../assets/screenshots/home-dark.png" alt="الصفحة الرئيسية بالوضع الداكن" width="900">
 </p>
 
 </details>
