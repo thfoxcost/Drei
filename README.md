@@ -30,16 +30,6 @@
 
 <br>
 
-<p align="center">
-  <a href="https://drei.sh">Website</a>
-  &nbsp;•&nbsp;
-  <a href="#getting-started">Getting Started</a>
-  &nbsp;•&nbsp;
-  <a href="#features">Features</a>
-  &nbsp;•&nbsp;
-  <a href="#license">License</a>
-</p>
-
 ---
 
 Drei (pronounced approximately **"dry"**, from the German word for **"three"**) is a free and open-source Git hosting platform designed to be **lightweight, fast, and easy to self-host**.
