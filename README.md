@@ -26,6 +26,8 @@
     <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/badge/-React-61DAFB.svg?logo=react&variant=branded&size=sm&mode=dark">
     <img alt="React" src="https://www.shieldcn.dev/badge/-React-61DAFB.svg?logo=react&variant=branded&size=sm&mode=light">
   </picture>
+  &nbsp;&nbsp;
+  <img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg">
 </div>
 
 <br>
@@ -37,6 +39,17 @@ Drei (pronounced approximately **"dry"**, from the German word for **"three"**) 
 Run Drei on your own server or network and keep full control over your repositories, accounts, and data without relying on a third-party Git hosting provider.
 
 Learn more at **[drei.sh](https://drei.sh)**.
+
+## Contents
+
+- [Preview](#preview)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [Deployment](#deployment)
+- [Roadmap](#roadmap)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+- [Inspiration](#inspiration)
 
 <details>
 <summary><strong>Preview</strong></summary>
@@ -70,12 +83,79 @@ Learn more at **[drei.sh](https://drei.sh)**.
 
 ## Features
 
-* **Git Repository Hosting** — Create, manage, and browse Git repositories.
-* **Git Push & Clone** — Push to and clone repositories over HTTP.
-* **Authentication** — User authentication and account management.
-* **Repository Browsing** — Explore files, commits, branches, and repository information.
-* **Self-Hosted** — Run Drei on your own infrastructure and keep control of your data.
-* **Lightweight** — Built with a simple and efficient architecture focused on performance and low resource usage.
+### Git hosting
+
+- **Repository creation** with descriptions, avatars, and a project website link
+- **Clone, fetch, and push over HTTP** via a `git-http-backend` CGI passthrough
+- **Authenticated pushes** — pushing requires a signed-in session with contributor or organization rights; private repositories are never readable anonymously
+- **Read-only archived repositories** — archived repos reject pushes while staying clonable
+- **Public and private visibility** per repository
+- **Forking**, with fork tracking and contributor lists
+- **Renaming** that keeps ownership consistent across the database and disk
+
+### Browsing code
+
+- **File tree** with lazy directory loading and syntax-highlighted contents
+- **Blob view** for any file at any commit, tag, or branch
+- **Commit history** with per-commit detail, diffs, and changed files
+- **Branches and tags** with a ref switcher and deletion (default branch protected)
+- **Compare** any two refs, with commit- and file-level diffs
+- **README rendering** with highlighted code blocks and copy buttons
+- **File search** inside a repository
+- **Raw file download** and **full repository archive**
+- **RSS feed** and **`llms.txt`** export for any repository
+
+### Issues
+
+- Create, view, and filter issues by state, author, assignee, label, and sort order
+- **Comments** threaded per issue, with image uploads
+- **Labels** with colors, created and managed per repository
+- **Assignees** and state transitions (open/closed)
+
+### Pull requests
+
+- Open pull requests across branches with titles, descriptions, and labels
+- **Reviewers and reviews**
+- **Threaded comments** on the conversation and on the diff
+- **Merge, revert, close, and reopen** — with mergeability checks before merging
+- **Changed-files view** with per-file diffs and viewed-file tracking
+- **Duplicate detection** and source-branch cleanup after merge
+
+### Organizations
+
+- Create organizations with avatars, descriptions, purposes, and tags
+- **Roles**: owner, admin, and member, with role-gated administration
+- **Members management**, pinned organizations, and organization-owned repositories
+- Member and repository listings per organization, with language breakdowns
+
+### Insights and activity
+
+- **Insights**: repository pulse, contributor leaderboards, and code-frequency analytics
+- **Global activity feed** across the repositories you can see
+- **Contribution heatmap** per user, with a selectable year
+- **People directory** with user and repository views, presence, and profession
+
+### Integrations and extras
+
+- **Discord webhooks** per repository for issue and pull request activity, with per-event toggles
+- **Repository backups** as verified `git bundle` snapshots, with retention and manual runs
+- **In-app to-do list** with reminders surfaced in the header
+- **Notifications** for repository events
+- **QR code** for cloning a repository from mobile
+
+### Interface
+
+- **Dark and light themes**, with appearance settings and system sync
+- **Internationalization** — English and German
+- **Command palette** (⌘K) for fast navigation
+- **Dashboard widgets**: contribution heatmap, clock, weather, and a live system health panel (frontend, backend, database, storage, CPU, memory, uptime)
+- **Avatars and profile customization** with bio, location, and quote
+
+### Self-hosting
+
+- **Docker Compose** stack: client, backend, and PostgreSQL
+- **Swagger/OpenAPI** documentation, served outside production only
+- **Lightweight footprint** — Go standard library HTTP, go-git, and Bun
 
 ## Getting Started
 
@@ -138,17 +218,6 @@ git config --global http.extraHeader "Cookie: better-auth.session_token=<paste-t
 
 Then `git clone` / `git push` against
 `http://localhost:3200/git/<username>/<repo>.git` as usual.
-
-### Production with Docker Compose
-
-```bash
-export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
-docker compose up --build
-```
-
-Change the default `user`/`password` PostgreSQL credentials in
-`docker-compose.yml` before exposing a deployment, and serve it behind
-HTTPS (Caddy, Nginx, or similar).
 
 ## Deployment
 
@@ -259,6 +328,14 @@ before handing a `receive-pack` request to `git-http-backend`. Private
 repositories are unreadable without the same permission, and archived
 repositories reject pushes outright.
 
+## Roadmap
+
+Things that are stubbed or not built yet:
+
+- Repository **Actions**, **Security**, and **Tags** settings pages
+- Organization **teams**
+- Deployment documentation in languages other than English
+
 ## License
 
 Drei is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
@@ -267,64 +344,64 @@ See the [LICENSE](./LICENSE) file for the complete license text.
 
 ## Acknowledgements
 
-### Stack
+Drei stands on the shoulders of a lot of excellent open-source work.
 
-Drei would not have been possible without the following open-source projects and technologies.
+### Frontend
 
-#### Frontend
+- **React** — the UI library everything is built from
+- **TanStack Start & Router** — full-stack React framework and type-safe routing
+- **TypeScript** — typed end to end, client and server
+- **Vite** — dev server and build tooling
+- **Tailwind CSS** — utility-first styling
+- **shadcn/ui & Radix UI** — accessible, unstyled component primitives
+- **i18next & react-i18next** — localization (English, German)
+- **Recharts** — charts for insights and activity
+- **Lucide & React Icons** — iconography
+- **Bun** — runtime, package manager, and bundler
 
-* **React** — A JavaScript library for building user interfaces.
-* **TanStack** — A collection of open-source tools for building modern, type-safe web applications.
-* **shadcn/ui** — Accessible and customizable UI components built for React.
-* **Vite** — A fast and modern frontend build tool and development server.
-* **TypeScript** — A strongly typed programming language built on JavaScript.
-* **Lucide** — An open-source icon library used throughout the interface.
-* **And other dependencies** listed in `client/package.json`.
+*Full list in [`client/package.json`](./client/package.json).*
 
-#### Backend
+### Backend
 
-* **Go** — A fast, simple, and efficient programming language used to build the Drei backend.
-* **net/http** — Go's standard HTTP package used for Drei's HTTP server and API.
-* **go-git** — A pure Go implementation of Git used for repository operations.
-* **Air** — A live-reloading development tool for Go applications.
-* **Better Auth** — A framework-agnostic authentication and authorization framework for TypeScript.
-* **And other dependencies** listed in `server/package.json` and `go.mod`.
+- **Go** — the language the backend is written in
+- **net/http** — the standard library HTTP server and router
+- **go-git** — pure-Go Git implementation for repository operations
+- **pgx** — PostgreSQL driver
+- **gopsutil** — host and process metrics for the system panel
+- **swaggo** — generated Swagger/OpenAPI documentation
+- **Git** — served over HTTP via `git-http-backend`
 
-#### Documentation
+*Full list in [`backend/go.mod`](./backend/go.mod).*
 
-* **Coming soon** — Drei's documentation stack is currently being evaluated and will be documented once a stable setup is finalized.
+### Infrastructure
 
-#### Project
+- **PostgreSQL** — metadata, accounts, and sessions
+- **Docker & Docker Compose** — the deployment stack
+- **Git** — the version control system at the core of Drei
 
-* **Bun** — A fast all-in-one JavaScript and TypeScript runtime, package manager, bundler, and toolkit.
-* **Python** — Used for custom scripts and manual repository maintenance.
-* **Git** — The distributed version control system at the core of Drei.
+### Tooling
 
-#### Infrastructure
-
-* **Coming soon** — Deployment and infrastructure technologies will be documented once the production setup is finalized.
+- **Biome** — linting and formatting
+- **Vitest** — unit testing
+- **Air** — live reload for the Go backend
+- **Python** — repository maintenance scripts
 
 ## Inspiration
 
-Drei would not have been possible without the projects and communities that have shaped the modern Git hosting ecosystem.
+Drei exists because the self-hosted Git landscape deserved better. Three
+projects shaped it:
 
-### Gitea
+- **[Gitea](https://about.gitea.com/)** — proved that self-hosted Git hosting
+  can be small, fast, and genuinely easy to run. Drei's ambition is the same
+  class of software.
+- **[GitLab](https://about.gitlab.com/)** — showed what a Git platform can grow
+  into, and where to draw the line. Drei deliberately stays much smaller.
+- **[GitHub](https://github.com/)** — set the bar for how repository browsing
+  should feel. Familiarity is a feature.
 
-**Gitea** is a lightweight, self-hosted Git service focused on simplicity, performance, and ease of deployment.
-
-Gitea was one of the main inspirations behind Drei's goal of providing a **simple, lightweight, and self-hosted alternative for Git repository hosting**. Its approach to repository management and self-hosting helped shape many of the ideas behind Drei.
-
-### GitLab
-
-**GitLab** is a comprehensive DevOps platform built around Git.
-
-Drei takes inspiration from GitLab's approach to repository management, source browsing, and developer workflows. While Drei is intentionally much smaller in scope, GitLab demonstrated how Git hosting can evolve into a complete development platform.
-
-### GitHub
-
-**GitHub** has also influenced Drei's user experience, particularly its familiar approach to repository browsing, project organization, and collaboration.
-
-Drei builds upon these ideas while pursuing its own goal: **a lightweight, fast, and self-hostable Git platform that gives users full control over their infrastructure and code.**
+Drei takes the best of those ideas and goes its own way: **a lightweight, fast,
+self-hostable Git platform that gives you full control over your infrastructure
+and your code.**
 
 ---
 

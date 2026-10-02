@@ -15,15 +15,15 @@
 <br>
 
 <p align="center">
-  <img src="assets/screenshots/home.png" alt="Accueil" width="900">
+  <img src="../assets/screenshots/home.png" alt="Accueil" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/repo.png" alt="Dépôt" width="900">
+  <img src="../assets/screenshots/repo.png" alt="Dépôt" width="900">
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/home-dark.png" alt="Accueil en mode sombre" width="900">
+  <img src="../assets/screenshots/home-dark.png" alt="Accueil en mode sombre" width="900">
 </p>
 
 </details>
